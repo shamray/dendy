@@ -19,6 +19,9 @@ public:
     uint8_t s;
     uint8_t p;
 
+    uint8_t x{0};
+    uint8_t y{0};
+
     struct instruction
     {
         using arg_t = std::function<uint8_t(mos6502&)>;
