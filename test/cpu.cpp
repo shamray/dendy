@@ -36,3 +36,14 @@ TEST_CASE_METHOD(fixture, "LDA-IMM")
 
     CHECK(cpu.a == 0x55);
 }
+
+TEST_CASE_METHOD(fixture, "LDA-ZP")
+{
+    nes::mos6502 cpu(mem);
+
+    load(0x0010, std::array{ 0x42 });
+    load(0x8000, std::array{ 0xa5, 0x10 });
+    cpu.tick();
+
+    CHECK(cpu.a == 0x42);
+}
