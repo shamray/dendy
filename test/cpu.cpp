@@ -3,22 +3,24 @@
 
 #include "libnes/mos6502.h"
 
+#include <ranges>
+#include <array>
+
+constexpr auto operator""_Kb(size_t const x) 
+{
+    return x * 1024;
+}
+
 class fixture
 {
 public:
     fixture()
-        : mem(64 * 1024, 0)
-    {
-        assert(mem.size() == 64 * 1024);
-    }
+        : mem(64_Kb, 0)
+    {}
 
-    template <class T>
-    void program(uint16_t addr, T&& program)
+    void load(uint16_t addr, auto program)
     {
-        std::copy(
-            std::begin(program), std::end(program),
-            mem.begin() + addr
-        );
+        std::ranges::copy(program, mem.begin() + addr);
     }
 
     std::vector<uint8_t> mem;
@@ -29,7 +31,7 @@ TEST_CASE_METHOD(fixture, "LDA-IMM")
 {
     nes::mos6502 cpu(mem);
 
-    program(0x8000, std::vector<uint8_t>{0xa9, 0x55});
+    load(0x8000, std::array{0xa9, 0x55});
     cpu.tick();
 
     CHECK(cpu.a == 0x55);
