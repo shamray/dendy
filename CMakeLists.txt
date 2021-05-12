@@ -22,6 +22,7 @@ add_library(libnes
 )
 
 target_include_directories(libnes PUBLIC src)
+target_compile_features(libnes PUBLIC cxx_std_20)
 
 include(Catch)
 enable_testing()
