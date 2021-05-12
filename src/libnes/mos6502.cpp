@@ -17,11 +17,11 @@ auto adc = [](mos6502& cpu, auto operand)
 };
 
 auto lda = [](mos6502& cpu, auto operand) {
-    cpu.a = operand(cpu);
+    cpu.a = operand;
 };
 
 auto ldx = [](mos6502& cpu, auto operand) {
-    cpu.x = operand(cpu);
+    cpu.x = operand;
 };
 
 auto brk = [](mos6502& cpu, auto operand) {
@@ -66,7 +66,9 @@ void mos6502::tick()
 {
     auto opcode = read(pc++);
     auto cmd = decode(opcode).value_or(instruction{});
-    cmd.op(*this, cmd.arg);
+
+    auto arg = cmd.arg(*this);
+    cmd.op(*this, arg);
 }
 
 auto mos6502::decode(uint8_t opcode) -> std::optional<instruction>

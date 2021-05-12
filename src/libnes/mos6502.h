@@ -25,7 +25,7 @@ public:
     struct instruction
     {
         using arg_t = std::function<uint8_t(mos6502&)>;
-        using op_t = std::function<void(mos6502&, arg_t)>;
+        using op_t = std::function<void(mos6502&, uint8_t)>;
 
         op_t op;
         arg_t arg;
