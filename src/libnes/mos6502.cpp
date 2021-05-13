@@ -113,8 +113,10 @@ const std::unordered_map<uint8_t, mos6502::instruction> instruction_set {
 }
 
 mos6502::mos6502(std::vector<uint8_t>& memory)
-    : memory_(memory)
-{}
+    : memory_{memory}
+{
+    pc = read_word(0xFFFC);
+}
 
 void mos6502::tick()
 {

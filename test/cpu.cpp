@@ -11,12 +11,14 @@ constexpr auto operator""_Kb(size_t const x)
     return x * 1024;
 }
 
-class fixture
+class cpu_test
 {
 public:
-    fixture()
+    cpu_test()
         : mem(64_Kb, 0)
-    {}
+    {
+        load(0xFFFC, std::array{0x00, 0x80});
+    }
 
     void load(uint16_t addr, auto program)
     {
@@ -24,113 +26,114 @@ public:
     }
 
     std::vector<uint8_t> mem;
+    uint16_t prgadr{0x8000};
 
 };
 
-TEST_CASE_METHOD(fixture, "read_word")
+TEST_CASE_METHOD(cpu_test, "read_word")
 {
     nes::mos6502 cpu(mem);
 
-    load(0x0017, std::array{ 0x10, 0xd0 }); // $D010
+    load(0x0017, std::array{0x10, 0xd0}); // $D010
 
     CHECK(cpu.read_word(0x0017) == 0xd010);
 }
 
-TEST_CASE_METHOD(fixture, "LDA-IMM")
+TEST_CASE_METHOD(cpu_test, "LDA-IMM")
 {
     nes::mos6502 cpu(mem);
-
-    load(0x8000, std::array{0xa9, 0x55}); // LDA #$55
+         
+    load(prgadr, std::array{0xa9, 0x55}); // LDA #$55
     cpu.tick();
 
     CHECK(cpu.a == 0x55);
 }
 
-TEST_CASE_METHOD(fixture, "Unsupported opcode")
+TEST_CASE_METHOD(cpu_test, "Unsupported opcode")
 {
     nes::mos6502 cpu(mem);
 
-    load(0x8000, std::array{ 0x02 });
+    load(prgadr, std::array{0x02});
     CHECK_THROWS_AS(cpu.tick(), std::runtime_error);
 }
 
-TEST_CASE_METHOD(fixture, "LDA-ZP")
+TEST_CASE_METHOD(cpu_test, "LDA-ZP")
 {
     nes::mos6502 cpu(mem);
 
-    load(0x0010, std::array{ 0x42 });
-    load(0x8000, std::array{ 0xa5, 0x10 }); // LDA $10
+    load(0x0010, std::array{0x42});
+    load(prgadr, std::array{0xa5, 0x10}); // LDA $10
     cpu.tick();
 
     CHECK(cpu.a == 0x42);
 }
 
-TEST_CASE_METHOD(fixture, "LDA-ZPX")
+TEST_CASE_METHOD(cpu_test, "LDA-ZPX")
 {
     nes::mos6502 cpu(mem);
 
     cpu.x = 0x02;
-    load(0x0012, std::array{ 0x89 });
-    load(0x8000, std::array{ 0xb5, 0x10 }); // LDA $10,X
+    load(0x0012, std::array{0x89 });
+    load(prgadr, std::array{0xb5, 0x10}); // LDA $10,X
     cpu.tick();
 
     CHECK(cpu.a == 0x89);
 }
 
-TEST_CASE_METHOD(fixture, "LDA-IZX")
+TEST_CASE_METHOD(cpu_test, "LDA-IZX")
 {
     nes::mos6502 cpu(mem);
 
     cpu.x = 0x02;
-    load(0x0017, std::array{ 0x10, 0xd0 }); // $D010
-    load(0xd010, std::array{ 0x0F });
-    load(0x8000, std::array{ 0xa1, 0x15 }); // LDA ($15,X)
+    load(0x0017, std::array{0x10, 0xd0}); // $D010
+    load(0xd010, std::array{0x0F});
+    load(prgadr, std::array{0xa1, 0x15}); // LDA ($15,X)
     cpu.tick();
 
     CHECK(cpu.a == 0x0F);
 }
 
-TEST_CASE_METHOD(fixture, "LDA-IZY")
+TEST_CASE_METHOD(cpu_test, "LDA-IZY")
 {
     nes::mos6502 cpu(mem);
 
     cpu.y = 0x03;
-    load(0x002A, std::array{ 0x35, 0xc2 }); // $C235
-    load(0xc238, std::array{ 0x2F });
-    load(0x8000, std::array{ 0xb1, 0x2a }); // LDA ($2A),Y
+    load(0x002A, std::array{0x35, 0xc2}); // $C235
+    load(0xc238, std::array{0x2F});
+    load(prgadr, std::array{0xb1, 0x2a}); // LDA ($2A),Y
     cpu.tick();
 
     CHECK(cpu.a == 0x2F);
 }
 
-TEST_CASE_METHOD(fixture, "LDX-IMM")
+TEST_CASE_METHOD(cpu_test, "LDX-IMM")
 {
     nes::mos6502 cpu(mem);
 
-    load(0x8000, std::array{ 0xa2, 0x42 }); // LDX #$42
+    load(prgadr, std::array{0xa2, 0x42}); // LDX #$42
     cpu.tick();
 
     CHECK(cpu.x == 0x42);
 }
 
-TEST_CASE_METHOD(fixture, "LDX-ZP")
+TEST_CASE_METHOD(cpu_test, "LDX-ZP")
 {
     nes::mos6502 cpu(mem);
 
-    load(0x0010, std::array{ 0x88 });
-    load(0x8000, std::array{ 0xa6, 0x10 }); // LDX $10
+    load(0x0010, std::array{0x88});
+    load(prgadr, std::array{0xa6, 0x10}); // LDX $10
     cpu.tick();
 
     CHECK(cpu.x == 0x88);
 }
 
-TEST_CASE_METHOD(fixture, "LDX-ZPY")
+TEST_CASE_METHOD(cpu_test, "LDX-ZPY")
 {
     nes::mos6502 cpu(mem);
 
     cpu.y = 0x03;
-    load(0x0013, std::array{ 0x77 });
-    load(0x8000, std::array{ 0xb6, 0x10 }); // LDX $10,Y
+    load(0x0013, std::array{0x77});
+    load(prgadr, std::array{0xb6, 0x10}); // LDX $10,Y
     cpu.tick();
 
     CHECK(cpu.x == 0x77);
