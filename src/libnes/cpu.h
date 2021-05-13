@@ -24,20 +24,21 @@ public:
 
     struct instruction
     {
-        using fetch_argument = std::function<uint8_t(cpu&)>;
-        using command = std::function<void(cpu&, fetch_argument)>;
+        using fetch_address = std::function< uint16_t (cpu&) >;
+        using command       = std::function< void (cpu&, fetch_address) >;
 
-        command operation;
-        fetch_argument operand;
-        int cycles{1};
-        int additional_cycles{0};
+        command         operation;
+        fetch_address   fetch_operand_address;
+        int             cycles {1};
+        int             additional_cycles {0};
 
-        void execute(cpu& cpu) const { operation(cpu, operand); }
+        void execute(cpu& cpu) const { operation(cpu, fetch_operand_address); }
     };
 
     void tick();
 
     auto read(uint16_t addr) const { return memory_[addr]; }
+    void write(uint16_t addr, uint8_t value) const { memory_[addr] = value; }
     auto read_word(uint16_t addr) const -> uint16_t;
     auto decode(uint8_t opcode)->std::optional<instruction>;
 

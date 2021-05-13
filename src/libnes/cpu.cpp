@@ -23,75 +23,95 @@ namespace
 
 // Operations
 
-auto adc = [](auto& cpu, auto operand)
+auto adc = [](auto& cpu, auto fetch_addr)
 {
 };
 
-auto lda = [](auto& cpu, auto operand) {
-    cpu.a = operand(cpu);
+auto lda = [](auto& cpu, auto fetch_addr) 
+{
+    auto address = fetch_addr(cpu);
+    auto operand = cpu.read(address);
+    cpu.a = operand;
 };
 
-auto ldx = [](auto& cpu, auto operand) {
-    cpu.x = operand(cpu);
+auto ldx = [](auto& cpu, auto fetch_addr)
+{
+    auto address = fetch_addr(cpu);
+    auto operand = cpu.read(address);
+    cpu.x = operand;
 };
 
-auto brk = [](auto& cpu, auto operand) {
+auto sta = [](auto& cpu, auto fetch_addr) 
+{
+    auto address = fetch_addr(cpu);
+    cpu.write(address, cpu.a);
+};
+
+auto brk = [](auto& cpu, auto _) 
+{
     // TODO: set brake flag
 };
 
 
 // Addressing modes
 
-auto imm = [](auto& cpu) {
+auto imm = [](auto& cpu) 
+{
+    return cpu.pc++;
+};
+
+auto zp =  [](auto& cpu) 
+{
     return cpu.read(cpu.pc++);
 };
 
-auto zp =  [](auto& cpu) {
+auto zpx = [](auto& cpu) 
+{
     auto address = cpu.read(cpu.pc++);
-    return cpu.read(address);
+    return cpu.x + address;
 };
 
-auto zpx = [](auto& cpu) {
+auto zpy = [](auto& cpu) 
+{
     auto address = cpu.read(cpu.pc++);
-    return cpu.read(cpu.x + address);
+    return cpu.y + address;
 };
 
-auto zpy = [](auto& cpu) {
-    auto address = cpu.read(cpu.pc++);
-    return cpu.read(cpu.y + address);
-};
-
-auto abs = [](auto& cpu) {
+auto abs = [](auto& cpu) 
+{
     auto address = cpu.read_word(cpu.pc);
     cpu.pc += 2;
-    return cpu.read(address);
+    return address;
 };
 
-auto abx = [](auto& cpu) {
+auto abx = [](auto& cpu) 
+{
     auto address = cpu.read_word(cpu.pc) + cpu.x;
     cpu.pc += 2;
-    return cpu.read(address);
+    return address;
 };
 
-auto aby = [](auto& cpu) {
+auto aby = [](auto& cpu) 
+{
     auto address = cpu.read_word(cpu.pc) + cpu.y;
     cpu.pc += 2;
-    return cpu.read(address);
+    return address;
 };
 
-auto izx = [](auto& cpu) {
+auto izx = [](auto& cpu) 
+{
     auto index = cpu.read(cpu.pc++) + cpu.x;
-    auto address = cpu.read_word(index);
-    return cpu.read(address);
+    return cpu.read_word(index);
 };
 
-auto izy = [](auto& cpu) {
+auto izy = [](auto& cpu) 
+{
     auto index = cpu.read(cpu.pc++);
-    auto address = cpu.read_word(index) + cpu.y;
-    return cpu.read(address);
+    return cpu.read_word(index) + cpu.y;
 };
 
-auto imp = [](auto& ) -> uint8_t {
+auto imp = [](auto& ) -> uint8_t 
+{
     throw std::logic_error("Calling operand function for implied addressing mode");
 };
 
@@ -108,6 +128,14 @@ const std::unordered_map<uint8_t, cpu::instruction> instruction_set {
     {0xB9, { lda, aby, 4, 1 }},
     {0xA1, { lda, izx, 6 }},
     {0xB1, { lda, izy, 5, 1 }},
+
+    {0x85, { sta, zp , 3 }},
+    {0x95, { sta, zpx, 4 }},
+    {0x8D, { sta, abs, 4 }},
+    {0x9D, { sta, abx, 5 }},
+    {0x99, { sta, aby, 5 }},
+    {0x81, { sta, izx, 6 }},
+    {0x91, { sta, izy, 6 }},
 
     {0xA2, { ldx, imm, 2 }},
     {0xA6, { ldx, zp , 3 }},

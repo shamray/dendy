@@ -61,8 +61,9 @@ TEST_CASE_METHOD(cpu_test, "LDA-ZP")
 {
     nes::cpu cpu(mem);
 
-    load(0x0010, std::array{0x42});
     load(prgadr, std::array{0xa5, 0x10}); // LDA $10
+    load(0x0010, std::array{0x42});
+
     cpu.tick();
 
     CHECK(cpu.a == 0x42);
@@ -72,9 +73,11 @@ TEST_CASE_METHOD(cpu_test, "LDA-ZPX")
 {
     nes::cpu cpu(mem);
 
+    load(prgadr, std::array{0xb5, 0x10}); // LDA $10,X
+
     cpu.x = 0x02;
     load(0x0012, std::array{0x89});
-    load(prgadr, std::array{0xb5, 0x10}); // LDA $10,X
+
     cpu.tick();
 
     CHECK(cpu.a == 0x89);
@@ -124,10 +127,12 @@ TEST_CASE_METHOD(cpu_test, "LDA-IZX")
 {
     nes::cpu cpu(mem);
 
+    load(prgadr, std::array{0xa1, 0x15}); // LDA ($15,X)
+
     cpu.x = 0x02;
     load(0x0017, std::array{0x10, 0xd0}); // $D010
     load(0xd010, std::array{0x0F});
-    load(prgadr, std::array{0xa1, 0x15}); // LDA ($15,X)
+
     cpu.tick();
 
     CHECK(cpu.a == 0x0F);
@@ -137,10 +142,12 @@ TEST_CASE_METHOD(cpu_test, "LDA-IZY")
 {
     nes::cpu cpu(mem);
 
+    load(prgadr, std::array{0xb1, 0x2a}); // LDA ($2A),Y
+
     cpu.y = 0x03;
     load(0x002A, std::array{0x35, 0xc2}); // $C235
     load(0xc238, std::array{0x2F});
-    load(prgadr, std::array{0xb1, 0x2a}); // LDA ($2A),Y
+
     cpu.tick();
 
     CHECK(cpu.a == 0x2F);
@@ -160,8 +167,9 @@ TEST_CASE_METHOD(cpu_test, "LDX-ZP")
 {
     nes::cpu cpu(mem);
 
-    load(0x0010, std::array{0x88});
     load(prgadr, std::array{0xa6, 0x10}); // LDX $10
+    load(0x0010, std::array{0x88});
+
     cpu.tick();
 
     CHECK(cpu.x == 0x88);
@@ -204,3 +212,28 @@ TEST_CASE_METHOD(cpu_test, "LDX-ABY")
 
     CHECK(cpu.x == 0x42);
 }
+
+TEST_CASE_METHOD(cpu_test, "STA-ZP")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{0x85, 0x10}); // STA $10
+    cpu.a = 0x42;
+
+    cpu.tick();
+
+    CHECK(mem[0x0010] == 0x42);
+}
+
+TEST_CASE_METHOD(cpu_test, "STA-ABS")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{0x8d, 0x77, 0xd0}); // STA $D077
+    cpu.a = 0x55;
+
+    cpu.tick();
+
+    CHECK(mem[0xd077] == 0x55);
+}
+
