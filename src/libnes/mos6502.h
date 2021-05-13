@@ -35,6 +35,7 @@ public:
     void tick();
 
     auto read(uint16_t addr) const { return memory_[addr]; }
+    auto read_word(uint16_t addr) const -> uint16_t;
     auto decode(uint8_t opcode)->std::optional<instruction>;
 
 private:
