@@ -73,11 +73,51 @@ TEST_CASE_METHOD(cpu_test, "LDA-ZPX")
     nes::cpu cpu(mem);
 
     cpu.x = 0x02;
-    load(0x0012, std::array{0x89 });
+    load(0x0012, std::array{0x89});
     load(prgadr, std::array{0xb5, 0x10}); // LDA $10,X
     cpu.tick();
 
     CHECK(cpu.a == 0x89);
+}
+
+TEST_CASE_METHOD(cpu_test, "LDA-ABS")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{ 0xad, 0x10, 0xd0 }); // LDA $D010
+    load(0xd010, std::array{ 0x42 });
+
+    cpu.tick();
+
+    CHECK(cpu.a == 0x42);
+}
+
+TEST_CASE_METHOD(cpu_test, "LDA-ABX")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{ 0xbd, 0x0A, 0xd0 }); // LDA $D00A,X
+
+    cpu.x = 0x06;
+    load(0xd010, std::array{ 0x42 });
+
+    cpu.tick();
+
+    CHECK(cpu.a == 0x42);
+}
+
+TEST_CASE_METHOD(cpu_test, "LDA-ABY")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{ 0xb9, 0x0B, 0xd0 }); // LDA $D00B,X
+
+    cpu.y = 0x05;
+    load(0xd010, std::array{ 0x42 });
+
+    cpu.tick();
+
+    CHECK(cpu.a == 0x42);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDA-IZX")

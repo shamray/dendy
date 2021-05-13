@@ -62,15 +62,21 @@ auto zpy = [](auto& cpu) {
 };
 
 auto abs = [](auto& cpu) {
-    return uint8_t{};
+    auto address = cpu.read_word(cpu.pc);
+    cpu.pc += 2;
+    return cpu.read(address);
 };
 
 auto abx = [](auto& cpu) {
-    return uint8_t{};
+    auto address = cpu.read_word(cpu.pc) + cpu.x;
+    cpu.pc += 2;
+    return cpu.read(address);
 };
 
 auto aby = [](auto& cpu) {
-    return uint8_t{};
+    auto address = cpu.read_word(cpu.pc) + cpu.y;
+    cpu.pc += 2;
+    return cpu.read(address);
 };
 
 auto izx = [](auto& cpu) {
