@@ -4,6 +4,7 @@
 #include <vector>
 #include <functional>
 #include <optional>
+#include <bitset>
 
 namespace nes
 {
@@ -13,14 +14,27 @@ class cpu
 public:
     cpu(std::vector<uint8_t>& memory);
 
+    enum class flags
+    {
+        carry       = 0,
+        zero        = 1,
+        int_disable = 2,
+        decimal     = 3,
+        break1      = 4,
+        break2      = 5,
+        overflow    = 6,
+        negative    = 7
+    };
+
+    std::bitset<8> p;
     uint16_t pc{0x8000};
 
     uint8_t a{0};
     uint8_t s{0};
-    uint8_t p{0};
 
     uint8_t x{0};
     uint8_t y{0};
+    
 
     struct instruction
     {
