@@ -84,8 +84,8 @@ TEST_CASE_METHOD(cpu_test, "LDA-ABS")
 {
     nes::cpu cpu(mem);
 
-    load(prgadr, std::array{ 0xad, 0x10, 0xd0 }); // LDA $D010
-    load(0xd010, std::array{ 0x42 });
+    load(prgadr, std::array{0xad, 0x10, 0xd0}); // LDA $D010
+    load(0xd010, std::array{0x42});
 
     cpu.tick();
 
@@ -96,10 +96,10 @@ TEST_CASE_METHOD(cpu_test, "LDA-ABX")
 {
     nes::cpu cpu(mem);
 
-    load(prgadr, std::array{ 0xbd, 0x0A, 0xd0 }); // LDA $D00A,X
+    load(prgadr, std::array{0xbd, 0x0A, 0xd0}); // LDA $D00A,X
 
     cpu.x = 0x06;
-    load(0xd010, std::array{ 0x42 });
+    load(0xd010, std::array{0x42});
 
     cpu.tick();
 
@@ -110,10 +110,10 @@ TEST_CASE_METHOD(cpu_test, "LDA-ABY")
 {
     nes::cpu cpu(mem);
 
-    load(prgadr, std::array{ 0xb9, 0x0B, 0xd0 }); // LDA $D00B,X
+    load(prgadr, std::array{0xb9, 0x0B, 0xd0}); // LDA $D00B,Y
 
     cpu.y = 0x05;
-    load(0xd010, std::array{ 0x42 });
+    load(0xd010, std::array{0x42});
 
     cpu.tick();
 
