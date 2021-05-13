@@ -58,6 +58,11 @@ private:
     flags_register* flags_{nullptr};
 };
 
+inline std::ostream& operator<< (std::ostream& s, const arith_register& r)
+{
+    return s << static_cast<int>(r);
+}
+
 using program_counter = uint16_t;
 using stack_register = uint8_t;
 

@@ -210,6 +210,18 @@ TEST_CASE_METHOD(cpu_test, "LDX-ZPY")
     CHECK(cpu.x == 0x77);
 }
 
+TEST_CASE_METHOD(cpu_test, "LDA-ZPX-Overflow")
+{
+    nes::cpu cpu(mem);
+
+    cpu.x = 0x01;
+    load(0x0000, std::array{0x77});
+    load(prgadr, std::array{0xb5, 0xff}); // LDX $10,Y
+    cpu.tick();
+
+    CHECK(cpu.a == 0x77);
+}
+
 TEST_CASE_METHOD(cpu_test, "LDX-ABS")
 {
     nes::cpu cpu(mem);

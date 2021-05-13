@@ -69,13 +69,13 @@ auto zp =  [](auto& cpu)
 auto zpx = [](auto& cpu) 
 {
     auto address = cpu.read(cpu.pc++);
-    return cpu.x + address;
+    return (cpu.x + address) % 0x100;
 };
 
 auto zpy = [](auto& cpu) 
 {
     auto address = cpu.read(cpu.pc++);
-    return cpu.y + address;
+    return (cpu.y + address) % 0x100;
 };
 
 auto abs = [](auto& cpu) 
