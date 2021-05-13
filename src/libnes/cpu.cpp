@@ -104,14 +104,16 @@ const std::unordered_map<uint8_t, cpu::instruction> instruction_set {
     {0xA5, { lda, zp , 3 }},
     {0xB5, { lda, zpx, 4 }},
     {0xAD, { lda, abs, 4 }},
-    {0xBD, { lda, abx, 4 }},
-    {0xB9, { lda, aby, 4 }},
+    {0xBD, { lda, abx, 4, 1 }},
+    {0xB9, { lda, aby, 4, 1 }},
     {0xA1, { lda, izx, 6 }},
-    {0xB1, { lda, izy, 5 }},
+    {0xB1, { lda, izy, 5, 1 }},
 
     {0xA2, { ldx, imm, 2 }},
     {0xA6, { ldx, zp , 3 }},
     {0xB6, { ldx, zpy, 3 }},
+    {0xAE, { ldx, abs, 4 }},
+    {0xBE, { ldx, aby, 4, 1 }},
 
     {0x00, { brk, imp, 7 }}
 };

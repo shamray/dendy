@@ -178,3 +178,29 @@ TEST_CASE_METHOD(cpu_test, "LDX-ZPY")
 
     CHECK(cpu.x == 0x77);
 }
+
+TEST_CASE_METHOD(cpu_test, "LDX-ABS")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{0xae, 0x10, 0xd0}); // LDX $D010
+    load(0xd010, std::array{0x42});
+
+    cpu.tick();
+
+    CHECK(cpu.x == 0x42);
+}
+
+TEST_CASE_METHOD(cpu_test, "LDX-ABY")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{0xbe, 0x0B, 0xd0}); // LDX $D00B,Y
+
+    cpu.y = 0x05;
+    load(0xd010, std::array{0x42});
+
+    cpu.tick();
+
+    CHECK(cpu.x == 0x42);
+}

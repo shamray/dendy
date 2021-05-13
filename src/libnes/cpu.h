@@ -30,6 +30,7 @@ public:
         command operation;
         fetch_argument operand;
         int cycles{1};
+        int additional_cycles{0};
 
         void execute(cpu& cpu) const { operation(cpu, operand); }
     };
