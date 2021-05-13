@@ -61,6 +61,18 @@ auto zpy = [](mos6502& cpu) {
     return cpu.read(cpu.y + address);
 };
 
+auto abs = [](mos6502& cpu) {
+    return uint8_t{};
+};
+
+auto abx = [](mos6502& cpu) {
+    return uint8_t{};
+};
+
+auto aby = [](mos6502& cpu) {
+    return uint8_t{};
+};
+
 auto izx = [](mos6502& cpu) {
     auto index = cpu.read(cpu.pc++) + cpu.x;
     auto address = cpu.read_word(index);
@@ -85,6 +97,9 @@ const std::unordered_map<uint8_t, mos6502::instruction> instruction_set {
     {0xA9, { lda, imm, 2 }},
     {0xA5, { lda, zp , 3 }},
     {0xB5, { lda, zpx, 4 }},
+    {0xAD, { lda, abs, 4 }},
+    {0xBD, { lda, abx, 4 }},
+    {0xB9, { lda, aby, 4 }},
     {0xA1, { lda, izx, 6 }},
     {0xB1, { lda, izy, 5 }},
 
