@@ -58,8 +58,8 @@ TEST_CASE_METHOD(cpu_test, "LDA-Flags")
         load(prgadr, std::array{0xa9, 0x00}); // LDA #$00
         cpu.tick();
 
-        CHECK(cpu.p.test(nes::cpu::flag::zero));
-        CHECK_FALSE(cpu.p.test(nes::cpu::flag::negative));
+        CHECK(cpu.p.test(nes::cpu_flag::zero));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
     }
 
     SECTION("Negative")
@@ -67,10 +67,9 @@ TEST_CASE_METHOD(cpu_test, "LDA-Flags")
         load(prgadr, std::array{0xa9, 0xFF}); // LDA #$FF
         cpu.tick();
 
-        CHECK(cpu.p.test(nes::cpu::flag::negative));
-        CHECK_FALSE(cpu.p.test(nes::cpu::flag::zero));
+        CHECK(cpu.p.test(nes::cpu_flag::negative));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
     }
-
 }
 
 TEST_CASE_METHOD(cpu_test, "Unsupported opcode")
@@ -235,6 +234,29 @@ TEST_CASE_METHOD(cpu_test, "LDX-ABY")
     cpu.tick();
 
     CHECK(cpu.x == 0x42);
+}
+
+TEST_CASE_METHOD(cpu_test, "LDX-Flags")
+{
+    nes::cpu cpu(mem);
+
+    SECTION("Zero")
+    {
+        load(prgadr, std::array{0xa2, 0x00}); // LDX #$00
+        cpu.tick();
+
+        CHECK(cpu.p.test(nes::cpu_flag::zero));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
+    }
+
+    SECTION("Negative")
+    {
+        load(prgadr, std::array{0xa2, 0xFF}); // LDX #$FF
+        cpu.tick();
+
+        CHECK(cpu.p.test(nes::cpu_flag::negative));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
+    }
 }
 
 TEST_CASE_METHOD(cpu_test, "STA-ZP")

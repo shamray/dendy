@@ -33,9 +33,6 @@ auto lda = [](auto& cpu, auto fetch_addr)
     auto operand = cpu.read(address);
 
     cpu.a = operand;
-
-    cpu.p.set(cpu::flag::zero, cpu.a == 0);
-    cpu.p.set(cpu::flag::negative, (cpu.a & 0x80 ) != 0);
 };
 
 auto ldx = [](auto& cpu, auto fetch_addr)
