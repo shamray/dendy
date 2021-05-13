@@ -32,7 +32,7 @@ public:
 
 TEST_CASE_METHOD(cpu_test, "read_word")
 {
-    nes::mos6502 cpu(mem);
+    nes::cpu cpu(mem);
 
     load(0x0017, std::array{0x10, 0xd0}); // $D010
 
@@ -41,7 +41,7 @@ TEST_CASE_METHOD(cpu_test, "read_word")
 
 TEST_CASE_METHOD(cpu_test, "LDA-IMM")
 {
-    nes::mos6502 cpu(mem);
+    nes::cpu cpu(mem);
          
     load(prgadr, std::array{0xa9, 0x55}); // LDA #$55
     cpu.tick();
@@ -51,7 +51,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-IMM")
 
 TEST_CASE_METHOD(cpu_test, "Unsupported opcode")
 {
-    nes::mos6502 cpu(mem);
+    nes::cpu cpu(mem);
 
     load(prgadr, std::array{0x02});
     CHECK_THROWS_AS(cpu.tick(), std::runtime_error);
@@ -59,7 +59,7 @@ TEST_CASE_METHOD(cpu_test, "Unsupported opcode")
 
 TEST_CASE_METHOD(cpu_test, "LDA-ZP")
 {
-    nes::mos6502 cpu(mem);
+    nes::cpu cpu(mem);
 
     load(0x0010, std::array{0x42});
     load(prgadr, std::array{0xa5, 0x10}); // LDA $10
@@ -70,7 +70,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-ZP")
 
 TEST_CASE_METHOD(cpu_test, "LDA-ZPX")
 {
-    nes::mos6502 cpu(mem);
+    nes::cpu cpu(mem);
 
     cpu.x = 0x02;
     load(0x0012, std::array{0x89 });
@@ -82,7 +82,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-ZPX")
 
 TEST_CASE_METHOD(cpu_test, "LDA-IZX")
 {
-    nes::mos6502 cpu(mem);
+    nes::cpu cpu(mem);
 
     cpu.x = 0x02;
     load(0x0017, std::array{0x10, 0xd0}); // $D010
@@ -95,7 +95,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-IZX")
 
 TEST_CASE_METHOD(cpu_test, "LDA-IZY")
 {
-    nes::mos6502 cpu(mem);
+    nes::cpu cpu(mem);
 
     cpu.y = 0x03;
     load(0x002A, std::array{0x35, 0xc2}); // $C235
@@ -108,7 +108,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-IZY")
 
 TEST_CASE_METHOD(cpu_test, "LDX-IMM")
 {
-    nes::mos6502 cpu(mem);
+    nes::cpu cpu(mem);
 
     load(prgadr, std::array{0xa2, 0x42}); // LDX #$42
     cpu.tick();
@@ -118,7 +118,7 @@ TEST_CASE_METHOD(cpu_test, "LDX-IMM")
 
 TEST_CASE_METHOD(cpu_test, "LDX-ZP")
 {
-    nes::mos6502 cpu(mem);
+    nes::cpu cpu(mem);
 
     load(0x0010, std::array{0x88});
     load(prgadr, std::array{0xa6, 0x10}); // LDX $10
@@ -129,7 +129,7 @@ TEST_CASE_METHOD(cpu_test, "LDX-ZP")
 
 TEST_CASE_METHOD(cpu_test, "LDX-ZPY")
 {
-    nes::mos6502 cpu(mem);
+    nes::cpu cpu(mem);
 
     cpu.y = 0x03;
     load(0x0013, std::array{0x77});

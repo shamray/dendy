@@ -8,10 +8,10 @@
 namespace nes
 {
 
-class mos6502
+class cpu
 {
 public:
-    mos6502(std::vector<uint8_t>& memory);
+    cpu(std::vector<uint8_t>& memory);
 
     uint16_t pc{0x8000};
 
@@ -24,7 +24,6 @@ public:
 
     struct instruction
     {
-        using cpu = mos6502;
         using fetch_argument = std::function<uint8_t(cpu&)>;
         using command = std::function<void(cpu&, fetch_argument)>;
 

@@ -92,7 +92,7 @@ auto imp = [](auto& ) -> uint8_t {
 
 // Instruction set lookup table
 
-const std::unordered_map<uint8_t, mos6502::instruction> instruction_set {
+const std::unordered_map<uint8_t, cpu::instruction> instruction_set {
 
     {0xA9, { lda, imm, 2 }},
     {0xA5, { lda, zp , 3 }},
@@ -112,18 +112,18 @@ const std::unordered_map<uint8_t, mos6502::instruction> instruction_set {
 
 }
 
-mos6502::mos6502(std::vector<uint8_t>& memory)
+cpu::cpu(std::vector<uint8_t>& memory)
     : memory_{memory}
 {
     pc = read_word(0xFFFC);
 }
 
-void mos6502::tick()
+void cpu::tick()
 {
     auto opcode = read(pc++);
 
     auto instruction = decode(opcode)
-        .value_or(mos6502::instruction{
+        .value_or(cpu::instruction{
             [opcode](auto...) { throw unsupported_opcode(opcode); },
             imp
         });
@@ -131,7 +131,7 @@ void mos6502::tick()
     instruction.execute(*this);
 }
 
-auto mos6502::read_word(uint16_t addr) const -> uint16_t
+auto cpu::read_word(uint16_t addr) const -> uint16_t
 {
     auto lo = read(addr);
     auto hi = read(addr + 1);
@@ -139,7 +139,7 @@ auto mos6502::read_word(uint16_t addr) const -> uint16_t
     return (hi << 8) | lo;
 }
 
-auto mos6502::decode(uint8_t opcode) -> std::optional<instruction>
+auto cpu::decode(uint8_t opcode) -> std::optional<instruction>
 {
     auto found = instruction_set.find(opcode);
     if (found == std::end(instruction_set))
