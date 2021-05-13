@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include "libnes/mos6502.h"
+#include "libnes/cpu.h"
 
 #include <ranges>
 #include <array>

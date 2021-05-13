@@ -1,4 +1,4 @@
-#include "libnes/mos6502.h"
+#include "libnes/cpu.h"
 
 #include <cassert>
 #include <stdexcept>

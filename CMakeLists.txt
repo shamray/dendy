@@ -17,8 +17,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 find_package(Catch2 REQUIRED)
 
 add_library(libnes
-	"src/libnes/mos6502.h" 
-	"src/libnes/mos6502.cpp"
+	"src/libnes/cpu.h" 
+	"src/libnes/cpu.cpp"
 )
 
 target_include_directories(libnes PUBLIC src)
@@ -27,7 +27,7 @@ target_compile_features(libnes PUBLIC cxx_std_20)
 include(Catch)
 enable_testing()
 add_executable(unit_tests
-	"test/cpu.cpp"
+	"test/cpu_test.cpp"
 )
 
 target_link_libraries(unit_tests
