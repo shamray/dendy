@@ -14,7 +14,7 @@ class cpu
 public:
     cpu(std::vector<uint8_t>& memory);
 
-    enum class flags
+    enum class flag
     {
         carry       = 0,
         zero        = 1,
@@ -26,8 +26,21 @@ public:
         negative    = 7
     };
 
-    std::bitset<8> p;
+    class flags
+    {
+        constexpr static auto pos(flag f) { return static_cast<size_t>(f); }
+
+    public:
+        void set(flag f, bool value = true) { bits_.set(pos(f), value); }
+        void reset(flag f) { bits_.reset(pos(f)); }
+        auto test(flag f) { return bits_.test(pos(f)); }
+
+    private:
+        std::bitset<8> bits_;
+    };
+
     uint16_t pc{0x8000};
+    flags p;
 
     uint8_t a{0};
     uint8_t s{0};

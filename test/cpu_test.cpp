@@ -49,6 +49,30 @@ TEST_CASE_METHOD(cpu_test, "LDA-IMM")
     CHECK(cpu.a == 0x55);
 }
 
+TEST_CASE_METHOD(cpu_test, "LDA-Flags")
+{
+    nes::cpu cpu(mem);
+
+    SECTION("Zero")
+    {
+        load(prgadr, std::array{0xa9, 0x00}); // LDA #$00
+        cpu.tick();
+
+        CHECK(cpu.p.test(nes::cpu::flag::zero));
+        CHECK_FALSE(cpu.p.test(nes::cpu::flag::negative));
+    }
+
+    SECTION("Negative")
+    {
+        load(prgadr, std::array{0xa9, 0xFF}); // LDA #$FF
+        cpu.tick();
+
+        CHECK(cpu.p.test(nes::cpu::flag::negative));
+        CHECK_FALSE(cpu.p.test(nes::cpu::flag::zero));
+    }
+
+}
+
 TEST_CASE_METHOD(cpu_test, "Unsupported opcode")
 {
     nes::cpu cpu(mem);
