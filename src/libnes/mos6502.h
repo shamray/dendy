@@ -16,20 +16,23 @@ public:
     uint16_t pc{0x8000};
 
     uint8_t a{0};
-    uint8_t s;
-    uint8_t p;
+    uint8_t s{0};
+    uint8_t p{0};
 
     uint8_t x{0};
     uint8_t y{0};
 
     struct instruction
     {
-        using arg_t = std::function<uint8_t(mos6502&)>;
-        using op_t = std::function<void(mos6502&, arg_t)>;
+        using cpu = mos6502;
+        using fetch_argument = std::function<uint8_t(cpu&)>;
+        using command = std::function<void(cpu&, fetch_argument)>;
 
-        op_t op;
-        arg_t arg;
-        int cycles{ 1 };
+        command operation;
+        fetch_argument operand;
+        int cycles{1};
+
+        void execute(cpu& cpu) const { operation(cpu, operand); }
     };
 
     void tick();

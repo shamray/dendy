@@ -119,13 +119,14 @@ mos6502::mos6502(std::vector<uint8_t>& memory)
 void mos6502::tick()
 {
     auto opcode = read(pc++);
-    auto cmd = decode(opcode)
-        .value_or(instruction{
+
+    auto instruction = decode(opcode)
+        .value_or(mos6502::instruction{
             [opcode](auto...) { throw unsupported_opcode(opcode); },
-            imp,
-            0
+            imp
         });
-    cmd.op(*this, cmd.arg);
+
+    instruction.execute(*this);
 }
 
 auto mos6502::read_word(uint16_t addr) const -> uint16_t
