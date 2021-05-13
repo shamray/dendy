@@ -23,69 +23,69 @@ namespace
 
 // Operations
 
-auto adc = [](mos6502& cpu, auto operand)
+auto adc = [](auto& cpu, auto operand)
 {
 };
 
-auto lda = [](mos6502& cpu, auto operand) {
+auto lda = [](auto& cpu, auto operand) {
     cpu.a = operand(cpu);
 };
 
-auto ldx = [](mos6502& cpu, auto operand) {
+auto ldx = [](auto& cpu, auto operand) {
     cpu.x = operand(cpu);
 };
 
-auto brk = [](mos6502& cpu, auto operand) {
+auto brk = [](auto& cpu, auto operand) {
     // TODO: set brake flag
 };
 
 
 // Addressing modes
 
-auto imm = [](mos6502& cpu) {
+auto imm = [](auto& cpu) {
     return cpu.read(cpu.pc++);
 };
 
-auto zp =  [](mos6502& cpu) {
+auto zp =  [](auto& cpu) {
     auto address = cpu.read(cpu.pc++);
     return cpu.read(address);
 };
 
-auto zpx = [](mos6502& cpu) {
+auto zpx = [](auto& cpu) {
     auto address = cpu.read(cpu.pc++);
     return cpu.read(cpu.x + address);
 };
 
-auto zpy = [](mos6502& cpu) {
+auto zpy = [](auto& cpu) {
     auto address = cpu.read(cpu.pc++);
     return cpu.read(cpu.y + address);
 };
 
-auto abs = [](mos6502& cpu) {
+auto abs = [](auto& cpu) {
     return uint8_t{};
 };
 
-auto abx = [](mos6502& cpu) {
+auto abx = [](auto& cpu) {
     return uint8_t{};
 };
 
-auto aby = [](mos6502& cpu) {
+auto aby = [](auto& cpu) {
     return uint8_t{};
 };
 
-auto izx = [](mos6502& cpu) {
+auto izx = [](auto& cpu) {
     auto index = cpu.read(cpu.pc++) + cpu.x;
     auto address = cpu.read_word(index);
     return cpu.read(address);
 };
 
-auto izy = [](mos6502& cpu) {
+auto izy = [](auto& cpu) {
     auto index = cpu.read(cpu.pc++);
     auto address = cpu.read_word(index) + cpu.y;
     return cpu.read(address);
 };
 
-auto imp = [](mos6502& ) -> uint8_t {
+auto imp = [](auto& ) -> uint8_t {
     throw std::logic_error("Calling operand function for implied addressing mode");
 };
 
