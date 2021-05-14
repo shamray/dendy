@@ -21,10 +21,34 @@ public:
 namespace
 {
 
+constexpr auto operator "" _i(unsigned long long x) { return static_cast<uint8_t>(x); }
+
+auto carry(const flags_register& f)
+{
+    return f.test(cpu_flag::carry) ? 1_i : 0_i;
+}
+
+auto arith_result(int x)
+{
+    auto c = (x / 0x100) != 0;
+    auto r = (x % 0x100);
+
+    return std::tuple{r, c};
+}
+
 // Operations
 
 auto adc = [](auto& cpu, auto fetch_addr)
 {
+    auto address = fetch_addr(cpu);
+    auto operand = cpu.read(address);
+
+    auto [r, c] = arith_result(
+        cpu.a + operand + carry(cpu.p)
+    );
+
+    cpu.a = r;
+    cpu.p.set(cpu_flag::carry, c);
 };
 
 auto lda = [](auto& cpu, auto fetch_addr) 
@@ -143,6 +167,15 @@ const std::unordered_map<uint8_t, cpu::instruction> instruction_set {
     {0xB6, { ldx, zpy, 3 }},
     {0xAE, { ldx, abs, 4 }},
     {0xBE, { ldx, aby, 4, 1 }},
+
+    {0x69, { adc, imm, 2 }},
+    {0x65, { adc, zp , 3 }},
+    {0x75, { adc, zpx, 4 }},
+    {0x6D, { adc, abs, 4 }},
+    {0x7D, { adc, abx, 4, 1 }},
+    {0x79, { adc, aby, 4, 1 }},
+    {0x61, { adc, izx, 6 }},
+    {0x71, { adc, izy, 5, 1 }},
 
     {0x00, { brk, imp, 7 }}
 };

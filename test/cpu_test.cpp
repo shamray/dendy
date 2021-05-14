@@ -295,3 +295,55 @@ TEST_CASE_METHOD(cpu_test, "STA-ABS")
     CHECK(mem[0xd077] == 0x55);
 }
 
+TEST_CASE_METHOD(cpu_test, "ADC-IMM")
+{
+    nes::cpu cpu(mem);
+    load(prgadr, std::array{0x69, 0x07});
+
+    SECTION("A = A + M")
+    {
+        cpu.a = 0x04;
+        cpu.tick();
+
+        CHECK(cpu.a == 0x0B); // 4 + 7 == 11
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
+    }
+
+    SECTION("A = A + M == 0")
+    {
+        cpu.a = 0xF9;
+        cpu.tick();
+
+        CHECK(cpu.a == 0x00); // 7 + (-7) == 0
+        CHECK(cpu.p.test(nes::cpu_flag::zero));
+    }
+
+    SECTION("A = A + M < 0")
+    {
+        cpu.a = 0xE3;
+        cpu.tick();
+
+        CHECK(cpu.a == 0xEA); // 7 + (-29) == -22
+        CHECK(cpu.p.test(nes::cpu_flag::negative));
+    }
+
+    SECTION("A = A + M + C")
+    {
+        cpu.a = 0x04;
+        cpu.p.set(nes::cpu_flag::carry);
+        cpu.tick();
+
+        CHECK(cpu.a == 0x0C); // 4 + 7 + 1== 12
+    }
+
+    SECTION("C,A = A + M")
+    {
+        cpu.a = 0xFF;
+        cpu.tick();
+
+        CHECK(cpu.a == 0x06); // 255 + 7 == 6 + carry
+        CHECK(cpu.p.test(nes::cpu_flag::carry));
+    }
+}

@@ -28,7 +28,7 @@ class flags_register
 public:
     void set(cpu_flag f, bool value = true) { bits_.set(pos(f), value); }
     void reset(cpu_flag f) { bits_.reset(pos(f)); }
-    auto test(cpu_flag f) { return bits_.test(pos(f)); }
+    auto test(cpu_flag f) const { return bits_.test(pos(f)); }
 
 private:
     std::bitset<8> bits_;
@@ -51,6 +51,11 @@ public:
             flags_->set(cpu_flag::negative, (val_ & 0x80) != 0);
         }
         return *this;
+    }
+
+    arith_register& operator+=(uint8_t operand)
+    {
+        return (*this) = val_ + operand;
     }
 
 private:
