@@ -43,7 +43,7 @@ class arith_register
 public:
     arith_register() = default;
     explicit arith_register(flags_register* f) : flags_{f} {}
-    explicit arith_register(uint8_t val, flags_register* f = nullptr) : val_{val} {}
+    explicit arith_register(uint8_t val, flags_register* f = nullptr) : val_{val}, flags_{f} {}
 
     operator uint8_t() const { return val_; } // NOLINT(google-explicit-constructor)
 
@@ -142,6 +142,7 @@ public:
 private:
     std::vector<uint8_t>& memory_;
     executable_instruction current_instruction;
+    std::unordered_map<uint8_t, cpu::instruction> instruction_set;
 };
 
 }

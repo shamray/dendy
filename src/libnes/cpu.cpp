@@ -1,6 +1,5 @@
 #include "libnes/cpu.h"
 
-#include <cassert>
 #include <stdexcept>
 #include <unordered_map>
 #include <string>
@@ -13,7 +12,7 @@ namespace nes
 class unsupported_opcode : public std::runtime_error
 {
 public:
-    unsupported_opcode(uint8_t opcode)
+    explicit unsupported_opcode(uint8_t opcode)
         : std::runtime_error("Unsupported opcode: "s + std::to_string(opcode))
     {}
 };
@@ -174,60 +173,55 @@ auto imp = [](auto& ) -> uint8_t
     throw std::logic_error("Calling operand function for implied addressing mode");
 };
 
-
-// Instruction set lookup table
-
-const std::unordered_map<uint8_t, cpu::instruction> instruction_set {
-
-    {0xEA, { nop, imp, 2 }},
-
-    {0xA9, { lda, imm, 2 }},
-    {0xA5, { lda, zp , 3 }},
-    {0xB5, { lda, zpx, 4 }},
-    {0xAD, { lda, abs, 4 }},
-    {0xBD, { lda, abx, 4, 1 }},
-    {0xB9, { lda, aby, 4, 1 }},
-    {0xA1, { lda, izx, 6 }},
-    {0xB1, { lda, izy, 5, 1 }},
-
-    {0x85, { sta, zp , 3 }},
-    {0x95, { sta, zpx, 4 }},
-    {0x8D, { sta, abs, 4 }},
-    {0x9D, { sta, abx, 5 }},
-    {0x99, { sta, aby, 5 }},
-    {0x81, { sta, izx, 6 }},
-    {0x91, { sta, izy, 6 }},
-
-    {0xAA, { tax, imp, 2 }},
-    {0x8A, { txa, imp, 2 }},
-    {0xA8, { tay, imp, 2 }},
-    {0x98, { tya, imp, 2 }},
-
-    {0xBA, { tsx, imp, 2 }},
-    {0x9A, { txs, imp, 2 }},
-
-    {0xA2, { ldx, imm, 2 }},
-    {0xA6, { ldx, zp , 3 }},
-    {0xB6, { ldx, zpy, 3 }},
-    {0xAE, { ldx, abs, 4 }},
-    {0xBE, { ldx, aby, 4, 1 }},
-
-    {0x69, { adc, imm, 2 }},
-    {0x65, { adc, zp , 3 }},
-    {0x75, { adc, zpx, 4 }},
-    {0x6D, { adc, abs, 4 }},
-    {0x7D, { adc, abx, 4, 1 }},
-    {0x79, { adc, aby, 4, 1 }},
-    {0x61, { adc, izx, 6 }},
-    {0x71, { adc, izy, 5, 1 }},
-
-    {0x00, { brk, imp, 7 }}
-};
-
 }
 
 cpu::cpu(std::vector<uint8_t>& memory)
     : memory_{memory}
+    , instruction_set{
+        {0xEA, { nop, imp, 2 }},
+
+        {0xA9, { lda, imm, 2 }},
+        {0xA5, { lda, zp , 3 }},
+        {0xB5, { lda, zpx, 4 }},
+        {0xAD, { lda, abs, 4 }},
+        {0xBD, { lda, abx, 4, 1 }},
+        {0xB9, { lda, aby, 4, 1 }},
+        {0xA1, { lda, izx, 6 }},
+        {0xB1, { lda, izy, 5, 1 }},
+
+        {0x85, { sta, zp , 3 }},
+        {0x95, { sta, zpx, 4 }},
+        {0x8D, { sta, abs, 4 }},
+        {0x9D, { sta, abx, 5 }},
+        {0x99, { sta, aby, 5 }},
+        {0x81, { sta, izx, 6 }},
+        {0x91, { sta, izy, 6 }},
+
+        {0xAA, { tax, imp, 2 }},
+        {0x8A, { txa, imp, 2 }},
+        {0xA8, { tay, imp, 2 }},
+        {0x98, { tya, imp, 2 }},
+
+        {0xBA, { tsx, imp, 2 }},
+        {0x9A, { txs, imp, 2 }},
+
+        {0xA2, { ldx, imm, 2 }},
+        {0xA6, { ldx, zp , 3 }},
+        {0xB6, { ldx, zpy, 3 }},
+        {0xAE, { ldx, abs, 4 }},
+        {0xBE, { ldx, aby, 4, 1 }},
+
+        {0x69, { adc, imm, 2 }},
+        {0x65, { adc, zp , 3 }},
+        {0x75, { adc, zpx, 4 }},
+        {0x6D, { adc, abs, 4 }},
+        {0x7D, { adc, abx, 4, 1 }},
+        {0x79, { adc, aby, 4, 1 }},
+        {0x61, { adc, izx, 6 }},
+        {0x71, { adc, izy, 5, 1 }},
+
+        {0x00, { brk, imp, 7 }}
+    }
 {
     pc = read_word(0xFFFC);
 }
