@@ -53,11 +53,6 @@ public:
         return *this;
     }
 
-    arith_register& operator+=(uint8_t operand)
-    {
-        return (*this) = val_ + operand;
-    }
-
 private:
     uint8_t val_{0};
     flags_register* flags_{nullptr};
