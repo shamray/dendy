@@ -74,10 +74,42 @@ auto sta = [](auto& cpu, auto fetch_addr)
     cpu.write(address, cpu.a);
 };
 
-auto brk = [](auto& cpu, auto _) 
+auto tax = [](auto& cpu, auto )
+{
+    cpu.x = static_cast<uint8_t>(cpu.a);
+};
+
+auto tay = [](auto& cpu, auto )
+{
+    cpu.y = static_cast<uint8_t>(cpu.a);
+};
+
+auto tsx = [](auto& cpu, auto )
+{
+    cpu.x = static_cast<uint8_t>(cpu.s);
+};
+
+auto txa = [](auto& cpu, auto )
+{
+    cpu.a = static_cast<uint8_t>(cpu.x);
+};
+
+auto txs = [](auto& cpu, auto )
+{
+    cpu.s = static_cast<uint8_t>(cpu.x);
+};
+
+auto tya = [](auto& cpu, auto )
+{
+    cpu.a = static_cast<uint8_t>(cpu.y);
+};
+
+auto brk = [](auto& cpu, auto _)
 {
     // TODO: set brake flag
 };
+
+auto nop = [](auto&, auto) {};
 
 
 // Addressing modes
@@ -147,6 +179,8 @@ auto imp = [](auto& ) -> uint8_t
 
 const std::unordered_map<uint8_t, cpu::instruction> instruction_set {
 
+    {0xEA, { nop, imp, 2 }},
+
     {0xA9, { lda, imm, 2 }},
     {0xA5, { lda, zp , 3 }},
     {0xB5, { lda, zpx, 4 }},
@@ -163,6 +197,14 @@ const std::unordered_map<uint8_t, cpu::instruction> instruction_set {
     {0x99, { sta, aby, 5 }},
     {0x81, { sta, izx, 6 }},
     {0x91, { sta, izy, 6 }},
+
+    {0xAA, { tax, imp, 2 }},
+    {0x8A, { txa, imp, 2 }},
+    {0xA8, { tay, imp, 2 }},
+    {0x98, { tya, imp, 2 }},
+
+    {0xBA, { tsx, imp, 2 }},
+    {0x9A, { txs, imp, 2 }},
 
     {0xA2, { ldx, imm, 2 }},
     {0xA6, { ldx, zp , 3 }},

@@ -295,6 +295,96 @@ TEST_CASE_METHOD(cpu_test, "STA-ABS")
     CHECK(mem[0xd077] == 0x55);
 }
 
+TEST_CASE_METHOD(cpu_test, "TAX")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{0xaa}); // TAX
+    cpu.a = 0xDA;
+    cpu.x = 0x00;
+
+    REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
+    cpu.tick(2);
+
+    CHECK(cpu.x == cpu.a);
+    CHECK(cpu.p.test(nes::cpu_flag::negative));
+}
+
+TEST_CASE_METHOD(cpu_test, "TXA")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{0x8a}); // TXA
+    cpu.x = 0xDA;
+    cpu.a = 0x00;
+
+    REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
+    cpu.tick(2);
+
+    CHECK(cpu.a == cpu.x);
+    CHECK(cpu.p.test(nes::cpu_flag::negative));
+}
+
+TEST_CASE_METHOD(cpu_test, "TAY")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{0xa8}); // TAY
+    cpu.a = 0xDA;
+    cpu.y = 0x00;
+
+    REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
+    cpu.tick(2);
+
+    CHECK(cpu.y == cpu.a);
+    CHECK(cpu.p.test(nes::cpu_flag::negative));
+}
+
+TEST_CASE_METHOD(cpu_test, "TYA")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{0x98}); // TYA
+    cpu.y = 0xDA;
+    cpu.a = 0x00;
+
+    REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
+    cpu.tick(2);
+
+    CHECK(cpu.a == cpu.y);
+    CHECK(cpu.p.test(nes::cpu_flag::negative));
+}
+
+TEST_CASE_METHOD(cpu_test, "TSX")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{0xba}); // TSX
+    cpu.s = 0xDA;
+    cpu.x = 0x00;
+
+    REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
+    cpu.tick(2);
+
+    CHECK(cpu.x == cpu.s);
+    CHECK(cpu.p.test(nes::cpu_flag::negative));
+}
+
+TEST_CASE_METHOD(cpu_test, "TXS")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{0x9a}); // TXS
+    cpu.s = 0x00;
+    cpu.x = 0xDA;
+
+    cpu.p.reset(nes::cpu_flag::negative);
+    cpu.tick(2);
+
+    CHECK(cpu.s == cpu.x);
+    CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
+}
+
 TEST_CASE_METHOD(cpu_test, "ADC-IMM")
 {
     nes::cpu cpu(mem);
