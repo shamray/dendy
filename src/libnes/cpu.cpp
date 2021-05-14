@@ -190,15 +190,17 @@ cpu::cpu(std::vector<uint8_t>& memory)
 
 void cpu::tick()
 {
-    auto opcode = read(pc++);
+    if (current_instruction.is_finished()) {
+        auto opcode = read(pc++);
 
-    auto instruction = decode(opcode)
-        .value_or(cpu::instruction{
-            [opcode](auto...) { throw unsupported_opcode(opcode); },
-            imp
-        });
+        current_instruction = decode(opcode)
+            .value_or(cpu::instruction{
+                [opcode](auto...) { throw unsupported_opcode(opcode); },
+                imp
+            });
+    }
 
-    instruction.execute(*this);
+    current_instruction.execute(*this);
 }
 
 auto cpu::read_word(uint16_t addr) const -> uint16_t

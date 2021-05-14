@@ -15,8 +15,8 @@ enum class cpu_flag
     zero = 1,
     int_disable = 2,
     decimal = 3,
-    break1 = 4,
-    break2 = 5,
+    break_called = 4,
+    _ = 5,
     overflow = 6,
     negative = 7
 };
@@ -90,11 +90,36 @@ public:
         fetch_address   fetch_operand_address;
         int             cycles {1};
         int             additional_cycles {0};
+    };
 
-        void execute(cpu& cpu) const { operation(cpu, fetch_operand_address); }
+    class executable_instruction: instruction
+    {
+    public:
+        executable_instruction() = default;
+        executable_instruction(const instruction& instruction)
+            : instruction(instruction)
+            , c_{cycles}
+        {
+        }
+
+        void execute(cpu& cpu)
+        {
+            if (is_finished())
+                return;
+
+            if (--c_ == 0) {
+                operation(cpu, fetch_operand_address);
+            }
+        }
+
+        bool is_finished() const { return c_ == 0; }
+
+    private:
+        int c_{0};
     };
 
     void tick();
+    void tick(int count) { for (auto i = 0; i < count; ++i) tick(); }
 
     auto read(uint16_t addr) const { return memory_[addr]; }
     void write(uint16_t addr, uint8_t value) const { memory_[addr] = value; }
@@ -103,6 +128,7 @@ public:
 
 private:
     std::vector<uint8_t>& memory_;
+    executable_instruction current_instruction;
 };
 
 }
