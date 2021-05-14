@@ -307,6 +307,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
 
         CHECK(cpu.a == 0x0B); // 4 + 7 == 11
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
     }
@@ -344,6 +345,26 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
         cpu.tick(2);
 
         CHECK(cpu.a == 0x06); // 255 + 7 == 6 + carry
+        CHECK(cpu.p.test(nes::cpu_flag::carry));
+    }
+
+    SECTION("Overflow: [+] + [+] = [-]")
+    {
+        cpu.a = 0x7D;
+        cpu.tick(2);
+
+        CHECK(cpu.a == 0x84); // 132 + 7 == "-84"
+        CHECK(cpu.p.test(nes::cpu_flag::overflow));
+    }
+
+    SECTION("Overflow: [-] + [-] = [+]")
+    {
+        load(prgadr, std::array{0x69, 0xFE});
+        cpu.a = 0x80;
+        cpu.tick(2);
+
+        CHECK(cpu.a == 0x7E); // -2 + (-128) == "+7E"
+        CHECK(cpu.p.test(nes::cpu_flag::overflow));
         CHECK(cpu.p.test(nes::cpu_flag::carry));
     }
 }

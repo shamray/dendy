@@ -46,9 +46,11 @@ auto adc = [](auto& cpu, auto fetch_addr)
     auto [r, c] = arith_result(
         cpu.a + operand + carry(cpu.p)
     );
+    auto v = ((operand ^ r) & (r ^ cpu.a) & 0x80) != 0;
 
     cpu.a = r;
     cpu.p.set(cpu_flag::carry, c);
+    cpu.p.set(cpu_flag::overflow, v);
 };
 
 auto lda = [](auto& cpu, auto fetch_addr) 

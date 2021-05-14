@@ -121,10 +121,12 @@ public:
     void tick();
     void tick(int count) { for (auto i = 0; i < count; ++i) tick(); }
 
-    auto read(uint16_t addr) const { return memory_[addr]; }
     void write(uint16_t addr, uint8_t value) const { memory_[addr] = value; }
+
+    auto read(uint16_t addr) const { return memory_[addr]; }
     auto read_word(uint16_t addr) const -> uint16_t;
-    auto decode(uint8_t opcode)->std::optional<instruction>;
+
+    auto decode(uint8_t opcode) -> std::optional<instruction>;
 
 private:
     std::vector<uint8_t>& memory_;
