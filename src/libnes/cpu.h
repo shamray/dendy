@@ -5,6 +5,8 @@
 #include <functional>
 #include <optional>
 #include <bitset>
+#include <iostream>
+#include <cassert>
 
 namespace nes
 {
@@ -16,7 +18,7 @@ enum class cpu_flag
     int_disable = 2,
     decimal = 3,
     break_called = 4,
-    _ = 5,
+    _ [[maybe_unused]] = 5,
     overflow = 6,
     negative = 7
 };
@@ -28,6 +30,8 @@ class flags_register
 public:
     void set(cpu_flag f, bool value = true) { bits_.set(pos(f), value); }
     void reset(cpu_flag f) { bits_.reset(pos(f)); }
+
+    [[nodiscard]]
     auto test(cpu_flag f) const { return bits_.test(pos(f)); }
 
 private:
@@ -38,10 +42,10 @@ class arith_register
 {
 public:
     arith_register() = default;
-    arith_register(flags_register* f) : flags_{f} {}
-    arith_register(uint8_t val, flags_register* f = nullptr) : val_{val} {}
+    explicit arith_register(flags_register* f) : flags_{f} {}
+    explicit arith_register(uint8_t val, flags_register* f = nullptr) : val_{val} {}
 
-    operator uint8_t() const { return val_; }
+    operator uint8_t() const { return val_; } // NOLINT(google-explicit-constructor)
 
     arith_register& operator=(uint8_t new_val)
     {
@@ -69,7 +73,7 @@ using stack_register = uint8_t;
 class cpu
 {
 public:
-    cpu(std::vector<uint8_t>& memory);
+    explicit cpu(std::vector<uint8_t>& memory);
 
     program_counter pc;
     
@@ -96,10 +100,17 @@ public:
     {
     public:
         executable_instruction() = default;
-        executable_instruction(const instruction& instruction)
-            : instruction(instruction)
+        explicit
+        executable_instruction(const instruction& from)
+            : instruction(from)
             , c_{cycles}
         {
+            assert(c_ != 0);
+        }
+
+        executable_instruction& operator=(const instruction& from)
+        {
+            return *this = executable_instruction{from};
         }
 
         void execute(cpu& cpu)
@@ -112,7 +123,7 @@ public:
             }
         }
 
-        bool is_finished() const { return c_ == 0; }
+        [[nodiscard]] bool is_finished() const { return c_ == 0; }
 
     private:
         int c_{0};
@@ -123,8 +134,8 @@ public:
 
     void write(uint16_t addr, uint8_t value) const { memory_[addr] = value; }
 
-    auto read(uint16_t addr) const { return memory_[addr]; }
-    auto read_word(uint16_t addr) const -> uint16_t;
+    [[nodiscard]] auto read(uint16_t addr) const { return memory_[addr]; }
+    [[nodiscard]] auto read_word(uint16_t addr) const -> uint16_t;
 
     auto decode(uint8_t opcode) -> std::optional<instruction>;
 
