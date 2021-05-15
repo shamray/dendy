@@ -77,7 +77,7 @@ public:
 
     program_counter pc;
     
-    stack_register s{0};
+    stack_register s{0xFD};
     flags_register p;
 
     arith_register a{&p};

@@ -125,6 +125,18 @@ auto txs = [](auto& cpu, auto )
     cpu.s = static_cast<uint8_t>(cpu.x);
 };
 
+auto pha = [](auto& cpu, auto )
+{
+    auto address = uint16_t{0x0100} + cpu.s--;
+    cpu.write(address, cpu.a);
+};
+
+auto pla = [](auto& cpu, auto )
+{
+    auto address = uint16_t{0x0100} + ++cpu.s;
+    cpu.a = cpu.read(address);
+};
+
 auto tya = [](auto& cpu, auto )
 {
     cpu.a = static_cast<uint8_t>(cpu.y);
@@ -231,6 +243,8 @@ cpu::cpu(std::vector<uint8_t>& memory)
 
         {0xBA, { tsx, imp, 2 }},
         {0x9A, { txs, imp, 2 }},
+        {0x48, { pha, imp, 3 }},
+        {0x68, { pla, imp, 4 }},
 
         {0xA2, { ldx, imm, 2 }},
         {0xA6, { ldx, zp , 3 }},
