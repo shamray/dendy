@@ -458,3 +458,107 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
         CHECK(cpu.p.test(nes::cpu_flag::carry));
     }
 }
+
+TEST_CASE_METHOD(cpu_test, "ADC-ABX")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{0x7d, 0x01, 0xc0}); // ADC $C001,X
+    load(0xc003, std::array{0x5a});
+    cpu.x = 0x02;
+    cpu.a = 0x01;
+
+    cpu.tick(4);
+    CHECK(cpu.a == 0x5b);
+}
+
+TEST_CASE_METHOD(cpu_test, "SBC")
+{
+    nes::cpu cpu(mem);
+
+    // STA $00,X
+    // TYA
+    // SBC $00,X
+    load(prgadr, std::array{0x95, 0x00, 0x98, 0xf5, 0x00}); // A = Y - A
+
+    SECTION("0x50-0xf0=0x60")
+    {
+        cpu.y = 0x50;
+        cpu.a = 0xf0;
+
+        cpu.tick(4 + 2 + 4);
+        CHECK(cpu.a == 0x60);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
+    }
+    SECTION("0x50-0xb0=0xa0")
+    {
+        cpu.y = 0x50;
+        cpu.a = 0xb0;
+
+        cpu.tick(4 + 2 + 4);
+        CHECK(cpu.a == 0xa0);
+        CHECK(cpu.p.test(nes::cpu_flag::overflow));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
+    }
+    SECTION("0x50-0x70=0xe0")
+    {
+        cpu.y = 0x50;
+        cpu.a = 0x70;
+
+        cpu.tick(4 + 2 + 4);
+        CHECK(cpu.a == 0xe0);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
+    }
+    SECTION("0x50-0x30=0x20")
+    {
+        cpu.y = 0x50;
+        cpu.a = 0x30;
+
+        cpu.tick(4 + 2 + 4);
+        CHECK(cpu.a == 0x20);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
+        CHECK(cpu.p.test(nes::cpu_flag::carry));
+    }
+    SECTION("0xd0-0xf0=0xe0")
+    {
+        cpu.y = 0xd0;
+        cpu.a = 0xf0;
+
+        cpu.tick(4 + 2 + 4);
+        CHECK(cpu.a == 0xe0);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
+    }
+    SECTION("0xd0-0xb0=0x20")
+    {
+        cpu.y = 0xd0;
+        cpu.a = 0xb0;
+
+        cpu.tick(4 + 2 + 4);
+        CHECK(cpu.a == 0x20);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
+        CHECK(cpu.p.test(nes::cpu_flag::carry));
+    }
+    SECTION("0xd0-0x70=0x60")
+    {
+        cpu.y = 0xd0;
+        cpu.a = 0x70;
+
+        cpu.tick(4 + 2 + 4);
+        CHECK(cpu.a == 0x60);
+        CHECK(cpu.p.test(nes::cpu_flag::overflow));
+        CHECK(cpu.p.test(nes::cpu_flag::carry));
+    }
+    SECTION("0xd0-0x30=0xa0")
+    {
+        cpu.y = 0xd0;
+        cpu.a = 0x30;
+
+        cpu.tick(4 + 2 + 4);
+        CHECK(cpu.a == 0xa0);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
+        CHECK(cpu.p.test(nes::cpu_flag::carry));
+    }
+}

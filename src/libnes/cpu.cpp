@@ -52,6 +52,23 @@ auto adc = [](auto& cpu, auto fetch_addr)
     cpu.p.set(cpu_flag::overflow, v);
 };
 
+auto sbc = [](auto& cpu, auto fetch_addr)
+{
+    auto address = fetch_addr(cpu);
+    auto operand = cpu.read(address);
+
+    operand = -operand;
+
+    auto [r, c] = arith_result(
+        cpu.a + operand + carry(cpu.p)
+    );
+    auto v = ((operand ^ r) & (r ^ cpu.a) & 0x80) != 0;
+
+    cpu.a = r;
+    cpu.p.set(cpu_flag::carry, c);
+    cpu.p.set(cpu_flag::overflow, v);
+};
+
 auto lda = [](auto& cpu, auto fetch_addr) 
 {
     auto address = fetch_addr(cpu);
@@ -219,6 +236,15 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0x79, { adc, aby, 4, 1 }},
         {0x61, { adc, izx, 6 }},
         {0x71, { adc, izy, 5, 1 }},
+
+        {0xE9, { sbc, imm, 2 }},
+        {0xE5, { sbc, zp , 3 }},
+        {0xF5, { sbc, zpx, 4 }},
+        {0xED, { sbc, abs, 4 }},
+        {0xFD, { sbc, abx, 4, 1 }},
+        {0xF9, { sbc, aby, 4, 1 }},
+        {0xE1, { sbc, izx, 6 }},
+        {0xF1, { sbc, izy, 5, 1 }},
 
         {0x00, { brk, imp, 7 }}
     }
