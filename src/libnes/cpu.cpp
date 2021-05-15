@@ -125,6 +125,11 @@ auto txs = [](auto& cpu, auto )
     cpu.s = static_cast<uint8_t>(cpu.x);
 };
 
+auto tya = [](auto& cpu, auto )
+{
+    cpu.a = static_cast<uint8_t>(cpu.y);
+};
+
 auto pha = [](auto& cpu, auto )
 {
     auto address = uint16_t{0x0100} + cpu.s--;
@@ -137,14 +142,22 @@ auto pla = [](auto& cpu, auto )
     cpu.a = cpu.read(address);
 };
 
-auto tya = [](auto& cpu, auto )
+auto php = [](auto& cpu, auto )
 {
-    cpu.a = static_cast<uint8_t>(cpu.y);
+    auto address = uint16_t{0x0100} + cpu.s--;
+    cpu.write(address, cpu.p.value());
+};
+
+auto plp = [](auto& cpu, auto )
+{
+    auto address = uint16_t{0x0100} + ++cpu.s;
+    auto flags_value = cpu.read(address);
+    cpu.p.assign(flags_value);
 };
 
 auto brk = [](auto& cpu, auto _)
 {
-    // TODO: set brake flag
+    // TODO: assign brake flag
 };
 
 auto nop = [](auto&, auto) {};
@@ -245,6 +258,8 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0x9A, { txs, imp, 2 }},
         {0x48, { pha, imp, 3 }},
         {0x68, { pla, imp, 4 }},
+        {0x08, { php, imp, 3 }},
+        {0x28, { plp, imp, 4 }},
 
         {0xA2, { ldx, imm, 2 }},
         {0xA6, { ldx, zp , 3 }},

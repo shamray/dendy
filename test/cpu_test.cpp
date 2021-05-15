@@ -405,7 +405,7 @@ TEST_CASE_METHOD(cpu_test, "PHA")
     cpu.tick(3);
 
     CHECK(cpu.s == 0xfc);
-    CHECK(mem[0x01Fd] == 0x55);
+    CHECK(mem[0x01fd] == 0x55);
 }
 
 TEST_CASE_METHOD(cpu_test, "PLA")
@@ -417,7 +417,7 @@ TEST_CASE_METHOD(cpu_test, "PLA")
 
     SECTION("positive")
     {
-        mem[0x01Fd] = 0x55;
+        mem[0x01fd] = 0x55;
         cpu.tick(4);
 
         CHECK(cpu.a == 0x55);
@@ -427,7 +427,7 @@ TEST_CASE_METHOD(cpu_test, "PLA")
     }
     SECTION("zero")
     {
-        mem[0x01Fd] = 0x00;
+        mem[0x01fd] = 0x00;
         cpu.tick(4);
 
         CHECK(cpu.a == 0x00);
@@ -437,7 +437,7 @@ TEST_CASE_METHOD(cpu_test, "PLA")
     }
     SECTION("negative")
     {
-        mem[0x01Fd] = 0xA0;
+        mem[0x01fd] = 0xA0;
         cpu.tick(4);
 
         CHECK(cpu.a == 0xA0);
@@ -445,6 +445,41 @@ TEST_CASE_METHOD(cpu_test, "PLA")
         CHECK      (cpu.p.test(nes::cpu_flag::negative));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
     }
+}
+
+TEST_CASE_METHOD(cpu_test, "PHP")
+{
+    nes::cpu cpu{mem};
+
+    load(prgadr, std::array{0x08}); // PHP
+    cpu.p.assign(0x42); // zero, overflow
+
+    cpu.tick(3);
+
+    CHECK(cpu.s == 0xfc);
+    CHECK(mem[0x01fd] == 0x42);
+}
+
+TEST_CASE_METHOD(cpu_test, "PLP")
+{
+    nes::cpu cpu{mem};
+
+    load(prgadr, std::array{0x28}); // PLP
+    load(0x01fd, std::array{0xDF}); // all flags
+    cpu.s = 0xfc;
+
+    REQUIRE(cpu.p.value() == 0x00);
+
+    cpu.tick(4);
+
+    CHECK(cpu.s == 0xfd);
+    CHECK(cpu.p.test(nes::cpu_flag::carry));
+    CHECK(cpu.p.test(nes::cpu_flag::zero));
+    CHECK(cpu.p.test(nes::cpu_flag::int_disable));
+    CHECK(cpu.p.test(nes::cpu_flag::decimal));
+    CHECK(cpu.p.test(nes::cpu_flag::break_called));
+    CHECK(cpu.p.test(nes::cpu_flag::overflow));
+    CHECK(cpu.p.test(nes::cpu_flag::negative));
 }
 
 TEST_CASE_METHOD(cpu_test, "ADC-IMM")
