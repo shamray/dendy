@@ -35,6 +35,21 @@ auto arith_result(int x)
     return std::tuple{r, c};
 }
 
+void adc_impl(auto& result, const auto& accum, uint8_t operand, flags_register& flags, bool set_overflow=true)
+{
+    auto [r, c] = arith_result(
+            accum + operand + carry(flags)
+    );
+    flags.set(cpu_flag::carry, c);
+
+    if (set_overflow) {
+        auto v = ((operand ^ r) & (r ^ accum) & 0x80) != 0;
+        flags.set(cpu_flag::overflow, v);
+    }
+
+    result = r;
+}
+
 // Operations
 
 auto adc = [](auto& cpu, auto fetch_addr)
@@ -42,14 +57,7 @@ auto adc = [](auto& cpu, auto fetch_addr)
     auto address = fetch_addr(cpu);
     auto operand = cpu.read(address);
 
-    auto [r, c] = arith_result(
-        cpu.a + operand + carry(cpu.p)
-    );
-    auto v = ((operand ^ r) & (r ^ cpu.a) & 0x80) != 0;
-
-    cpu.a = r;
-    cpu.p.set(cpu_flag::carry, c);
-    cpu.p.set(cpu_flag::overflow, v);
+    adc_impl(cpu.a, cpu.a, operand, cpu.p);
 };
 
 auto sbc = [](auto& cpu, auto fetch_addr)
@@ -57,19 +65,21 @@ auto sbc = [](auto& cpu, auto fetch_addr)
     auto address = fetch_addr(cpu);
     auto operand = cpu.read(address);
 
-    operand = -operand;
-
-    auto [r, c] = arith_result(
-        cpu.a + operand + carry(cpu.p)
-    );
-    auto v = ((operand ^ r) & (r ^ cpu.a) & 0x80) != 0;
-
-    cpu.a = r;
-    cpu.p.set(cpu_flag::carry, c);
-    cpu.p.set(cpu_flag::overflow, v);
+    adc_impl(cpu.a, cpu.a, -operand, cpu.p);
 };
 
-auto lda = [](auto& cpu, auto fetch_addr) 
+auto cmp = [](auto& cpu, auto fetch_addr)
+{
+    auto address = fetch_addr(cpu);
+    auto operand = cpu.read(address);
+
+    [[maybe_unused]]
+    auto alu_result = arith_register{&cpu.p};
+
+    adc_impl(alu_result, cpu.a, -operand, cpu.p, false);
+};
+
+auto lda = [](auto& cpu, auto fetch_addr)
 {
     auto address = fetch_addr(cpu);
     auto operand = cpu.read(address);
@@ -245,6 +255,15 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0xF9, { sbc, aby, 4, 1 }},
         {0xE1, { sbc, izx, 6 }},
         {0xF1, { sbc, izy, 5, 1 }},
+
+        {0xC9, { cmp, imm, 2 }},
+        {0xC5, { cmp, zp , 3 }},
+        {0xD5, { cmp, zpx, 4 }},
+        {0xCD, { cmp, abs, 4 }},
+        {0xDD, { cmp, abx, 4, 1 }},
+        {0xD9, { cmp, aby, 4, 1 }},
+        {0xC1, { cmp, izx, 6 }},
+        {0xD1, { cmp, izy, 5, 1 }},
 
         {0x00, { brk, imp, 7 }}
     }

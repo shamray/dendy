@@ -480,13 +480,14 @@ TEST_CASE_METHOD(cpu_test, "SBC")
     // TYA
     // SBC $00,X
     load(prgadr, std::array{0x95, 0x00, 0x98, 0xf5, 0x00}); // A = Y - A
+    int program_cycles = 4 + 2 + 4;
 
     SECTION("0x50-0xf0=0x60")
     {
         cpu.y = 0x50;
         cpu.a = 0xf0;
 
-        cpu.tick(4 + 2 + 4);
+        cpu.tick(program_cycles);
         CHECK(cpu.a == 0x60);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
@@ -496,7 +497,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.y = 0x50;
         cpu.a = 0xb0;
 
-        cpu.tick(4 + 2 + 4);
+        cpu.tick(program_cycles);
         CHECK(cpu.a == 0xa0);
         CHECK(cpu.p.test(nes::cpu_flag::overflow));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
@@ -506,7 +507,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.y = 0x50;
         cpu.a = 0x70;
 
-        cpu.tick(4 + 2 + 4);
+        cpu.tick(program_cycles);
         CHECK(cpu.a == 0xe0);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
@@ -516,7 +517,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.y = 0x50;
         cpu.a = 0x30;
 
-        cpu.tick(4 + 2 + 4);
+        cpu.tick(program_cycles);
         CHECK(cpu.a == 0x20);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK(cpu.p.test(nes::cpu_flag::carry));
@@ -526,7 +527,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.y = 0xd0;
         cpu.a = 0xf0;
 
-        cpu.tick(4 + 2 + 4);
+        cpu.tick(program_cycles);
         CHECK(cpu.a == 0xe0);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
@@ -536,7 +537,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.y = 0xd0;
         cpu.a = 0xb0;
 
-        cpu.tick(4 + 2 + 4);
+        cpu.tick(program_cycles);
         CHECK(cpu.a == 0x20);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK(cpu.p.test(nes::cpu_flag::carry));
@@ -546,7 +547,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.y = 0xd0;
         cpu.a = 0x70;
 
-        cpu.tick(4 + 2 + 4);
+        cpu.tick(program_cycles);
         CHECK(cpu.a == 0x60);
         CHECK(cpu.p.test(nes::cpu_flag::overflow));
         CHECK(cpu.p.test(nes::cpu_flag::carry));
@@ -556,9 +557,56 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.y = 0xd0;
         cpu.a = 0x30;
 
-        cpu.tick(4 + 2 + 4);
+        cpu.tick(program_cycles);
         CHECK(cpu.a == 0xa0);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK(cpu.p.test(nes::cpu_flag::carry));
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "CMP")
+{
+    nes::cpu cpu(mem);
+
+    load(prgadr, std::array{0xc9, 0x2A});
+    
+    SECTION("A < M")
+    {
+        cpu.a = 0x29;
+        cpu.tick(2);
+
+        CHECK       (cpu.p.test(nes::cpu_flag::negative));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::zero));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::carry));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+    }
+    SECTION("A = M")
+    {
+        cpu.a = 0x2A;
+        cpu.tick(2);
+
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::negative));
+        CHECK       (cpu.p.test(nes::cpu_flag::zero));
+        CHECK       (cpu.p.test(nes::cpu_flag::carry));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+    }
+    SECTION("A > M")
+    {
+        cpu.a = 0x2B;
+        cpu.tick(2);
+
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::negative));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::zero));
+        CHECK       (cpu.p.test(nes::cpu_flag::carry));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+    }
+    SECTION("V = 0")
+    {
+        load(prgadr, std::array{0xc9, 0xd0});
+
+        cpu.a = 0x70;
+        cpu.tick(2);
+
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
     }
 }
