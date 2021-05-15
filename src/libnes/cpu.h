@@ -46,16 +46,21 @@ public:
     explicit arith_register(flags_register* f) : flags_{f} {}
     explicit arith_register(uint8_t val, flags_register* f = nullptr) : val_{val}, flags_{f} {}
 
-    operator uint8_t() const { return val_; } // NOLINT(google-explicit-constructor)
+    [[nodiscard]] auto value() const { return val_; }
 
     arith_register& operator=(uint8_t new_val)
+    {
+        assign(new_val);
+        return *this;
+    }
+
+    void assign(uint8_t new_val)
     {
         val_ = new_val;
         if (flags_) {
             flags_->set(cpu_flag::zero, val_ == 0);
             flags_->set(cpu_flag::negative, (val_ & 0x80) != 0);
         }
-        return *this;
     }
 
 private:
@@ -65,10 +70,26 @@ private:
 
 inline std::ostream& operator<< (std::ostream& s, const arith_register& r)
 {
-    return s << static_cast<int>(r);
+    return s << static_cast<int>(r.value());
 }
 
-using program_counter = uint16_t;
+class program_counter
+{
+public:
+    void assign(uint16_t val) { val_ = val; }
+    auto advance(int16_t increment = 1)
+    {
+        auto old = val_;
+        val_ += increment;
+        return old;
+    }
+
+    [[nodiscard]] auto value() const { return val_; }
+
+private:
+    uint16_t val_;
+};
+
 using stack_register = uint8_t;
 
 class cpu

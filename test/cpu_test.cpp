@@ -47,7 +47,7 @@ public:
 
 TEST_CASE_METHOD(cpu_test, "Power Up")
 {
-    CHECK(cpu.read_word(0xfffc) == cpu.pc);
+    CHECK(cpu.read_word(0xfffc) == cpu.pc.value());
     CHECK(cpu.s == 0xfd);
 }
 
@@ -63,7 +63,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-IMM")
     load(prgadr, std::array{0xa9, 0x55}); // LDA #$55
     tick(2);
 
-    CHECK(cpu.a == 0x55);
+    CHECK(cpu.a.value() == 0x55);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDA-Flags")
@@ -100,7 +100,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-ZP")
 
     tick(3);
 
-    CHECK(cpu.a == 0x42);
+    CHECK(cpu.a.value() == 0x42);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDA-ZPX")
@@ -112,7 +112,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-ZPX")
 
     tick(4);
 
-    CHECK(cpu.a == 0x89);
+    CHECK(cpu.a.value() == 0x89);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDA-ABS")
@@ -122,7 +122,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-ABS")
 
     tick(4);
 
-    CHECK(cpu.a == 0x42);
+    CHECK(cpu.a.value() == 0x42);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDA-ABX")
@@ -137,7 +137,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-ABX")
         cpu.x = 0x06;
         tick(4);
 
-        CHECK(cpu.a == 0x42);
+        CHECK(cpu.a.value() == 0x42);
     }
     SECTION("Page Cross")
     {
@@ -145,7 +145,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-ABX")
         tick(4, false);
         tick(1);
 
-        CHECK(cpu.a == 0x43);
+        CHECK(cpu.a.value() == 0x43);
     }
 }
 
@@ -161,7 +161,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-ABY")
         cpu.y = 0x05;
         tick(4);
 
-        CHECK(cpu.a == 0x42);
+        CHECK(cpu.a.value() == 0x42);
     }
     SECTION("Page Cross")
     {
@@ -169,7 +169,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-ABY")
         tick(4, false);
         tick(1);
 
-        CHECK(cpu.a == 0x43);
+        CHECK(cpu.a.value() == 0x43);
     }
 }
 
@@ -183,7 +183,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-IZX")
 
     tick(6);
 
-    CHECK(cpu.a == 0x0F);
+    CHECK(cpu.a.value() == 0x0F);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDA-IZY")
@@ -199,7 +199,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-IZY")
         cpu.y = 0x03;
         tick(5);
 
-        CHECK(cpu.a == 0x2F);
+        CHECK(cpu.a.value() == 0x2F);
     }
     SECTION("Page Cross")
     {
@@ -207,7 +207,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-IZY")
         tick(5, false);
         tick(1);
 
-        CHECK(cpu.a == 0x21);
+        CHECK(cpu.a.value() == 0x21);
     }
 }
 
@@ -216,7 +216,7 @@ TEST_CASE_METHOD(cpu_test, "LDX-IMM")
     load(prgadr, std::array{0xa2, 0x42}); // LDX #$42
     tick(2);
 
-    CHECK(cpu.x == 0x42);
+    CHECK(cpu.x.value() == 0x42);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDX-ZP")
@@ -226,7 +226,7 @@ TEST_CASE_METHOD(cpu_test, "LDX-ZP")
 
     tick(3);
 
-    CHECK(cpu.x == 0x88);
+    CHECK(cpu.x.value() == 0x88);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDX-ZPY")
@@ -236,7 +236,7 @@ TEST_CASE_METHOD(cpu_test, "LDX-ZPY")
     load(0x0013, std::array{0x77});
     tick(4);
 
-    CHECK(cpu.x == 0x77);
+    CHECK(cpu.x.value() == 0x77);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDA-ZPX-Overflow")
@@ -246,7 +246,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-ZPX-Overflow")
     load(prgadr, std::array{0xb5, 0xff}); // LDX $10,Y
     tick(4);
 
-    CHECK(cpu.a == 0x77);
+    CHECK(cpu.a.value() == 0x77);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDX-ABS")
@@ -256,7 +256,7 @@ TEST_CASE_METHOD(cpu_test, "LDX-ABS")
 
     tick(4);
 
-    CHECK(cpu.x == 0x42);
+    CHECK(cpu.x.value() == 0x42);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDX-ABY")
@@ -268,7 +268,7 @@ TEST_CASE_METHOD(cpu_test, "LDX-ABY")
 
     tick(4);
 
-    CHECK(cpu.x == 0x42);
+    CHECK(cpu.x.value() == 0x42);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDX-Flags")
@@ -321,7 +321,7 @@ TEST_CASE_METHOD(cpu_test, "TAX")
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
     tick(2);
 
-    CHECK(cpu.x == cpu.a);
+    CHECK(cpu.x.value() == cpu.a.value());
     CHECK(cpu.p.test(nes::cpu_flag::negative));
 }
 
@@ -334,7 +334,7 @@ TEST_CASE_METHOD(cpu_test, "TXA")
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
     tick(2);
 
-    CHECK(cpu.a == cpu.x);
+    CHECK(cpu.a.value() == cpu.x.value());
     CHECK(cpu.p.test(nes::cpu_flag::negative));
 }
 
@@ -347,7 +347,7 @@ TEST_CASE_METHOD(cpu_test, "TAY")
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
     tick(2);
 
-    CHECK(cpu.y == cpu.a);
+    CHECK(cpu.y.value() == cpu.a.value());
     CHECK(cpu.p.test(nes::cpu_flag::negative));
 }
 
@@ -360,7 +360,7 @@ TEST_CASE_METHOD(cpu_test, "TYA")
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
     tick(2);
 
-    CHECK(cpu.a == cpu.y);
+    CHECK(cpu.a.value() == cpu.y.value());
     CHECK(cpu.p.test(nes::cpu_flag::negative));
 }
 
@@ -373,7 +373,7 @@ TEST_CASE_METHOD(cpu_test, "TSX")
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
     tick(2);
 
-    CHECK(cpu.x == cpu.s);
+    CHECK(cpu.x.value() == cpu.s);
     CHECK(cpu.p.test(nes::cpu_flag::negative));
 }
 
@@ -386,7 +386,7 @@ TEST_CASE_METHOD(cpu_test, "TXS")
     cpu.p.reset(nes::cpu_flag::negative);
     tick(2);
 
-    CHECK(cpu.s == cpu.x);
+    CHECK(cpu.s == cpu.x.value());
     CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
 }
 
@@ -413,7 +413,7 @@ TEST_CASE_METHOD(cpu_test, "PLA")
         mem[0x01fd] = 0x55;
         tick(4);
 
-        CHECK(cpu.a == 0x55);
+        CHECK(cpu.a.value() == 0x55);
 
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
@@ -423,7 +423,7 @@ TEST_CASE_METHOD(cpu_test, "PLA")
         mem[0x01fd] = 0x00;
         tick(4);
 
-        CHECK(cpu.a == 0x00);
+        CHECK(cpu.a.value() == 0x00);
 
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
         CHECK      (cpu.p.test(nes::cpu_flag::zero));
@@ -433,7 +433,7 @@ TEST_CASE_METHOD(cpu_test, "PLA")
         mem[0x01fd] = 0xA0;
         tick(4);
 
-        CHECK(cpu.a == 0xA0);
+        CHECK(cpu.a.value() == 0xA0);
 
         CHECK      (cpu.p.test(nes::cpu_flag::negative));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
@@ -480,7 +480,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
         cpu.a = 0x04;
         tick(2);
 
-        CHECK(cpu.a == 0x0B); // 4 + 7 == 11
+        CHECK(cpu.a.value() == 0x0B); // 4 + 7 == 11
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
@@ -492,7 +492,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
         cpu.a = 0xF9;
         tick(2);
 
-        CHECK(cpu.a == 0x00); // 7 + (-7) == 0
+        CHECK(cpu.a.value() == 0x00); // 7 + (-7) == 0
         CHECK(cpu.p.test(nes::cpu_flag::zero));
     }
 
@@ -501,7 +501,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
         cpu.a = 0xE3;
         tick(2);
 
-        CHECK(cpu.a == 0xEA); // 7 + (-29) == -22
+        CHECK(cpu.a.value() == 0xEA); // 7 + (-29) == -22
         CHECK(cpu.p.test(nes::cpu_flag::negative));
     }
 
@@ -511,7 +511,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
         cpu.p.set(nes::cpu_flag::carry);
         tick(2);
 
-        CHECK(cpu.a == 0x0C); // 4 + 7 + 1== 12
+        CHECK(cpu.a.value() == 0x0C); // 4 + 7 + 1== 12
     }
 
     SECTION("C,A = A + M")
@@ -519,7 +519,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
         cpu.a = 0xFF;
         tick(2);
 
-        CHECK(cpu.a == 0x06); // 255 + 7 == 6 + carry
+        CHECK(cpu.a.value() == 0x06); // 255 + 7 == 6 + carry
         CHECK(cpu.p.test(nes::cpu_flag::carry));
     }
 
@@ -528,7 +528,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
         cpu.a = 0x7D;
         tick(2);
 
-        CHECK(cpu.a == 0x84); // 132 + 7 == "-84"
+        CHECK(cpu.a.value() == 0x84); // 132 + 7 == "-84"
         CHECK(cpu.p.test(nes::cpu_flag::overflow));
     }
 
@@ -538,7 +538,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
         cpu.a = 0x80;
         tick(2);
 
-        CHECK(cpu.a == 0x7E); // -2 + (-128) == "+7E"
+        CHECK(cpu.a.value() == 0x7E); // -2 + (-128) == "+7E"
         CHECK(cpu.p.test(nes::cpu_flag::overflow));
         CHECK(cpu.p.test(nes::cpu_flag::carry));
     }
@@ -552,7 +552,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-ABX")
     cpu.a = 0x01;
 
     tick(4);
-    CHECK(cpu.a == 0x5b);
+    CHECK(cpu.a.value() == 0x5b);
 }
 
 TEST_CASE_METHOD(cpu_test, "SBC")
@@ -569,7 +569,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.a = 0xf0;
 
         tick(program_cycles);
-        CHECK(cpu.a == 0x60);
+        CHECK(cpu.a.value() == 0x60);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
     }
@@ -579,7 +579,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.a = 0xb0;
 
         tick(program_cycles);
-        CHECK(cpu.a == 0xa0);
+        CHECK(cpu.a.value() == 0xa0);
         CHECK(cpu.p.test(nes::cpu_flag::overflow));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
     }
@@ -589,7 +589,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.a = 0x70;
 
         tick(program_cycles);
-        CHECK(cpu.a == 0xe0);
+        CHECK(cpu.a.value() == 0xe0);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
     }
@@ -599,7 +599,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.a = 0x30;
 
         tick(program_cycles);
-        CHECK(cpu.a == 0x20);
+        CHECK(cpu.a.value() == 0x20);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK(cpu.p.test(nes::cpu_flag::carry));
     }
@@ -609,7 +609,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.a = 0xf0;
 
         tick(program_cycles);
-        CHECK(cpu.a == 0xe0);
+        CHECK(cpu.a.value() == 0xe0);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
     }
@@ -619,7 +619,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.a = 0xb0;
 
         tick(program_cycles);
-        CHECK(cpu.a == 0x20);
+        CHECK(cpu.a.value() == 0x20);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK(cpu.p.test(nes::cpu_flag::carry));
     }
@@ -629,7 +629,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.a = 0x70;
 
         tick(program_cycles);
-        CHECK(cpu.a == 0x60);
+        CHECK(cpu.a.value() == 0x60);
         CHECK(cpu.p.test(nes::cpu_flag::overflow));
         CHECK(cpu.p.test(nes::cpu_flag::carry));
     }
@@ -639,7 +639,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
         cpu.a = 0x30;
 
         tick(program_cycles);
-        CHECK(cpu.a == 0xa0);
+        CHECK(cpu.a.value() == 0xa0);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK(cpu.p.test(nes::cpu_flag::carry));
     }

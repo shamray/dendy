@@ -46,7 +46,7 @@ auto arith_result(int x)
     return std::tuple{r, c};
 }
 
-void adc_impl(auto& result, const auto& accum, uint8_t operand, flags_register& flags, bool set_overflow=true)
+void adc_impl(auto& result, uint8_t accum, uint8_t operand, flags_register& flags, bool set_overflow=true)
 {
     auto [r, c] = arith_result(
             accum + operand + carry(flags)
@@ -68,7 +68,7 @@ auto adc = [](auto& cpu, auto fetch_addr)
     auto [address, page_crossed] = fetch_addr();
     auto operand = cpu.read(address);
 
-    adc_impl(cpu.a, cpu.a, operand, cpu.p);
+    adc_impl(cpu.a, cpu.a.value(), operand, cpu.p);
     return page_crossed;
 };
 
@@ -77,7 +77,7 @@ auto sbc = [](auto& cpu, auto fetch_addr)
     auto [address, page_crossed] = fetch_addr();
     auto operand = cpu.read(address);
 
-    adc_impl(cpu.a, cpu.a, -operand, cpu.p);
+    adc_impl(cpu.a, cpu.a.value(), -operand, cpu.p);
     return page_crossed;
 };
 
@@ -89,7 +89,7 @@ auto cmp = [](auto& cpu, auto fetch_addr)
     [[maybe_unused]]
     auto alu_result = arith_register{&cpu.p};
 
-    adc_impl(alu_result, cpu.a, -operand, cpu.p, false);
+    adc_impl(alu_result, cpu.a.value(), -operand, cpu.p, false);
     return page_crossed;
 };
 
@@ -113,50 +113,50 @@ auto ldx = [](auto& cpu, auto fetch_addr)
 auto sta = [](auto& cpu, auto fetch_addr) 
 {
     auto [address, page_crossed] = fetch_addr();
-    cpu.write(address, cpu.a);
+    cpu.write(address, cpu.a.value());
     return page_crossed;
 };
 
 auto tax = [](auto& cpu, auto )
 {
-    cpu.x = static_cast<uint8_t>(cpu.a);
+    cpu.x.assign(cpu.a.value());
     return false;
 };
 
 auto tay = [](auto& cpu, auto )
 {
-    cpu.y = static_cast<uint8_t>(cpu.a);
+    cpu.y.assign(cpu.a.value());
     return false;
 };
 
 auto tsx = [](auto& cpu, auto )
 {
-    cpu.x = static_cast<uint8_t>(cpu.s);
+    cpu.x.assign(cpu.s);
     return false;
 };
 
 auto txa = [](auto& cpu, auto )
 {
-    cpu.a = static_cast<uint8_t>(cpu.x);
+    cpu.a.assign(cpu.x.value());
     return false;
 };
 
 auto txs = [](auto& cpu, auto )
 {
-    cpu.s = static_cast<uint8_t>(cpu.x);
+    cpu.s = cpu.x.value();
     return false;
 };
 
 auto tya = [](auto& cpu, auto )
 {
-    cpu.a = static_cast<uint8_t>(cpu.y);
+    cpu.a.assign(cpu.y.value());
     return false;
 };
 
 auto pha = [](auto& cpu, auto )
 {
     auto address = uint16_t{0x0100} + cpu.s--;
-    cpu.write(address, cpu.a);
+    cpu.write(address, cpu.a.value());
     return false;
 };
 
@@ -195,57 +195,52 @@ auto nop = [](auto&, auto) { return false; };
 
 auto imm = [](auto& cpu) 
 {
-    return std::tuple{cpu.pc++, false};
+    return std::tuple{cpu.pc.advance(), false};
 };
 
 auto zp =  [](auto& cpu) 
 {
-    return std::tuple{cpu.read(cpu.pc++), false};
+    return std::tuple{cpu.read(cpu.pc.advance()), false};
 };
 
 auto zpx = [](auto& cpu) 
 {
-    auto address = cpu.read(cpu.pc++);
-    return std::tuple{(cpu.x + address) % 0x100, false};
+    auto address = cpu.read(cpu.pc.advance());
+    return std::tuple{(cpu.x.value() + address) % 0x100, false};
 };
 
 auto zpy = [](auto& cpu) 
 {
-    auto address = cpu.read(cpu.pc++);
-    return std::tuple{(cpu.y + address) % 0x100, false};
+    auto address = cpu.read(cpu.pc.advance());
+    return std::tuple{(cpu.y.value() + address) % 0x100, false};
 };
 
 auto abs = [](auto& cpu) 
 {
-    auto address = cpu.read_word(cpu.pc);
-    cpu.pc += 2;
+    auto address = cpu.read_word(cpu.pc.advance(2));
     return std::tuple{address, false};
 };
 
 auto abx = [](auto& cpu) 
 {
-    auto r = index(cpu.read_word(cpu.pc), cpu.x);
-    cpu.pc += 2;
-    return r;
+    return index(cpu.read_word(cpu.pc.advance(2)), cpu.x.value());
 };
 
 auto aby = [](auto& cpu) 
 {
-    auto r = index(cpu.read_word(cpu.pc), cpu.y);
-    cpu.pc += 2;
-    return r;
+    return index(cpu.read_word(cpu.pc.advance(2)), cpu.y.value());
 };
 
 auto izx = [](auto& cpu) 
 {
-    auto indexed = cpu.read(cpu.pc++) + cpu.x;
+    auto indexed = cpu.read(cpu.pc.advance()) + cpu.x.value();
     return std::tuple{cpu.read_word(indexed), false};
 };
 
 auto izy = [](auto& cpu) 
 {
-    auto base = cpu.read(cpu.pc++);
-    return index(cpu.read_word(base), cpu.y);
+    auto base = cpu.read(cpu.pc.advance());
+    return index(cpu.read_word(base), cpu.y.value());
 };
 
 auto imp = [](auto& ) -> std::tuple<uint16_t,bool>
@@ -325,13 +320,13 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0x00, { brk, imp, 7 }}
     }
 {
-    pc = read_word(0xFFFC);
+    pc.assign(read_word(0xFFFC));
 }
 
 void cpu::tick()
 {
     if (current_instruction.is_finished()) {
-        auto opcode = read(pc++);
+        auto opcode = read(pc.advance());
 
         current_instruction = decode(opcode)
             .value_or(cpu::instruction{
