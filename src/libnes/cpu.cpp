@@ -27,6 +27,17 @@ auto carry(const flags_register& f)
     return f.test(cpu_flag::carry) ? 1_i : 0_i;
 }
 
+auto is_page_crossed(uint16_t base, uint16_t effective_address)
+{
+    return (base & 0xFF00) != (effective_address & 0xFF00);
+}
+
+auto index(uint16_t base, uint8_t offset)
+{
+    auto address = base + offset;
+    return std::tuple{address, is_page_crossed(base, address)};
+}
+
 auto arith_result(int x)
 {
     auto c = (x / 0x100) != 0;
@@ -54,98 +65,113 @@ void adc_impl(auto& result, const auto& accum, uint8_t operand, flags_register& 
 
 auto adc = [](auto& cpu, auto fetch_addr)
 {
-    auto address = fetch_addr(cpu);
+    auto [address, page_crossed] = fetch_addr();
     auto operand = cpu.read(address);
 
     adc_impl(cpu.a, cpu.a, operand, cpu.p);
+    return page_crossed;
 };
 
 auto sbc = [](auto& cpu, auto fetch_addr)
 {
-    auto address = fetch_addr(cpu);
+    auto [address, page_crossed] = fetch_addr();
     auto operand = cpu.read(address);
 
     adc_impl(cpu.a, cpu.a, -operand, cpu.p);
+    return page_crossed;
 };
 
 auto cmp = [](auto& cpu, auto fetch_addr)
 {
-    auto address = fetch_addr(cpu);
+    auto [address, page_crossed] = fetch_addr();
     auto operand = cpu.read(address);
 
     [[maybe_unused]]
     auto alu_result = arith_register{&cpu.p};
 
     adc_impl(alu_result, cpu.a, -operand, cpu.p, false);
+    return page_crossed;
 };
 
 auto lda = [](auto& cpu, auto fetch_addr)
 {
-    auto address = fetch_addr(cpu);
+    auto [address, page_crossed] = fetch_addr();
     auto operand = cpu.read(address);
 
     cpu.a = operand;
+    return page_crossed;
 };
 
 auto ldx = [](auto& cpu, auto fetch_addr)
 {
-    auto address = fetch_addr(cpu);
+    auto [address, page_crossed] = fetch_addr();
     auto operand = cpu.read(address);
     cpu.x = operand;
+    return page_crossed;
 };
 
 auto sta = [](auto& cpu, auto fetch_addr) 
 {
-    auto address = fetch_addr(cpu);
+    auto [address, page_crossed] = fetch_addr();
     cpu.write(address, cpu.a);
+    return page_crossed;
 };
 
 auto tax = [](auto& cpu, auto )
 {
     cpu.x = static_cast<uint8_t>(cpu.a);
+    return false;
 };
 
 auto tay = [](auto& cpu, auto )
 {
     cpu.y = static_cast<uint8_t>(cpu.a);
+    return false;
 };
 
 auto tsx = [](auto& cpu, auto )
 {
     cpu.x = static_cast<uint8_t>(cpu.s);
+    return false;
 };
 
 auto txa = [](auto& cpu, auto )
 {
     cpu.a = static_cast<uint8_t>(cpu.x);
+    return false;
 };
 
 auto txs = [](auto& cpu, auto )
 {
     cpu.s = static_cast<uint8_t>(cpu.x);
+    return false;
 };
 
 auto tya = [](auto& cpu, auto )
 {
     cpu.a = static_cast<uint8_t>(cpu.y);
+    return false;
 };
 
 auto pha = [](auto& cpu, auto )
 {
     auto address = uint16_t{0x0100} + cpu.s--;
     cpu.write(address, cpu.a);
+    return false;
 };
 
 auto pla = [](auto& cpu, auto )
 {
     auto address = uint16_t{0x0100} + ++cpu.s;
     cpu.a = cpu.read(address);
+    return false;
 };
 
 auto php = [](auto& cpu, auto )
 {
     auto address = uint16_t{0x0100} + cpu.s--;
     cpu.write(address, cpu.p.value());
+    return false;
 };
 
 auto plp = [](auto& cpu, auto )
@@ -153,74 +179,76 @@ auto plp = [](auto& cpu, auto )
     auto address = uint16_t{0x0100} + ++cpu.s;
     auto flags_value = cpu.read(address);
     cpu.p.assign(flags_value);
+    return false;
 };
 
 auto brk = [](auto& cpu, auto _)
 {
     // TODO: assign brake flag
+    return false;
 };
 
-auto nop = [](auto&, auto) {};
+auto nop = [](auto&, auto) { return false; };
 
 
 // Addressing modes
 
 auto imm = [](auto& cpu) 
 {
-    return cpu.pc++;
+    return std::tuple{cpu.pc++, false};
 };
 
 auto zp =  [](auto& cpu) 
 {
-    return cpu.read(cpu.pc++);
+    return std::tuple{cpu.read(cpu.pc++), false};
 };
 
 auto zpx = [](auto& cpu) 
 {
     auto address = cpu.read(cpu.pc++);
-    return (cpu.x + address) % 0x100;
+    return std::tuple{(cpu.x + address) % 0x100, false};
 };
 
 auto zpy = [](auto& cpu) 
 {
     auto address = cpu.read(cpu.pc++);
-    return (cpu.y + address) % 0x100;
+    return std::tuple{(cpu.y + address) % 0x100, false};
 };
 
 auto abs = [](auto& cpu) 
 {
     auto address = cpu.read_word(cpu.pc);
     cpu.pc += 2;
-    return address;
+    return std::tuple{address, false};
 };
 
 auto abx = [](auto& cpu) 
 {
-    auto address = cpu.read_word(cpu.pc) + cpu.x;
+    auto r = index(cpu.read_word(cpu.pc), cpu.x);
     cpu.pc += 2;
-    return address;
+    return r;
 };
 
 auto aby = [](auto& cpu) 
 {
-    auto address = cpu.read_word(cpu.pc) + cpu.y;
+    auto r = index(cpu.read_word(cpu.pc), cpu.y);
     cpu.pc += 2;
-    return address;
+    return r;
 };
 
 auto izx = [](auto& cpu) 
 {
-    auto index = cpu.read(cpu.pc++) + cpu.x;
-    return cpu.read_word(index);
+    auto indexed = cpu.read(cpu.pc++) + cpu.x;
+    return std::tuple{cpu.read_word(indexed), false};
 };
 
 auto izy = [](auto& cpu) 
 {
-    auto index = cpu.read(cpu.pc++);
-    return cpu.read_word(index) + cpu.y;
+    auto base = cpu.read(cpu.pc++);
+    return index(cpu.read_word(base), cpu.y);
 };
 
-auto imp = [](auto& ) -> uint8_t 
+auto imp = [](auto& ) -> std::tuple<uint16_t,bool>
 {
     throw std::logic_error("Calling operand function for implied addressing mode");
 };
@@ -263,7 +291,7 @@ cpu::cpu(std::vector<uint8_t>& memory)
 
         {0xA2, { ldx, imm, 2 }},
         {0xA6, { ldx, zp , 3 }},
-        {0xB6, { ldx, zpy, 3 }},
+        {0xB6, { ldx, zpy, 4 }},
         {0xAE, { ldx, abs, 4 }},
         {0xBE, { ldx, aby, 4, 1 }},
 
@@ -307,7 +335,7 @@ void cpu::tick()
 
         current_instruction = decode(opcode)
             .value_or(cpu::instruction{
-                [opcode](auto...) { throw unsupported_opcode(opcode); },
+                [opcode](auto...) -> bool { throw unsupported_opcode(opcode); },
                 imp
             });
     }

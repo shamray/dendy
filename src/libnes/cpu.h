@@ -32,10 +32,8 @@ public:
     void set(cpu_flag f, bool value = true) { bits_.set(pos(f), value); }
     void reset(cpu_flag f) { bits_.reset(pos(f)); }
 
-    auto value() const { return static_cast<uint8_t>(bits_.to_ulong()); }
-
-    [[nodiscard]]
-    auto test(cpu_flag f) const { return bits_.test(pos(f)); }
+    [[nodiscard]] auto test(cpu_flag f) const { return bits_.test(pos(f)); }
+    [[nodiscard]] auto value() const { return static_cast<uint8_t>(bits_.to_ulong()); }
 
 private:
     std::bitset<8> bits_;
@@ -90,11 +88,12 @@ public:
 
     struct instruction
     {
-        using fetch_address = std::function< uint16_t (cpu&) >;
-        using command       = std::function< void (cpu&, fetch_address) >;
+        using fetch_address = std::function< std::tuple<uint16_t,bool> () >;
+        using command       = std::function< bool (cpu&, fetch_address) >;
+        using address_mode  = std::function< std::tuple<uint16_t,bool> (cpu&) >;
 
         command         operation;
-        fetch_address   fetch_operand_address;
+        address_mode    fetch_operand_address;
         int             cycles {1};
         int             additional_cycles {0};
     };
@@ -121,19 +120,26 @@ public:
             if (is_finished())
                 return;
 
-            if (--c_ == 0) {
-                operation(cpu, fetch_operand_address);
+            if (c_ == 0) {
+                --ac_;
+            }
+            else if (--c_ == 0) {
+                auto add_cycle = operation(cpu, [&](){ return fetch_operand_address(cpu); });
+                if (add_cycle)
+                    ac_ = additional_cycles;
+                return;
             }
         }
 
-        [[nodiscard]] bool is_finished() const { return c_ == 0; }
+        [[nodiscard]] bool is_finished() const { return c_ == 0 && ac_ == 0; }
 
     private:
         int c_{0};
+        int ac_{0};
     };
 
     void tick();
-    void tick(int count) { for (auto i = 0; i < count; ++i) tick(); }
+    auto is_executing() { return !current_instruction.is_finished();}
 
     void write(uint16_t addr, uint8_t value) const { memory_[addr] = value; }
 
