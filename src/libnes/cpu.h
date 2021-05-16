@@ -134,7 +134,6 @@ public:
         command         operation;
         address_mode    fetch_operand_address;
         int             cycles {1};
-        int             additional_cycles {0};
     };
 
     class executable_instruction: instruction
@@ -165,7 +164,7 @@ public:
             else if (--c_ == 0) {
                 auto add_cycle = operation(cpu, [&](){ return fetch_operand_address(cpu); });
                 if (add_cycle)
-                    ac_ = additional_cycles;
+                    ac_ = 1;
                 return;
             }
         }

@@ -178,6 +178,25 @@ auto plp = [](auto& cpu, auto )
     return false;
 };
 
+auto jmp = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, _] = fetch_addr();
+    cpu.pc.assign(address);
+    return false;
+};
+
+auto jsr = [](auto& cpu, auto fetch_addr)
+{
+//    auto [address, page_crossed] = fetch_addr();
+    return false;
+};
+
+auto rts = [](auto& cpu, auto )
+{
+//    auto [address, page_crossed] = fetch_addr();
+    return false;
+};
+
 auto brk = [](auto& cpu, auto _)
 {
     // TODO: assign brake flag
@@ -227,7 +246,15 @@ auto aby = [](auto& cpu)
     return index(cpu.read_word(cpu.pc.advance(2)), cpu.y.value());
 };
 
-auto izx = [](auto& cpu) 
+auto ind = [](auto& cpu)
+{
+    auto address = cpu.read_word(cpu.pc.advance(2));
+    auto lo = cpu.read(address);
+    auto hi = cpu.read((address / 0x100) * 0x100 + (address + 1) % 0x100);
+    return std::tuple{static_cast<std::uint16_t>((hi << 8) | lo), false};
+};
+
+auto izx = [](auto& cpu)
 {
     auto indexed = cpu.read(cpu.pc.advance()) + cpu.x.value();
     return std::tuple{cpu.read_word(indexed), false};
@@ -255,10 +282,10 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0xA5, { lda, zp , 3 }},
         {0xB5, { lda, zpx, 4 }},
         {0xAD, { lda, abs, 4 }},
-        {0xBD, { lda, abx, 4, 1 }},
-        {0xB9, { lda, aby, 4, 1 }},
+        {0xBD, { lda, abx, 4 }},
+        {0xB9, { lda, aby, 4 }},
         {0xA1, { lda, izx, 6 }},
-        {0xB1, { lda, izy, 5, 1 }},
+        {0xB1, { lda, izy, 5 }},
 
         {0x85, { sta, zp , 3 }},
         {0x95, { sta, zpx, 4 }},
@@ -284,34 +311,39 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0xA6, { ldx, zp , 3 }},
         {0xB6, { ldx, zpy, 4 }},
         {0xAE, { ldx, abs, 4 }},
-        {0xBE, { ldx, aby, 4, 1 }},
+        {0xBE, { ldx, aby, 4 }},
 
         {0x69, { adc, imm, 2 }},
         {0x65, { adc, zp , 3 }},
         {0x75, { adc, zpx, 4 }},
         {0x6D, { adc, abs, 4 }},
-        {0x7D, { adc, abx, 4, 1 }},
-        {0x79, { adc, aby, 4, 1 }},
+        {0x7D, { adc, abx, 4 }},
+        {0x79, { adc, aby, 4 }},
         {0x61, { adc, izx, 6 }},
-        {0x71, { adc, izy, 5, 1 }},
+        {0x71, { adc, izy, 5 }},
 
         {0xE9, { sbc, imm, 2 }},
         {0xE5, { sbc, zp , 3 }},
         {0xF5, { sbc, zpx, 4 }},
         {0xED, { sbc, abs, 4 }},
-        {0xFD, { sbc, abx, 4, 1 }},
-        {0xF9, { sbc, aby, 4, 1 }},
+        {0xFD, { sbc, abx, 4 }},
+        {0xF9, { sbc, aby, 4 }},
         {0xE1, { sbc, izx, 6 }},
-        {0xF1, { sbc, izy, 5, 1 }},
+        {0xF1, { sbc, izy, 5 }},
 
         {0xC9, { cmp, imm, 2 }},
         {0xC5, { cmp, zp , 3 }},
         {0xD5, { cmp, zpx, 4 }},
         {0xCD, { cmp, abs, 4 }},
-        {0xDD, { cmp, abx, 4, 1 }},
-        {0xD9, { cmp, aby, 4, 1 }},
+        {0xDD, { cmp, abx, 4 }},
+        {0xD9, { cmp, aby, 4 }},
         {0xC1, { cmp, izx, 6 }},
-        {0xD1, { cmp, izy, 5, 1 }},
+        {0xD1, { cmp, izy, 5 }},
+
+        {0x4C, { jmp, abs, 3 }},
+        {0x6C, { jmp, ind, 5 }},
+        {0x20, { jsr, abs, 6 }},
+        {0x60, { rts, imp, 6 }},
 
         {0x00, { brk, imp, 7 }}
     }

@@ -647,7 +647,7 @@ TEST_CASE_METHOD(cpu_test, "SBC")
 
 TEST_CASE_METHOD(cpu_test, "CMP")
 {
-    load(prgadr, std::array{0xc9, 0x2A});
+    load(prgadr, std::array{0xc9, 0x2a});
     
     SECTION("A < M")
     {
@@ -688,4 +688,28 @@ TEST_CASE_METHOD(cpu_test, "CMP")
 
         CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
     }
+}
+
+TEST_CASE_METHOD(cpu_test, "JMP-ABS")
+{
+    load(prgadr, std::array{0x4c, 0x34, 0x12});
+    tick(3);
+    CHECK(cpu.pc.value() == 0x1234);
+}
+
+TEST_CASE_METHOD(cpu_test, "JMP-IND")
+{
+    load(prgadr, std::array{0x6c, 0x34, 0x12});
+    load(0x1234, std::array{0x78, 0x56});
+    tick(5);
+    CHECK(cpu.pc.value() == 0x5678);
+}
+
+TEST_CASE_METHOD(cpu_test, "JMP-IND (Page Crossing Bug)")
+{
+    load(prgadr, std::array{0x6c, 0xFF, 0x11});
+    load(0x11FF, std::array{0x34});
+    load(0x1100, std::array{0x12});
+    tick(5);
+    CHECK(cpu.pc.value() == 0x1234);
 }
