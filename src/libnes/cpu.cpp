@@ -131,7 +131,7 @@ auto tay = [](auto& cpu, auto )
 
 auto tsx = [](auto& cpu, auto )
 {
-    cpu.x.assign(cpu.s);
+    cpu.x.assign(cpu.s.value());
     return false;
 };
 
@@ -143,7 +143,7 @@ auto txa = [](auto& cpu, auto )
 
 auto txs = [](auto& cpu, auto )
 {
-    cpu.s = cpu.x.value();
+    cpu.s.assign(cpu.x.value());
     return false;
 };
 
@@ -155,29 +155,25 @@ auto tya = [](auto& cpu, auto )
 
 auto pha = [](auto& cpu, auto )
 {
-    auto address = uint16_t{0x0100} + cpu.s--;
-    cpu.write(address, cpu.a.value());
+    cpu.write(cpu.s.push(), cpu.a.value());
     return false;
 };
 
 auto pla = [](auto& cpu, auto )
 {
-    auto address = uint16_t{0x0100} + ++cpu.s;
-    cpu.a = cpu.read(address);
+    cpu.a = cpu.read(cpu.s.pop());
     return false;
 };
 
 auto php = [](auto& cpu, auto )
 {
-    auto address = uint16_t{0x0100} + cpu.s--;
-    cpu.write(address, cpu.p.value());
+    cpu.write(cpu.s.push(), cpu.p.value());
     return false;
 };
 
 auto plp = [](auto& cpu, auto )
 {
-    auto address = uint16_t{0x0100} + ++cpu.s;
-    auto flags_value = cpu.read(address);
+    auto flags_value = cpu.read(cpu.s.pop());
     cpu.p.assign(flags_value);
     return false;
 };

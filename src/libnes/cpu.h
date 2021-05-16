@@ -90,7 +90,25 @@ private:
     uint16_t val_;
 };
 
-using stack_register = uint8_t;
+class stack_register
+{
+public:
+    explicit stack_register(uint16_t stack_base, uint8_t initial_value)
+        : val_(initial_value)
+        , stack_base_(stack_base)
+    {}
+
+    void assign(uint8_t val) { val_ = val; }
+
+    auto push() { return stack_base_ + val_--; }
+    auto pop()  { return stack_base_ + ++val_; }
+
+    [[nodiscard]] auto value() const { return val_; }
+
+private:
+    uint8_t val_;
+    uint16_t stack_base_;
+};
 
 class cpu
 {
@@ -99,7 +117,7 @@ public:
 
     program_counter pc;
     
-    stack_register s{0xFD};
+    stack_register s{0x0100, 0xFD};
     flags_register p;
 
     arith_register a{&p};

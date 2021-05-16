@@ -48,7 +48,7 @@ public:
 TEST_CASE_METHOD(cpu_test, "Power Up")
 {
     CHECK(cpu.read_word(0xfffc) == cpu.pc.value());
-    CHECK(cpu.s == 0xfd);
+    CHECK(cpu.s.value() == 0xfd);
 }
 
 TEST_CASE_METHOD(cpu_test, "read_word")
@@ -107,7 +107,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-ZPX")
 {
     load(prgadr, std::array{0xb5, 0x10}); // LDA $10,X
 
-    cpu.x = 0x02;
+    cpu.x.assign(0x02);
     load(0x0012, std::array{0x89});
 
     tick(4);
@@ -134,14 +134,14 @@ TEST_CASE_METHOD(cpu_test, "LDA-ABX")
 
     SECTION("No Page Cross")
     {
-        cpu.x = 0x06;
+        cpu.x.assign(0x06);
         tick(4);
 
         CHECK(cpu.a.value() == 0x42);
     }
     SECTION("Page Cross")
     {
-        cpu.x = 0xFF;
+        cpu.x.assign(0xFF);
         tick(4, false);
         tick(1);
 
@@ -158,14 +158,14 @@ TEST_CASE_METHOD(cpu_test, "LDA-ABY")
 
     SECTION("No Page Cross")
     {
-        cpu.y = 0x05;
+        cpu.y.assign(0x05);
         tick(4);
 
         CHECK(cpu.a.value() == 0x42);
     }
     SECTION("Page Cross")
     {
-        cpu.y = 0xFE;
+        cpu.y.assign(0xFE);
         tick(4, false);
         tick(1);
 
@@ -177,7 +177,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-IZX")
 {
     load(prgadr, std::array{0xa1, 0x15}); // LDA ($15,X)
 
-    cpu.x = 0x02;
+    cpu.x.assign(0x02);
     load(0x0017, std::array{0x10, 0xd0}); // $D010
     load(0xd010, std::array{0x0F});
 
@@ -196,14 +196,14 @@ TEST_CASE_METHOD(cpu_test, "LDA-IZY")
 
     SECTION("No Page Cross")
     {
-        cpu.y = 0x03;
+        cpu.y.assign(0x03);
         tick(5);
 
         CHECK(cpu.a.value() == 0x2F);
     }
     SECTION("Page Cross")
     {
-        cpu.y = 0xCB;
+        cpu.y.assign(0xCB);
         tick(5, false);
         tick(1);
 
@@ -232,7 +232,7 @@ TEST_CASE_METHOD(cpu_test, "LDX-ZP")
 TEST_CASE_METHOD(cpu_test, "LDX-ZPY")
 {
     load(prgadr, std::array{0xb6, 0x10}); // LDX $10,Y
-	cpu.y = 0x03;
+	cpu.y.assign(0x03);
     load(0x0013, std::array{0x77});
     tick(4);
 
@@ -241,7 +241,7 @@ TEST_CASE_METHOD(cpu_test, "LDX-ZPY")
 
 TEST_CASE_METHOD(cpu_test, "LDA-ZPX-Overflow")
 {
-    cpu.x = 0x01;
+    cpu.x.assign(0x01);
     load(0x0000, std::array{0x77});
     load(prgadr, std::array{0xb5, 0xff}); // LDX $10,Y
     tick(4);
@@ -263,7 +263,7 @@ TEST_CASE_METHOD(cpu_test, "LDX-ABY")
 {
     load(prgadr, std::array{0xbe, 0x0B, 0xd0}); // LDX $D00B,Y
 
-    cpu.y = 0x05;
+    cpu.y.assign(0x05);
     load(0xd010, std::array{0x42});
 
     tick(4);
@@ -295,7 +295,7 @@ TEST_CASE_METHOD(cpu_test, "LDX-Flags")
 TEST_CASE_METHOD(cpu_test, "STA-ZP")
 {
     load(prgadr, std::array{0x85, 0x10}); // STA $10
-    cpu.a = 0x42;
+    cpu.a.assign(0x42);
 
     tick(3);
 
@@ -305,7 +305,7 @@ TEST_CASE_METHOD(cpu_test, "STA-ZP")
 TEST_CASE_METHOD(cpu_test, "STA-ABS")
 {
     load(prgadr, std::array{0x8d, 0x77, 0xd0}); // STA $D077
-    cpu.a = 0x55;
+    cpu.a.assign(0x55);
 
     tick(4);
 
@@ -315,8 +315,8 @@ TEST_CASE_METHOD(cpu_test, "STA-ABS")
 TEST_CASE_METHOD(cpu_test, "TAX")
 {
     load(prgadr, std::array{0xaa}); // TAX
-    cpu.a = 0xDA;
-    cpu.x = 0x00;
+    cpu.a.assign(0xDA);
+    cpu.x.assign(0x00);
 
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
     tick(2);
@@ -328,8 +328,8 @@ TEST_CASE_METHOD(cpu_test, "TAX")
 TEST_CASE_METHOD(cpu_test, "TXA")
 {
     load(prgadr, std::array{0x8a}); // TXA
-    cpu.x = 0xDA;
-    cpu.a = 0x00;
+    cpu.x.assign(0xDA);
+    cpu.a.assign(0x00);
 
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
     tick(2);
@@ -341,8 +341,8 @@ TEST_CASE_METHOD(cpu_test, "TXA")
 TEST_CASE_METHOD(cpu_test, "TAY")
 {
     load(prgadr, std::array{0xa8}); // TAY
-    cpu.a = 0xDA;
-    cpu.y = 0x00;
+    cpu.a.assign(0xDA);
+    cpu.y.assign(0x00);
 
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
     tick(2);
@@ -354,8 +354,8 @@ TEST_CASE_METHOD(cpu_test, "TAY")
 TEST_CASE_METHOD(cpu_test, "TYA")
 {
     load(prgadr, std::array{0x98}); // TYA
-    cpu.y = 0xDA;
-    cpu.a = 0x00;
+    cpu.y.assign(0xDA);
+    cpu.a.assign(0x00);
 
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
     tick(2);
@@ -367,46 +367,46 @@ TEST_CASE_METHOD(cpu_test, "TYA")
 TEST_CASE_METHOD(cpu_test, "TSX")
 {
     load(prgadr, std::array{0xba}); // TSX
-    cpu.s = 0xDA;
-    cpu.x = 0x00;
+    cpu.s.assign(0xDA);
+    cpu.x.assign(0x00);
 
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
     tick(2);
 
-    CHECK(cpu.x.value() == cpu.s);
+    CHECK(cpu.x.value() == cpu.s.value());
     CHECK(cpu.p.test(nes::cpu_flag::negative));
 }
 
 TEST_CASE_METHOD(cpu_test, "TXS")
 {
     load(prgadr, std::array{0x9a}); // TXS
-    cpu.s = 0x00;
-    cpu.x = 0xDA;
+    cpu.s.assign(0x00);
+    cpu.x.assign(0xDA);
 
     cpu.p.reset(nes::cpu_flag::negative);
     tick(2);
 
-    CHECK(cpu.s == cpu.x.value());
+    CHECK(cpu.s.value() == cpu.x.value());
     CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
 }
 
 TEST_CASE_METHOD(cpu_test, "PHA")
 {
     load(prgadr, std::array{0x48}); // PHA
-    cpu.a = 0x55;
+    cpu.a.assign(0x55);
 
-    REQUIRE(cpu.s == 0xfd);
+    REQUIRE(cpu.s.value() == 0xfd);
 
     tick(3);
 
-    CHECK(cpu.s == 0xfc);
+    CHECK(cpu.s.value() == 0xfc);
     CHECK(mem[0x01fd] == 0x55);
 }
 
 TEST_CASE_METHOD(cpu_test, "PLA")
 {
     load(prgadr, std::array{0x68}); // PLA
-    cpu.s = 0xfc;
+    cpu.s.assign(0xfc);
 
     SECTION("positive")
     {
@@ -447,7 +447,7 @@ TEST_CASE_METHOD(cpu_test, "PHP")
 
     tick(3);
 
-    CHECK(cpu.s == 0xfc);
+    CHECK(cpu.s.value() == 0xfc);
     CHECK(mem[0x01fd] == 0x42);
 }
 
@@ -455,13 +455,13 @@ TEST_CASE_METHOD(cpu_test, "PLP")
 {
     load(prgadr, std::array{0x28}); // PLP
     load(0x01fd, std::array{0xDF}); // all flags
-    cpu.s = 0xfc;
+    cpu.s.assign(0xfc);
 
     REQUIRE(cpu.p.value() == 0x00);
 
     tick(4);
 
-    CHECK(cpu.s == 0xfd);
+    CHECK(cpu.s.value() == 0xfd);
     CHECK(cpu.p.test(nes::cpu_flag::carry));
     CHECK(cpu.p.test(nes::cpu_flag::zero));
     CHECK(cpu.p.test(nes::cpu_flag::int_disable));
@@ -477,7 +477,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
 
     SECTION("A = A + M")
     {
-        cpu.a = 0x04;
+        cpu.a.assign(0x04);
         tick(2);
 
         CHECK(cpu.a.value() == 0x0B); // 4 + 7 == 11
@@ -489,7 +489,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
 
     SECTION("A = A + M == 0")
     {
-        cpu.a = 0xF9;
+        cpu.a.assign(0xF9);
         tick(2);
 
         CHECK(cpu.a.value() == 0x00); // 7 + (-7) == 0
@@ -498,7 +498,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
 
     SECTION("A = A + M < 0")
     {
-        cpu.a = 0xE3;
+        cpu.a.assign(0xE3);
         tick(2);
 
         CHECK(cpu.a.value() == 0xEA); // 7 + (-29) == -22
@@ -507,7 +507,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
 
     SECTION("A = A + M + C")
     {
-        cpu.a = 0x04;
+        cpu.a.assign(0x04);
         cpu.p.set(nes::cpu_flag::carry);
         tick(2);
 
@@ -516,7 +516,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
 
     SECTION("C,A = A + M")
     {
-        cpu.a = 0xFF;
+        cpu.a.assign(0xFF);
         tick(2);
 
         CHECK(cpu.a.value() == 0x06); // 255 + 7 == 6 + carry
@@ -525,7 +525,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
 
     SECTION("Overflow: [+] + [+] = [-]")
     {
-        cpu.a = 0x7D;
+        cpu.a.assign(0x7D);
         tick(2);
 
         CHECK(cpu.a.value() == 0x84); // 132 + 7 == "-84"
@@ -535,7 +535,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
     SECTION("Overflow: [-] + [-] = [+]")
     {
         load(prgadr, std::array{0x69, 0xFE});
-        cpu.a = 0x80;
+        cpu.a.assign(0x80);
         tick(2);
 
         CHECK(cpu.a.value() == 0x7E); // -2 + (-128) == "+7E"
@@ -548,8 +548,8 @@ TEST_CASE_METHOD(cpu_test, "ADC-ABX")
 {
     load(prgadr, std::array{0x7d, 0x01, 0xc0}); // ADC $C001,X
     load(0xc003, std::array{0x5a});
-    cpu.x = 0x02;
-    cpu.a = 0x01;
+    cpu.x.assign(0x02);
+    cpu.a.assign(0x01);
 
     tick(4);
     CHECK(cpu.a.value() == 0x5b);
@@ -565,8 +565,8 @@ TEST_CASE_METHOD(cpu_test, "SBC")
 
     SECTION("0x50-0xf0=0x60")
     {
-        cpu.y = 0x50;
-        cpu.a = 0xf0;
+        cpu.y.assign(0x50);
+        cpu.a.assign(0xf0);
 
         tick(program_cycles);
         CHECK(cpu.a.value() == 0x60);
@@ -575,8 +575,8 @@ TEST_CASE_METHOD(cpu_test, "SBC")
     }
     SECTION("0x50-0xb0=0xa0")
     {
-        cpu.y = 0x50;
-        cpu.a = 0xb0;
+        cpu.y.assign(0x50);
+        cpu.a.assign(0xb0);
 
         tick(program_cycles);
         CHECK(cpu.a.value() == 0xa0);
@@ -585,8 +585,8 @@ TEST_CASE_METHOD(cpu_test, "SBC")
     }
     SECTION("0x50-0x70=0xe0")
     {
-        cpu.y = 0x50;
-        cpu.a = 0x70;
+        cpu.y.assign(0x50);
+        cpu.a.assign(0x70);
 
         tick(program_cycles);
         CHECK(cpu.a.value() == 0xe0);
@@ -595,8 +595,8 @@ TEST_CASE_METHOD(cpu_test, "SBC")
     }
     SECTION("0x50-0x30=0x20")
     {
-        cpu.y = 0x50;
-        cpu.a = 0x30;
+        cpu.y.assign(0x50);
+        cpu.a.assign(0x30);
 
         tick(program_cycles);
         CHECK(cpu.a.value() == 0x20);
@@ -605,8 +605,8 @@ TEST_CASE_METHOD(cpu_test, "SBC")
     }
     SECTION("0xd0-0xf0=0xe0")
     {
-        cpu.y = 0xd0;
-        cpu.a = 0xf0;
+        cpu.y.assign(0xd0);
+        cpu.a.assign(0xf0);
 
         tick(program_cycles);
         CHECK(cpu.a.value() == 0xe0);
@@ -615,8 +615,8 @@ TEST_CASE_METHOD(cpu_test, "SBC")
     }
     SECTION("0xd0-0xb0=0x20")
     {
-        cpu.y = 0xd0;
-        cpu.a = 0xb0;
+        cpu.y.assign(0xd0);
+        cpu.a.assign(0xb0);
 
         tick(program_cycles);
         CHECK(cpu.a.value() == 0x20);
@@ -625,8 +625,8 @@ TEST_CASE_METHOD(cpu_test, "SBC")
     }
     SECTION("0xd0-0x70=0x60")
     {
-        cpu.y = 0xd0;
-        cpu.a = 0x70;
+        cpu.y.assign(0xd0);
+        cpu.a.assign(0x70);
 
         tick(program_cycles);
         CHECK(cpu.a.value() == 0x60);
@@ -635,8 +635,8 @@ TEST_CASE_METHOD(cpu_test, "SBC")
     }
     SECTION("0xd0-0x30=0xa0")
     {
-        cpu.y = 0xd0;
-        cpu.a = 0x30;
+        cpu.y.assign(0xd0);
+        cpu.a.assign(0x30);
 
         tick(program_cycles);
         CHECK(cpu.a.value() == 0xa0);
@@ -651,7 +651,7 @@ TEST_CASE_METHOD(cpu_test, "CMP")
     
     SECTION("A < M")
     {
-        cpu.a = 0x29;
+        cpu.a.assign(0x29);
         tick(2);
 
         CHECK       (cpu.p.test(nes::cpu_flag::negative));
@@ -661,7 +661,7 @@ TEST_CASE_METHOD(cpu_test, "CMP")
     }
     SECTION("A = M")
     {
-        cpu.a = 0x2A;
+        cpu.a.assign(0x2A);
         tick(2);
 
         CHECK_FALSE (cpu.p.test(nes::cpu_flag::negative));
@@ -671,7 +671,7 @@ TEST_CASE_METHOD(cpu_test, "CMP")
     }
     SECTION("A > M")
     {
-        cpu.a = 0x2B;
+        cpu.a.assign(0x2B);
         tick(2);
 
         CHECK_FALSE (cpu.p.test(nes::cpu_flag::negative));
@@ -683,7 +683,7 @@ TEST_CASE_METHOD(cpu_test, "CMP")
     {
         load(prgadr, std::array{0xc9, 0xd0});
 
-        cpu.a = 0x70;
+        cpu.a.assign(0x70);
         tick(2);
 
         CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
