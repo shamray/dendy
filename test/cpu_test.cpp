@@ -79,7 +79,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-Flags")
 
     SECTION("Negative")
     {
-        load(prgadr, std::array{0xa9, 0xFF}); // LDA #$FF
+        load(prgadr, std::array{0xa9, 0xff}); // LDA #$FF
         tick(2);
 
         CHECK(cpu.p.test(nes::cpu_flag::negative));
@@ -141,7 +141,7 @@ TEST_CASE_METHOD(cpu_test, "LDA-ABX")
     }
     SECTION("Page Cross")
     {
-        cpu.x.assign(0xFF);
+        cpu.x.assign(0xff);
         tick(4, false);
         tick(1);
 
@@ -284,7 +284,7 @@ TEST_CASE_METHOD(cpu_test, "LDX-Flags")
 
     SECTION("Negative")
     {
-        load(prgadr, std::array{0xa2, 0xFF}); // LDX #$FF
+        load(prgadr, std::array{0xa2, 0xff}); // LDX #$FF
         tick(2);
 
         CHECK(cpu.p.test(nes::cpu_flag::negative));
@@ -315,7 +315,7 @@ TEST_CASE_METHOD(cpu_test, "STA-ABS")
 TEST_CASE_METHOD(cpu_test, "TAX")
 {
     load(prgadr, std::array{0xaa}); // TAX
-    cpu.a.assign(0xDA);
+    cpu.a.assign(0xdA);
     cpu.x.assign(0x00);
 
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
@@ -328,7 +328,7 @@ TEST_CASE_METHOD(cpu_test, "TAX")
 TEST_CASE_METHOD(cpu_test, "TXA")
 {
     load(prgadr, std::array{0x8a}); // TXA
-    cpu.x.assign(0xDA);
+    cpu.x.assign(0xdA);
     cpu.a.assign(0x00);
 
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
@@ -341,7 +341,7 @@ TEST_CASE_METHOD(cpu_test, "TXA")
 TEST_CASE_METHOD(cpu_test, "TAY")
 {
     load(prgadr, std::array{0xa8}); // TAY
-    cpu.a.assign(0xDA);
+    cpu.a.assign(0xdA);
     cpu.y.assign(0x00);
 
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
@@ -354,7 +354,7 @@ TEST_CASE_METHOD(cpu_test, "TAY")
 TEST_CASE_METHOD(cpu_test, "TYA")
 {
     load(prgadr, std::array{0x98}); // TYA
-    cpu.y.assign(0xDA);
+    cpu.y.assign(0xdA);
     cpu.a.assign(0x00);
 
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
@@ -367,7 +367,7 @@ TEST_CASE_METHOD(cpu_test, "TYA")
 TEST_CASE_METHOD(cpu_test, "TSX")
 {
     load(prgadr, std::array{0xba}); // TSX
-    cpu.s.assign(0xDA);
+    cpu.s.assign(0xdA);
     cpu.x.assign(0x00);
 
     REQUIRE_FALSE(cpu.p.test(nes::cpu_flag::negative));
@@ -381,7 +381,7 @@ TEST_CASE_METHOD(cpu_test, "TXS")
 {
     load(prgadr, std::array{0x9a}); // TXS
     cpu.s.assign(0x00);
-    cpu.x.assign(0xDA);
+    cpu.x.assign(0xdA);
 
     cpu.p.reset(nes::cpu_flag::negative);
     tick(2);
@@ -516,7 +516,7 @@ TEST_CASE_METHOD(cpu_test, "ADC-IMM")
 
     SECTION("C,A = A + M")
     {
-        cpu.a.assign(0xFF);
+        cpu.a.assign(0xff);
         tick(2);
 
         CHECK(cpu.a.value() == 0x06); // 255 + 7 == 6 + carry
@@ -707,9 +707,33 @@ TEST_CASE_METHOD(cpu_test, "JMP-IND")
 
 TEST_CASE_METHOD(cpu_test, "JMP-IND (Page Crossing Bug)")
 {
-    load(prgadr, std::array{0x6c, 0xFF, 0x11});
+    load(prgadr, std::array{0x6c, 0xff, 0x11});
     load(0x11FF, std::array{0x34});
     load(0x1100, std::array{0x12});
     tick(5);
     CHECK(cpu.pc.value() == 0x1234);
+}
+
+TEST_CASE_METHOD(cpu_test, "JSR")
+{
+    load(prgadr, std::array{0x20, 0x00, 0xa0});
+    tick(6);
+
+    CHECK(cpu.pc.value() == 0xa000);
+
+    CHECK(cpu.s.value() == 0xfb);
+    CHECK(mem[0x1fd] == 0x80);
+    CHECK(mem[0x1fc] == 0x02);
+}
+
+TEST_CASE_METHOD(cpu_test, "RTS")
+{
+    load(prgadr, std::array{0x60});
+    load(0x1fd, std::array{0xb0});
+    load(0x1fc, std::array{0x02});
+    cpu.s.assign(0xfb);
+    tick(6);
+
+    CHECK(cpu.pc.value() == 0xb003);
+    CHECK(cpu.s.value() == 0xfd);
 }

@@ -84,6 +84,9 @@ public:
         return old;
     }
 
+    [[nodiscard]] auto hi() const { return static_cast<uint8_t>(val_ >> 8); }
+    [[nodiscard]] auto lo() const { return static_cast<uint8_t>(val_ & 0xFF); }
+
     [[nodiscard]] auto value() const { return val_; }
 
 private:

@@ -187,13 +187,19 @@ auto jmp = [](auto& cpu, auto fetch_addr)
 
 auto jsr = [](auto& cpu, auto fetch_addr)
 {
-//    auto [address, page_crossed] = fetch_addr();
+    auto [address, _] = fetch_addr();
+    cpu.write(cpu.s.push(), cpu.pc.hi());
+    cpu.write(cpu.s.push(), cpu.pc.lo() - 1);
+    cpu.pc.assign(address);
     return false;
 };
 
 auto rts = [](auto& cpu, auto )
 {
-//    auto [address, page_crossed] = fetch_addr();
+    auto lo = cpu.read(cpu.s.pop());
+    auto hi = cpu.read(cpu.s.pop());
+    auto address = (hi << 8) | lo;
+    cpu.pc.assign(address + 1);
     return false;
 };
 
