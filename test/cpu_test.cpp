@@ -179,11 +179,24 @@ TEST_CASE_METHOD(cpu_test, "LDA-IZX")
 
     cpu.x.assign(0x02);
     load(0x0017, std::array{0x10, 0xd0}); // $D010
-    load(0xd010, std::array{0x0F});
+    load(0xd010, std::array{0x0f});
 
     tick(6);
 
-    CHECK(cpu.a.value() == 0x0F);
+    CHECK(cpu.a.value() == 0x0f);
+}
+
+TEST_CASE_METHOD(cpu_test, "LDA-IZX, X > 128")
+{
+    load(prgadr, std::array{0xa1, 0x15}); // LDA ($15,X)
+
+    cpu.x.assign(0xc2);
+    load(0x00d7, std::array{0x10, 0xd0}); // $D010
+    load(0xd010, std::array{0x0f});
+
+    tick(6);
+
+    CHECK(cpu.a.value() == 0x0f);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDA-IZY")
@@ -736,4 +749,31 @@ TEST_CASE_METHOD(cpu_test, "RTS")
 
     CHECK(cpu.pc.value() == 0xb003);
     CHECK(cpu.s.value() == 0xfd);
+}
+
+TEST_CASE_METHOD(cpu_test, "BPL, offset > 0")
+{
+    load(prgadr, std::array{0x10, 0x20}); // +32
+
+    SECTION("Branch")
+    {
+        cpu.p.reset(nes::cpu_flag::negative);
+        tick(3);
+        CHECK(cpu.pc.value() == 0x8020);
+    }
+    SECTION("Else")
+    {
+        cpu.p.set(nes::cpu_flag::negative);
+        tick(2);
+        CHECK(cpu.pc.value() == 0x8002);
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "BPL, offset < 0, page cross")
+{
+    load(prgadr, std::array{0x10, 0xce}); // -32
+
+    cpu.p.reset(nes::cpu_flag::negative);
+    tick(4);
+    CHECK(cpu.pc.value() == 0x7fce);
 }

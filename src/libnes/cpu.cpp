@@ -32,9 +32,9 @@ auto is_page_crossed(uint16_t base, uint16_t effective_address)
     return (base & 0xFF00) != (effective_address & 0xFF00);
 }
 
-auto index(uint16_t base, uint8_t offset)
+auto index(uint16_t base, int16_t offset)
 {
-    auto address = base + offset;
+    uint16_t address = int(base) + offset;
     auto additional_cycles = is_page_crossed(base, address) ? 1 : 0;
 
     return std::tuple{address, additional_cycles};
@@ -180,14 +180,57 @@ auto plp = [](auto& cpu, auto )
     return 0;
 };
 
-auto bpl = [](auto& cpu, auto fetch_addr) { return 0; };
-auto bmi = [](auto& cpu, auto fetch_addr) { return 0; };
-auto bvc = [](auto& cpu, auto fetch_addr) { return 0; };
-auto bvs = [](auto& cpu, auto fetch_addr) { return 0; };
-auto bcc = [](auto& cpu, auto fetch_addr) { return 0; };
-auto bcs = [](auto& cpu, auto fetch_addr) { return 0; };
-auto bne = [](auto& cpu, auto fetch_addr) { return 0; };
-auto beq = [](auto& cpu, auto fetch_addr) { return 0; };
+auto bpl = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, additional_cycles] = fetch_addr();
+    if (cpu.p.test(cpu_flag::negative)) {
+        return additional_cycles;
+    }
+    cpu.pc.assign(address);
+    return additional_cycles + 1;
+};
+
+auto bmi = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, additional_cycles] = fetch_addr();
+    return additional_cycles;
+};
+
+auto bvc = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, additional_cycles] = fetch_addr();
+    return additional_cycles;
+};
+
+auto bvs = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, additional_cycles] = fetch_addr();
+    return additional_cycles;
+};
+
+auto bcc = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, additional_cycles] = fetch_addr();
+    return additional_cycles;
+};
+
+auto bcs = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, additional_cycles] = fetch_addr();
+    return additional_cycles;
+};
+
+auto bne = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, additional_cycles] = fetch_addr();
+    return additional_cycles;
+};
+
+auto beq = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, additional_cycles] = fetch_addr();
+    return additional_cycles;
+};
 
 auto jmp = [](auto& cpu, auto fetch_addr)
 {
@@ -298,7 +341,9 @@ auto izy = [](auto& cpu)
 
 auto rel = [](auto& cpu)
 {
-    return std::tuple{uint16_t(), 0};
+    auto instruction_address = cpu.pc.value() - 1;
+    auto offset = cpu.read_signed(cpu.pc.advance());
+    return index(instruction_address, offset);
 };
 
 auto imp = [](auto& ) -> std::tuple<uint16_t,bool>
