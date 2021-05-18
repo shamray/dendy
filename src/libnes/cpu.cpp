@@ -100,6 +100,7 @@ auto inc = [](auto& cpu, auto fetch_addr)
     auto [address, _] = fetch_addr();
     auto operand = cpu.read(address);
 
+    cpu.write(address, operand + 1);
     return 0;
 };
 
@@ -108,26 +109,31 @@ auto dec = [](auto& cpu, auto fetch_addr)
     auto [address, _] = fetch_addr();
     auto operand = cpu.read(address);
 
+    cpu.write(address, operand - 1);
     return 0;
 };
 
 auto inx = [](auto& cpu, auto )
 {
+    cpu.x.assign(cpu.x.value() + 1);
     return 0;
 };
 
 auto iny = [](auto& cpu, auto )
 {
+    cpu.y.assign(cpu.y.value() + 1);
     return 0;
 };
 
 auto dex = [](auto& cpu, auto )
 {
+    cpu.x.assign(cpu.x.value() - 1);
     return 0;
 };
 
 auto dey = [](auto& cpu, auto )
 {
+    cpu.y.assign(cpu.y.value() - 1);
     return 0;
 };
 
@@ -534,8 +540,8 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0xE8, { inx, imp, 2 }},
         {0xC8, { iny, imp, 2 }},
 
-        {0xE8, { dex, imp, 2 }},
-        {0xC8, { dey, imp, 2 }},
+        {0xCA, { dex, imp, 2 }},
+        {0x88, { dey, imp, 2 }},
 
         {0x29, { ana, imm, 2 }},
         {0x25, { ana, zp , 3 }},

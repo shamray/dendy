@@ -974,3 +974,79 @@ TEST_CASE_METHOD(cpu_test, "BIT")
         CHECK      (cpu.p.test(nes::cpu_flag::negative));
     }
 }
+
+TEST_CASE_METHOD(cpu_test, "INC")
+{
+    load(prgadr, std::array{0xfe, 0x80, 0xf0}); // INC $F080,X
+    load(0xf081, std::array{0x33});
+    load(0xf120, std::array{0x75});
+
+    SECTION("Page Cross")
+    {
+        cpu.x.assign(0x01);
+        tick(7);
+        CHECK(mem[0xf081] == 0x34);
+    }
+    SECTION("No Page Cross")
+    {
+        cpu.x.assign(0xa0);
+        tick(7);
+        CHECK(mem[0xf120] == 0x76);
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "DEC")
+{
+    load(prgadr, std::array{0xde, 0x80, 0xf0}); // DEC $F080,X
+    load(0xf081, std::array{0x33});
+    load(0xf120, std::array{0x75});
+
+    SECTION("Page Cross")
+    {
+        cpu.x.assign(0x01);
+        tick(7);
+        CHECK(mem[0xf081] == 0x32);
+    }
+    SECTION("No Page Cross")
+    {
+        cpu.x.assign(0xa0);
+        tick(7);
+        CHECK(mem[0xf120] == 0x74);
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "INX")
+{
+    load(prgadr, std::array{0xe8}); // INX
+    cpu.x.assign(0x42);
+
+    tick(2);
+    CHECK((int)cpu.x.value() == 0x43);
+}
+
+TEST_CASE_METHOD(cpu_test, "DEX")
+{
+    load(prgadr, std::array{0xca}); // INX
+    cpu.x.assign(0x42);
+
+    tick(2);
+    CHECK((int)cpu.x.value() == 0x41);
+}
+
+TEST_CASE_METHOD(cpu_test, "INY")
+{
+    load(prgadr, std::array{0xc8}); // INY
+    cpu.y.assign(0x42);
+
+    tick(2);
+    CHECK((int)cpu.y.value() == 0x43);
+}
+
+TEST_CASE_METHOD(cpu_test, "DEY")
+{
+    load(prgadr, std::array{0x88}); // DEY
+    cpu.y.assign(0x42);
+
+    tick(2);
+    CHECK((int)cpu.y.value() == 0x41);
+}
