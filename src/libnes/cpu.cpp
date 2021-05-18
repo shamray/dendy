@@ -180,6 +180,15 @@ auto plp = [](auto& cpu, auto )
     return 0;
 };
 
+auto bpl = [](auto& cpu, auto fetch_addr) { return 0; };
+auto bmi = [](auto& cpu, auto fetch_addr) { return 0; };
+auto bvc = [](auto& cpu, auto fetch_addr) { return 0; };
+auto bvs = [](auto& cpu, auto fetch_addr) { return 0; };
+auto bcc = [](auto& cpu, auto fetch_addr) { return 0; };
+auto bcs = [](auto& cpu, auto fetch_addr) { return 0; };
+auto bne = [](auto& cpu, auto fetch_addr) { return 0; };
+auto beq = [](auto& cpu, auto fetch_addr) { return 0; };
+
 auto jmp = [](auto& cpu, auto fetch_addr)
 {
     auto [address, _] = fetch_addr();
@@ -287,6 +296,11 @@ auto izy = [](auto& cpu)
     return index(cpu.read_word(base), cpu.y.value());
 };
 
+auto rel = [](auto& cpu)
+{
+    return std::tuple{uint16_t(), 0};
+};
+
 auto imp = [](auto& ) -> std::tuple<uint16_t,bool>
 {
     throw std::logic_error("Calling operand function for implied addressing mode");
@@ -360,6 +374,15 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0xD9, { cmp, aby, 4 }},
         {0xC1, { cmp, izx, 6 }},
         {0xD1, { cmp, izy, 5 }},
+
+        {0x10, { bpl, rel, 2 }},
+        {0x30, { bmi, rel, 2 }},
+        {0x50, { bvc, rel, 2 }},
+        {0x70, { bvs, rel, 2 }},
+        {0x90, { bcc, rel, 2 }},
+        {0xB0, { bcs, rel, 2 }},
+        {0xD0, { bne, rel, 2 }},
+        {0xF0, { beq, rel, 2 }},
 
         {0x4C, { jmp, abs, 3 }},
         {0x6C, { jmp, ind, 5 }},
