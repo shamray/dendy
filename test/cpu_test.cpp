@@ -777,3 +777,129 @@ TEST_CASE_METHOD(cpu_test, "BPL, offset < 0, page cross")
     tick(4);
     CHECK(cpu.pc.value() == 0x7fce);
 }
+
+TEST_CASE_METHOD(cpu_test, "BMI")
+{
+    load(prgadr, std::array{0x30, 0x20});
+
+    SECTION("Branch")
+    {
+        cpu.p.set(nes::cpu_flag::negative);
+        tick(3);
+        CHECK(cpu.pc.value() == 0x8020);
+    }
+    SECTION("Else")
+    {
+        cpu.p.reset(nes::cpu_flag::negative);
+        tick(2);
+        CHECK(cpu.pc.value() == 0x8002);
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "BVC")
+{
+    load(prgadr, std::array{0x50, 0x20});
+
+    SECTION("Branch")
+    {
+        cpu.p.reset(nes::cpu_flag::overflow);
+        tick(3);
+        CHECK(cpu.pc.value() == 0x8020);
+    }
+    SECTION("Else")
+    {
+        cpu.p.set(nes::cpu_flag::overflow);
+        tick(2);
+        CHECK(cpu.pc.value() == 0x8002);
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "BVS")
+{
+    load(prgadr, std::array{0x70, 0x20});
+
+    SECTION("Branch")
+    {
+        cpu.p.set(nes::cpu_flag::overflow);
+        tick(3);
+        CHECK(cpu.pc.value() == 0x8020);
+    }
+    SECTION("Else")
+    {
+        cpu.p.reset(nes::cpu_flag::overflow);
+        tick(2);
+        CHECK(cpu.pc.value() == 0x8002);
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "BCC")
+{
+    load(prgadr, std::array{0x90, 0x20});
+
+    SECTION("Branch")
+    {
+        cpu.p.reset(nes::cpu_flag::carry);
+        tick(3);
+        CHECK(cpu.pc.value() == 0x8020);
+    }
+    SECTION("Else")
+    {
+        cpu.p.set(nes::cpu_flag::carry);
+        tick(2);
+        CHECK(cpu.pc.value() == 0x8002);
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "BCS")
+{
+    load(prgadr, std::array{0xb0, 0x20});
+
+    SECTION("Branch")
+    {
+        cpu.p.set(nes::cpu_flag::carry);
+        tick(3);
+        CHECK(cpu.pc.value() == 0x8020);
+    }
+    SECTION("Else")
+    {
+        cpu.p.reset(nes::cpu_flag::carry);
+        tick(2);
+        CHECK(cpu.pc.value() == 0x8002);
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "BNE")
+{
+    load(prgadr, std::array{0xd0, 0x20});
+
+    SECTION("Branch")
+    {
+        cpu.p.reset(nes::cpu_flag::zero);
+        tick(3);
+        CHECK(cpu.pc.value() == 0x8020);
+    }
+    SECTION("Else")
+    {
+        cpu.p.set(nes::cpu_flag::zero);
+        tick(2);
+        CHECK(cpu.pc.value() == 0x8002);
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "BEQ")
+{
+    load(prgadr, std::array{0xf0, 0x20});
+
+    SECTION("Branch")
+    {
+        cpu.p.set(nes::cpu_flag::zero);
+        tick(3);
+        CHECK(cpu.pc.value() == 0x8020);
+    }
+    SECTION("Else")
+    {
+        cpu.p.reset(nes::cpu_flag::zero);
+        tick(2);
+        CHECK(cpu.pc.value() == 0x8002);
+    }
+}

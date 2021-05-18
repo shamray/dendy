@@ -193,43 +193,71 @@ auto bpl = [](auto& cpu, auto fetch_addr)
 auto bmi = [](auto& cpu, auto fetch_addr)
 {
     auto [address, additional_cycles] = fetch_addr();
-    return additional_cycles;
+    if (!cpu.p.test(cpu_flag::negative)) {
+        return additional_cycles;
+    }
+    cpu.pc.assign(address);
+    return additional_cycles + 1;
 };
 
 auto bvc = [](auto& cpu, auto fetch_addr)
 {
     auto [address, additional_cycles] = fetch_addr();
-    return additional_cycles;
+    if (cpu.p.test(cpu_flag::overflow)) {
+        return additional_cycles;
+    }
+    cpu.pc.assign(address);
+    return additional_cycles + 1;
 };
 
 auto bvs = [](auto& cpu, auto fetch_addr)
 {
     auto [address, additional_cycles] = fetch_addr();
-    return additional_cycles;
+    if (!cpu.p.test(cpu_flag::overflow)) {
+        return additional_cycles;
+    }
+    cpu.pc.assign(address);
+    return additional_cycles + 1;
 };
 
 auto bcc = [](auto& cpu, auto fetch_addr)
 {
     auto [address, additional_cycles] = fetch_addr();
-    return additional_cycles;
+    if (cpu.p.test(cpu_flag::carry)) {
+        return additional_cycles;
+    }
+    cpu.pc.assign(address);
+    return additional_cycles + 1;
 };
 
 auto bcs = [](auto& cpu, auto fetch_addr)
 {
     auto [address, additional_cycles] = fetch_addr();
-    return additional_cycles;
+    if (!cpu.p.test(cpu_flag::carry)) {
+        return additional_cycles;
+    }
+    cpu.pc.assign(address);
+    return additional_cycles + 1;
 };
 
 auto bne = [](auto& cpu, auto fetch_addr)
 {
     auto [address, additional_cycles] = fetch_addr();
-    return additional_cycles;
+    if (cpu.p.test(cpu_flag::zero)) {
+        return additional_cycles;
+    }
+    cpu.pc.assign(address);
+    return additional_cycles + 1;
 };
 
 auto beq = [](auto& cpu, auto fetch_addr)
 {
     auto [address, additional_cycles] = fetch_addr();
-    return additional_cycles;
+    if (!cpu.p.test(cpu_flag::zero)) {
+        return additional_cycles;
+    }
+    cpu.pc.assign(address);
+    return additional_cycles + 1;
 };
 
 auto jmp = [](auto& cpu, auto fetch_addr)
