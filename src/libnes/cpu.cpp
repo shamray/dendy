@@ -95,6 +95,42 @@ auto cmp = [](auto& cpu, auto fetch_addr)
     return additional_cycles;
 };
 
+auto inc = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, _] = fetch_addr();
+    auto operand = cpu.read(address);
+
+    return 0;
+};
+
+auto dec = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, _] = fetch_addr();
+    auto operand = cpu.read(address);
+
+    return 0;
+};
+
+auto inx = [](auto& cpu, auto )
+{
+    return 0;
+};
+
+auto iny = [](auto& cpu, auto )
+{
+    return 0;
+};
+
+auto dex = [](auto& cpu, auto )
+{
+    return 0;
+};
+
+auto dey = [](auto& cpu, auto )
+{
+    return 0;
+};
+
 auto ana = [](auto& cpu, auto fetch_addr)
 {
     auto [address, additional_cycles] = fetch_addr();
@@ -484,6 +520,22 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0xD9, { cmp, aby, 4 }},
         {0xC1, { cmp, izx, 6 }},
         {0xD1, { cmp, izy, 5 }},
+
+        {0xE6, { inc, zp , 5 }},
+        {0xF6, { inc, zpx, 6 }},
+        {0xEE, { inc, abs, 6 }},
+        {0xFE, { inc, abx, 7 }},
+
+        {0xC6, { dec, zp , 5 }},
+        {0xD6, { dec, zpx, 6 }},
+        {0xCE, { dec, abs, 6 }},
+        {0xDE, { dec, abx, 7 }},
+
+        {0xE8, { inx, imp, 2 }},
+        {0xC8, { iny, imp, 2 }},
+
+        {0xE8, { dex, imp, 2 }},
+        {0xC8, { dey, imp, 2 }},
 
         {0x29, { ana, imm, 2 }},
         {0x25, { ana, zp , 3 }},
