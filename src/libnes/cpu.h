@@ -130,8 +130,8 @@ public:
 
     struct instruction
     {
-        using fetch_address = std::function< std::tuple<uint16_t,bool> () >;
-        using command       = std::function< bool (cpu&, fetch_address) >;
+        using fetch_address = std::function< std::tuple<uint16_t,int> () >;
+        using command       = std::function< int (cpu&, fetch_address) >;
         using address_mode  = std::function< std::tuple<uint16_t,bool> (cpu&) >;
 
         command         operation;
@@ -165,10 +165,8 @@ public:
                 --ac_;
             }
             else if (--c_ == 0) {
-                auto add_cycle = operation(cpu, [&](){ return fetch_operand_address(cpu); });
-                if (add_cycle)
-                    ac_ = 1;
-                return;
+                if (auto additional_cycles = operation(cpu, [&](){ return fetch_operand_address(cpu); }))
+                    ac_ = additional_cycles;
             }
         }
 

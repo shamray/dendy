@@ -35,7 +35,9 @@ auto is_page_crossed(uint16_t base, uint16_t effective_address)
 auto index(uint16_t base, uint8_t offset)
 {
     auto address = base + offset;
-    return std::tuple{address, is_page_crossed(base, address)};
+    auto additional_cycles = is_page_crossed(base, address) ? 1 : 0;
+
+    return std::tuple{address, additional_cycles};
 }
 
 auto arith_result(int x)
@@ -65,124 +67,124 @@ void adc_impl(auto& result, uint8_t accum, uint8_t operand, flags_register& flag
 
 auto adc = [](auto& cpu, auto fetch_addr)
 {
-    auto [address, page_crossed] = fetch_addr();
+    auto [address, additional_cycles] = fetch_addr();
     auto operand = cpu.read(address);
 
     adc_impl(cpu.a, cpu.a.value(), operand, cpu.p);
-    return page_crossed;
+    return additional_cycles;
 };
 
 auto sbc = [](auto& cpu, auto fetch_addr)
 {
-    auto [address, page_crossed] = fetch_addr();
+    auto [address, additional_cycles] = fetch_addr();
     auto operand = cpu.read(address);
 
     adc_impl(cpu.a, cpu.a.value(), -operand, cpu.p);
-    return page_crossed;
+    return additional_cycles;
 };
 
 auto cmp = [](auto& cpu, auto fetch_addr)
 {
-    auto [address, page_crossed] = fetch_addr();
+    auto [address, additional_cycles] = fetch_addr();
     auto operand = cpu.read(address);
 
     [[maybe_unused]]
     auto alu_result = arith_register{&cpu.p};
 
     adc_impl(alu_result, cpu.a.value(), -operand, cpu.p, false);
-    return page_crossed;
+    return additional_cycles;
 };
 
 auto lda = [](auto& cpu, auto fetch_addr)
 {
-    auto [address, page_crossed] = fetch_addr();
+    auto [address, additional_cycles] = fetch_addr();
     auto operand = cpu.read(address);
 
     cpu.a = operand;
-    return page_crossed;
+    return additional_cycles;
 };
 
 auto ldx = [](auto& cpu, auto fetch_addr)
 {
-    auto [address, page_crossed] = fetch_addr();
+    auto [address, additional_cycles] = fetch_addr();
     auto operand = cpu.read(address);
     cpu.x = operand;
-    return page_crossed;
+    return additional_cycles;
 };
 
 auto sta = [](auto& cpu, auto fetch_addr) 
 {
-    auto [address, page_crossed] = fetch_addr();
+    auto [address, additional_cycles] = fetch_addr();
     cpu.write(address, cpu.a.value());
-    return page_crossed;
+    return additional_cycles;
 };
 
 auto tax = [](auto& cpu, auto )
 {
     cpu.x.assign(cpu.a.value());
-    return false;
+    return 0;
 };
 
 auto tay = [](auto& cpu, auto )
 {
     cpu.y.assign(cpu.a.value());
-    return false;
+    return 0;
 };
 
 auto tsx = [](auto& cpu, auto )
 {
     cpu.x.assign(cpu.s.value());
-    return false;
+    return 0;
 };
 
 auto txa = [](auto& cpu, auto )
 {
     cpu.a.assign(cpu.x.value());
-    return false;
+    return 0;
 };
 
 auto txs = [](auto& cpu, auto )
 {
     cpu.s.assign(cpu.x.value());
-    return false;
+    return 0;
 };
 
 auto tya = [](auto& cpu, auto )
 {
     cpu.a.assign(cpu.y.value());
-    return false;
+    return 0;
 };
 
 auto pha = [](auto& cpu, auto )
 {
     cpu.write(cpu.s.push(), cpu.a.value());
-    return false;
+    return 0;
 };
 
 auto pla = [](auto& cpu, auto )
 {
     cpu.a = cpu.read(cpu.s.pop());
-    return false;
+    return 0;
 };
 
 auto php = [](auto& cpu, auto )
 {
     cpu.write(cpu.s.push(), cpu.p.value());
-    return false;
+    return 0;
 };
 
 auto plp = [](auto& cpu, auto )
 {
     auto flags_value = cpu.read(cpu.s.pop());
     cpu.p.assign(flags_value);
-    return false;
+    return 0;
 };
 
 auto jmp = [](auto& cpu, auto fetch_addr)
 {
     auto [address, _] = fetch_addr();
     cpu.pc.assign(address);
-    return false;
+    return 0;
 };
 
 auto jsr = [](auto& cpu, auto fetch_addr)
@@ -191,7 +193,7 @@ auto jsr = [](auto& cpu, auto fetch_addr)
     cpu.write(cpu.s.push(), cpu.pc.hi());
     cpu.write(cpu.s.push(), cpu.pc.lo() - 1);
     cpu.pc.assign(address);
-    return false;
+    return 0;
 };
 
 auto rts = [](auto& cpu, auto _)
@@ -200,14 +202,14 @@ auto rts = [](auto& cpu, auto _)
     auto hi = cpu.read(cpu.s.pop());
     auto address = (hi << 8) | lo;
     cpu.pc.assign(address + 1);
-    return false;
+    return 0;
 };
 
 auto rti = [](auto& cpu, auto _)
 {
     plp(cpu, _);
     rts(cpu, _);
-    return false;
+    return 0;
 };
 
 auto brk = [](auto& cpu, auto _)
@@ -219,7 +221,7 @@ auto brk = [](auto& cpu, auto _)
     cpu.p.set(cpu_flag::break_called);
     cpu.p.set(cpu_flag::int_disable);
 
-    return false;
+    return 0;
 };
 
 auto nop = [](auto&, auto) { return false; };
@@ -229,30 +231,30 @@ auto nop = [](auto&, auto) { return false; };
 
 auto imm = [](auto& cpu) 
 {
-    return std::tuple{cpu.pc.advance(), false};
+    return std::tuple{cpu.pc.advance(), 0};
 };
 
 auto zp =  [](auto& cpu) 
 {
-    return std::tuple{cpu.read(cpu.pc.advance()), false};
+    return std::tuple{cpu.read(cpu.pc.advance()), 0};
 };
 
 auto zpx = [](auto& cpu) 
 {
     auto address = cpu.read(cpu.pc.advance());
-    return std::tuple{(cpu.x.value() + address) % 0x100, false};
+    return std::tuple{(cpu.x.value() + address) % 0x100, 0};
 };
 
 auto zpy = [](auto& cpu) 
 {
     auto address = cpu.read(cpu.pc.advance());
-    return std::tuple{(cpu.y.value() + address) % 0x100, false};
+    return std::tuple{(cpu.y.value() + address) % 0x100, 0};
 };
 
 auto abs = [](auto& cpu) 
 {
     auto address = cpu.read_word(cpu.pc.advance(2));
-    return std::tuple{address, false};
+    return std::tuple{address, 0};
 };
 
 auto abx = [](auto& cpu) 
@@ -270,13 +272,13 @@ auto ind = [](auto& cpu)
     auto address = cpu.read_word(cpu.pc.advance(2));
     auto lo = cpu.read(address);
     auto hi = cpu.read((address / 0x100) * 0x100 + (address + 1) % 0x100);
-    return std::tuple{static_cast<std::uint16_t>((hi << 8) | lo), false};
+    return std::tuple{static_cast<std::uint16_t>((hi << 8) | lo), 0};
 };
 
 auto izx = [](auto& cpu)
 {
     auto indexed = cpu.read(cpu.pc.advance()) + cpu.x.value();
-    return std::tuple{cpu.read_word(indexed), false};
+    return std::tuple{cpu.read_word(indexed), 0};
 };
 
 auto izy = [](auto& cpu) 
