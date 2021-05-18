@@ -194,7 +194,7 @@ auto jsr = [](auto& cpu, auto fetch_addr)
     return false;
 };
 
-auto rts = [](auto& cpu, auto )
+auto rts = [](auto& cpu, auto _)
 {
     auto lo = cpu.read(cpu.s.pop());
     auto hi = cpu.read(cpu.s.pop());
@@ -203,9 +203,22 @@ auto rts = [](auto& cpu, auto )
     return false;
 };
 
+auto rti = [](auto& cpu, auto _)
+{
+    plp(cpu, _);
+    rts(cpu, _);
+    return false;
+};
+
 auto brk = [](auto& cpu, auto _)
 {
-    // TODO: assign brake flag
+    jsr(cpu, [&cpu] {
+        return std::tuple{cpu.read_word(0xFFFE), false};
+    });
+    php(cpu, _);
+    cpu.p.set(cpu_flag::break_called);
+    cpu.p.set(cpu_flag::int_disable);
+
     return false;
 };
 
@@ -350,7 +363,7 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0x6C, { jmp, ind, 5 }},
         {0x20, { jsr, abs, 6 }},
         {0x60, { rts, imp, 6 }},
-
+        {0x40, { rti, imp, 6 }},
         {0x00, { brk, imp, 7 }}
     }
 {
