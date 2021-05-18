@@ -903,3 +903,74 @@ TEST_CASE_METHOD(cpu_test, "BEQ")
         CHECK(cpu.pc.value() == 0x8002);
     }
 }
+
+TEST_CASE_METHOD(cpu_test, "AND")
+{
+    load(prgadr, std::array{0x29, 0x01}); // AND #01
+    cpu.a.assign(0x02);
+
+    tick(2);
+    CHECK(cpu.a.value() == 0x00);
+    CHECK(cpu.p.test(nes::cpu_flag::zero));
+}
+
+TEST_CASE_METHOD(cpu_test, "ORA")
+{
+    load(prgadr, std::array{0x09, 0x01}); // ORA #01
+    cpu.a.assign(0x02);
+
+    tick(2);
+    CHECK(cpu.a.value() == 0x03);
+}
+
+TEST_CASE_METHOD(cpu_test, "EOR")
+{
+    load(prgadr, std::array{0x49, 0x03}); // EOR #03
+    cpu.a.assign(0x01);
+
+    tick(2);
+    CHECK(cpu.a.value() == 0x02);
+}
+
+TEST_CASE_METHOD(cpu_test, "BIT")
+{
+    load(prgadr, std::array{0x24, 0x00}); // BIT $00
+    load(0x0000, std::array{0xFE});
+
+    SECTION("Bit 0 = 0")
+    {
+        cpu.a.assign(0x01);
+
+        tick(3);
+        CHECK      (cpu.p.test(nes::cpu_flag::zero));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
+    }
+    SECTION("Bit 2 = 1")
+    {
+        cpu.a.assign(0x02);
+
+        tick(3);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
+    }
+    SECTION("Bit 6 = 1")
+    {
+        cpu.a.assign(0x40);
+
+        tick(3);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
+        CHECK      (cpu.p.test(nes::cpu_flag::overflow));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
+    }
+    SECTION("Bit 7 = 1")
+    {
+        cpu.a.assign(0x80);
+
+        tick(3);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
+        CHECK      (cpu.p.test(nes::cpu_flag::negative));
+    }
+}

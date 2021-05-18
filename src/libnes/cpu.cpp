@@ -95,6 +95,43 @@ auto cmp = [](auto& cpu, auto fetch_addr)
     return additional_cycles;
 };
 
+auto ana = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, additional_cycles] = fetch_addr();
+    auto operand = cpu.read(address);
+    cpu.a.assign(cpu.a.value() & operand);
+    return additional_cycles;
+};
+
+auto ora = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, additional_cycles] = fetch_addr();
+    auto operand = cpu.read(address);
+    cpu.a.assign(cpu.a.value() | operand);
+    return additional_cycles;
+};
+
+auto eor = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, additional_cycles] = fetch_addr();
+    auto operand = cpu.read(address);
+    cpu.a.assign(cpu.a.value() ^ operand);
+    return additional_cycles;
+};
+
+auto bit = [](auto& cpu, auto fetch_addr)
+{
+    auto [address, additional_cycles] = fetch_addr();
+    auto operand = cpu.read(address);
+
+    [[maybe_unused]]
+    auto alu_result = arith_register{&cpu.p};
+    alu_result.assign(cpu.a.value() & operand);
+    cpu.p.set(cpu_flag::overflow, alu_result.value() & (1 << 6));
+
+    return additional_cycles;
+};
+
 auto lda = [](auto& cpu, auto fetch_addr)
 {
     auto [address, additional_cycles] = fetch_addr();
@@ -447,6 +484,36 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0xD9, { cmp, aby, 4 }},
         {0xC1, { cmp, izx, 6 }},
         {0xD1, { cmp, izy, 5 }},
+
+        {0x29, { ana, imm, 2 }},
+        {0x25, { ana, zp , 3 }},
+        {0x35, { ana, zpx, 4 }},
+        {0x2D, { ana, abs, 4 }},
+        {0x3D, { ana, abx, 4 }},
+        {0x39, { ana, aby, 4 }},
+        {0x21, { ana, izx, 6 }},
+        {0x31, { ana, izy, 5 }},
+
+        {0x09, { ora, imm, 2 }},
+        {0x05, { ora, zp , 3 }},
+        {0x15, { ora, zpx, 4 }},
+        {0x0D, { ora, abs, 4 }},
+        {0x1D, { ora, abx, 4 }},
+        {0x19, { ora, aby, 4 }},
+        {0x01, { ora, izx, 6 }},
+        {0x11, { ora, izy, 5 }},
+
+        {0x49, { eor, imm, 2 }},
+        {0x45, { eor, zp , 3 }},
+        {0x55, { eor, zpx, 4 }},
+        {0x4D, { eor, abs, 4 }},
+        {0x5D, { eor, abx, 4 }},
+        {0x59, { eor, aby, 4 }},
+        {0x41, { eor, izx, 6 }},
+        {0x51, { eor, izy, 5 }},
+
+        {0x24, { bit, zp,  3 }},
+        {0x2C, { bit, abs, 4 }},
 
         {0x10, { bpl, rel, 2 }},
         {0x30, { bmi, rel, 2 }},
