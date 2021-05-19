@@ -132,7 +132,7 @@ public:
     {
         using fetch_address = std::function< std::tuple<uint16_t,int> () >;
         using command       = std::function< int (cpu&, fetch_address) >;
-        using address_mode  = std::function< std::tuple<uint16_t,bool> (cpu&) >;
+        using address_mode  = std::function< std::tuple<uint16_t,int> (cpu&) >;
 
         command         operation;
         address_mode    fetch_operand_address;
