@@ -7,6 +7,7 @@
 #include <bitset>
 #include <iostream>
 #include <cassert>
+#include <optional>
 
 namespace nes
 {
@@ -126,35 +127,14 @@ public:
     arith_register a{&p};
     arith_register x{&p};
     arith_register y{&p};
-
-
+    
     struct instruction
     {
-        using fetch_address = std::function< std::tuple<uint16_t,int> () >;
-        using command       = std::function< int (cpu&, fetch_address) >;
-        using address_mode  = std::function< std::tuple<uint16_t,int> (cpu&) >;
-
-        command         operation;
-        address_mode    fetch_operand_address;
-        int             cycles {1};
-    };
-
-    class executable_instruction: instruction
-    {
-    public:
-        executable_instruction() = default;
-        explicit
-        executable_instruction(const instruction& from)
-            : instruction(from)
+        instruction(auto op, auto am, int cycles = 1)
+            : command_{[op, am](auto& cpu){ return op(cpu, [&cpu, am](){ return am(cpu); }); }}
             , c_{cycles}
-        {
-            assert(c_ != 0);
-        }
-
-        executable_instruction& operator=(const instruction& from)
-        {
-            return *this = executable_instruction{from};
-        }
+        {}
+        instruction() = default;
 
         void execute(cpu& cpu)
         {
@@ -165,7 +145,7 @@ public:
                 --ac_;
             }
             else if (--c_ == 0) {
-                if (auto additional_cycles = operation(cpu, [&](){ return fetch_operand_address(cpu); }))
+                if (auto additional_cycles = command_(cpu))
                     ac_ = additional_cycles;
             }
         }
@@ -173,6 +153,7 @@ public:
         [[nodiscard]] bool is_finished() const { return c_ == 0 && ac_ == 0; }
 
     private:
+        std::function<int(cpu&)> command_;
         int c_{0};
         int ac_{0};
     };
@@ -190,7 +171,7 @@ public:
 
 private:
     std::vector<uint8_t>& memory_;
-    executable_instruction current_instruction;
+    instruction current_instruction;
     std::unordered_map<uint8_t, cpu::instruction> instruction_set;
 };
 

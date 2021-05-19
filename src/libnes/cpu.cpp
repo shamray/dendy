@@ -65,28 +65,25 @@ void adc_impl(auto& result, uint8_t accum, uint8_t operand, flags_register& flag
 
 // Operations
 
-auto adc = [](auto& cpu, auto fetch_addr)
+auto adc = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
-    auto operand = cpu.read(address);
+    auto [operand, additional_cycles] = address_mode().load_operand();
 
     adc_impl(cpu.a, cpu.a.value(), operand, cpu.p);
     return additional_cycles;
 };
 
-auto sbc = [](auto& cpu, auto fetch_addr)
+auto sbc = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
-    auto operand = cpu.read(address);
+    auto [operand, additional_cycles] = address_mode().load_operand();
 
     adc_impl(cpu.a, cpu.a.value(), -operand, cpu.p);
     return additional_cycles;
 };
 
-auto cmp = [](auto& cpu, auto fetch_addr)
+auto cmp = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
-    auto operand = cpu.read(address);
+    auto [operand, additional_cycles] = address_mode().load_operand();
 
     [[maybe_unused]]
     auto alu_result = arith_register{&cpu.p};
@@ -95,21 +92,21 @@ auto cmp = [](auto& cpu, auto fetch_addr)
     return additional_cycles;
 };
 
-auto inc = [](auto& cpu, auto fetch_addr)
+auto inc = [](auto& cpu, auto address_mode)
 {
-    auto [address, _] = fetch_addr();
-    auto operand = cpu.read(address);
+    auto am = address_mode();
+    auto [operand, _] = am.load_operand();
 
-    cpu.write(address, operand + 1);
+    am.store_operand(operand + 1);
     return 0;
 };
 
-auto dec = [](auto& cpu, auto fetch_addr)
+auto dec = [](auto& cpu, auto address_mode)
 {
-    auto [address, _] = fetch_addr();
-    auto operand = cpu.read(address);
+    auto am = address_mode();
+    auto [operand, _] = am.load_operand();
 
-    cpu.write(address, operand - 1);
+    am.store_operand(operand - 1);
     return 0;
 };
 
@@ -137,34 +134,30 @@ auto dey = [](auto& cpu, auto )
     return 0;
 };
 
-auto ana = [](auto& cpu, auto fetch_addr)
+auto ana = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
-    auto operand = cpu.read(address);
+    auto [operand, additional_cycles] = address_mode().load_operand();
     cpu.a.assign(cpu.a.value() & operand);
     return additional_cycles;
 };
 
-auto ora = [](auto& cpu, auto fetch_addr)
+auto ora = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
-    auto operand = cpu.read(address);
+    auto [operand, additional_cycles] = address_mode().load_operand();
     cpu.a.assign(cpu.a.value() | operand);
     return additional_cycles;
 };
 
-auto eor = [](auto& cpu, auto fetch_addr)
+auto eor = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
-    auto operand = cpu.read(address);
+    auto [operand, additional_cycles] = address_mode().load_operand();
     cpu.a.assign(cpu.a.value() ^ operand);
     return additional_cycles;
 };
 
-auto bit = [](auto& cpu, auto fetch_addr)
+auto bit = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
-    auto operand = cpu.read(address);
+    auto [operand, additional_cycles] = address_mode().load_operand();
 
     [[maybe_unused]]
     auto alu_result = arith_register{&cpu.p};
@@ -174,28 +167,24 @@ auto bit = [](auto& cpu, auto fetch_addr)
     return additional_cycles;
 };
 
-auto lda = [](auto& cpu, auto fetch_addr)
+auto lda = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
-    auto operand = cpu.read(address);
+    auto [operand, additional_cycles] = address_mode().load_operand();
 
     cpu.a = operand;
     return additional_cycles;
 };
 
-auto ldx = [](auto& cpu, auto fetch_addr)
+auto ldx = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
-    auto operand = cpu.read(address);
+    auto [operand, additional_cycles] = address_mode().load_operand();
     cpu.x = operand;
     return additional_cycles;
 };
 
-auto sta = [](auto& cpu, auto fetch_addr) 
+auto sta = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
-    cpu.write(address, cpu.a.value());
-    return additional_cycles;
+    return address_mode().store_operand(cpu.a.value());
 };
 
 auto tax = [](auto& cpu, auto )
@@ -259,9 +248,9 @@ auto plp = [](auto& cpu, auto )
     return 0;
 };
 
-auto bpl = [](auto& cpu, auto fetch_addr)
+auto bpl = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
+    auto [address, additional_cycles] = address_mode().fetch_address();
     if (cpu.p.test(cpu_flag::negative)) {
         return additional_cycles;
     }
@@ -269,9 +258,9 @@ auto bpl = [](auto& cpu, auto fetch_addr)
     return additional_cycles + 1;
 };
 
-auto bmi = [](auto& cpu, auto fetch_addr)
+auto bmi = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
+    auto [address, additional_cycles] = address_mode().fetch_address();
     if (!cpu.p.test(cpu_flag::negative)) {
         return additional_cycles;
     }
@@ -279,9 +268,9 @@ auto bmi = [](auto& cpu, auto fetch_addr)
     return additional_cycles + 1;
 };
 
-auto bvc = [](auto& cpu, auto fetch_addr)
+auto bvc = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
+    auto [address, additional_cycles] = address_mode().fetch_address();
     if (cpu.p.test(cpu_flag::overflow)) {
         return additional_cycles;
     }
@@ -289,9 +278,9 @@ auto bvc = [](auto& cpu, auto fetch_addr)
     return additional_cycles + 1;
 };
 
-auto bvs = [](auto& cpu, auto fetch_addr)
+auto bvs = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
+    auto [address, additional_cycles] = address_mode().fetch_address();
     if (!cpu.p.test(cpu_flag::overflow)) {
         return additional_cycles;
     }
@@ -299,9 +288,9 @@ auto bvs = [](auto& cpu, auto fetch_addr)
     return additional_cycles + 1;
 };
 
-auto bcc = [](auto& cpu, auto fetch_addr)
+auto bcc = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
+    auto [address, additional_cycles] = address_mode().fetch_address();
     if (cpu.p.test(cpu_flag::carry)) {
         return additional_cycles;
     }
@@ -309,9 +298,9 @@ auto bcc = [](auto& cpu, auto fetch_addr)
     return additional_cycles + 1;
 };
 
-auto bcs = [](auto& cpu, auto fetch_addr)
+auto bcs = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
+    auto [address, additional_cycles] = address_mode().fetch_address();
     if (!cpu.p.test(cpu_flag::carry)) {
         return additional_cycles;
     }
@@ -319,9 +308,9 @@ auto bcs = [](auto& cpu, auto fetch_addr)
     return additional_cycles + 1;
 };
 
-auto bne = [](auto& cpu, auto fetch_addr)
+auto bne = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
+    auto [address, additional_cycles] = address_mode().fetch_address();
     if (cpu.p.test(cpu_flag::zero)) {
         return additional_cycles;
     }
@@ -329,9 +318,9 @@ auto bne = [](auto& cpu, auto fetch_addr)
     return additional_cycles + 1;
 };
 
-auto beq = [](auto& cpu, auto fetch_addr)
+auto beq = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = fetch_addr();
+    auto [address, additional_cycles] = address_mode().fetch_address();
     if (!cpu.p.test(cpu_flag::zero)) {
         return additional_cycles;
     }
@@ -339,16 +328,16 @@ auto beq = [](auto& cpu, auto fetch_addr)
     return additional_cycles + 1;
 };
 
-auto jmp = [](auto& cpu, auto fetch_addr)
+auto jmp = [](auto& cpu, auto address_mode)
 {
-    auto [address, _] = fetch_addr();
+    auto [address, _] = address_mode().fetch_address();
     cpu.pc.assign(address);
     return 0;
 };
 
-auto jsr = [](auto& cpu, auto fetch_addr)
+auto jsr = [](auto& cpu, auto address_mode)
 {
-    auto [address, _] = fetch_addr();
+    auto [address, _] = address_mode().fetch_address();
     cpu.write(cpu.s.push(), cpu.pc.hi());
     cpu.write(cpu.s.push(), cpu.pc.lo() - 1);
     cpu.pc.assign(address);
@@ -371,10 +360,21 @@ auto rti = [](auto& cpu, auto _)
     return 0;
 };
 
+template <class cpu_t>
+struct reset_vector
+{
+    explicit reset_vector(cpu_t& c): cpu(c){}
+    cpu_t& cpu;
+    auto fetch_address()
+    {
+        return std::tuple{cpu.read_word(0xFFFE), 0};
+    }
+};
+
 auto brk = [](auto& cpu, auto _)
 {
     jsr(cpu, [&cpu] {
-        return std::tuple{cpu.read_word(0xFFFE), false};
+        return reset_vector{cpu};
     });
     php(cpu, _);
     cpu.p.set(cpu_flag::break_called);
@@ -388,74 +388,142 @@ auto nop = [](auto&, auto) { return false; };
 
 // Addressing modes
 
-auto imm = [](auto& cpu) 
+template <class fettch_addr_t>
+struct memory_based_address_mode
 {
-    return std::tuple{cpu.pc.advance(), 0};
+    memory_based_address_mode(cpu& c, fettch_addr_t fetch_addr) : cpu_(c), fetch_addr_(fetch_addr) {}
+
+    auto load_operand()
+    {
+        fetch_address();
+        auto [address, additional_cycles] = result_.value();
+        return std::tuple{cpu_.read(address), additional_cycles};
+    }
+
+    auto store_operand(uint8_t operand)
+    {
+        fetch_address();
+        auto [address, additional_cycles] = result_.value();
+        cpu_.write(address, operand);
+        return additional_cycles;
+    }
+
+    auto fetch_address()
+    {
+        if (!result_)
+            result_ = fetch_addr_(cpu_);
+        return result_.value();
+    }
+
+private:
+    cpu& cpu_;
+    std::optional<std::tuple<uint16_t, int>> result_;
+    fettch_addr_t fetch_addr_;
 };
 
-auto zp =  [](auto& cpu) 
+struct implied_address_mode {};
+
+auto imm = [](auto& cpu)
 {
-    return std::tuple{cpu.read(cpu.pc.advance()), 0};
+    return memory_based_address_mode{cpu, [](auto& cpu)
+    {
+        return std::tuple{cpu.pc.advance(), 0};
+    }};
 };
 
-auto zpx = [](auto& cpu) 
+auto zp =  [](auto& cpu)
 {
-    auto address = cpu.read(cpu.pc.advance());
-    return std::tuple{(cpu.x.value() + address) % 0x100, 0};
+    return memory_based_address_mode{cpu, [](auto& cpu )
+    {
+        return std::tuple{cpu.read(cpu.pc.advance()), 0};
+    }};
 };
 
-auto zpy = [](auto& cpu) 
+auto zpx = [](auto& cpu)
 {
-    auto address = cpu.read(cpu.pc.advance());
-    return std::tuple{(cpu.y.value() + address) % 0x100, 0};
+    return memory_based_address_mode{cpu, [](auto& cpu )
+    {
+        auto address = cpu.read(cpu.pc.advance());
+        return std::tuple{(cpu.x.value() + address) % 0x100, 0};
+    }};
 };
 
-auto abs = [](auto& cpu) 
+auto zpy = [](auto& cpu)
 {
-    auto address = cpu.read_word(cpu.pc.advance(2));
-    return std::tuple{address, 0};
+    return memory_based_address_mode{cpu, [](auto& cpu )
+    {
+        auto address = cpu.read(cpu.pc.advance());
+        return std::tuple{(cpu.y.value() + address) % 0x100, 0};
+    }};
 };
 
-auto abx = [](auto& cpu) 
+auto abs = [](auto& cpu)
 {
-    return index(cpu.read_word(cpu.pc.advance(2)), cpu.x.value());
+    return memory_based_address_mode{cpu, [](auto& cpu )
+    {
+        auto address = cpu.read_word(cpu.pc.advance(2));
+        return std::tuple{address, 0};
+    }};
 };
 
-auto aby = [](auto& cpu) 
+auto abx = [](auto& cpu)
 {
-    return index(cpu.read_word(cpu.pc.advance(2)), cpu.y.value());
+    return memory_based_address_mode{cpu, [](auto& cpu )
+    {
+        return index(cpu.read_word(cpu.pc.advance(2)), cpu.x.value());
+    }};
+};
+
+auto aby = [](auto& cpu)
+{
+    return memory_based_address_mode{cpu, [](auto& cpu )
+    {
+        return index(cpu.read_word(cpu.pc.advance(2)), cpu.y.value());
+    }};
 };
 
 auto ind = [](auto& cpu)
 {
-    auto address = cpu.read_word(cpu.pc.advance(2));
-    auto lo = cpu.read(address);
-    auto hi = cpu.read((address / 0x100) * 0x100 + (address + 1) % 0x100);
-    return std::tuple{static_cast<std::uint16_t>((hi << 8) | lo), 0};
+    return memory_based_address_mode{cpu, [](auto& cpu )
+    {
+        auto address = cpu.read_word(cpu.pc.advance(2));
+        auto lo = cpu.read(address);
+        auto hi = cpu.read((address / 0x100) * 0x100 + (address + 1) % 0x100);
+        return std::tuple{static_cast<std::uint16_t>((hi << 8) | lo), 0};
+    }};
 };
 
 auto izx = [](auto& cpu)
 {
-    auto indexed = cpu.read(cpu.pc.advance()) + cpu.x.value();
-    return std::tuple{cpu.read_word(indexed), 0};
+    return memory_based_address_mode{cpu, [](auto& cpu )
+    {
+        auto indexed = cpu.read(cpu.pc.advance()) + cpu.x.value();
+        return std::tuple{cpu.read_word(indexed), 0};
+    }};
 };
 
-auto izy = [](auto& cpu) 
+auto izy = [](auto& cpu)
 {
-    auto base = cpu.read(cpu.pc.advance());
-    return index(cpu.read_word(base), cpu.y.value());
+    return memory_based_address_mode{cpu, [](auto& cpu )
+    {
+        auto base = cpu.read(cpu.pc.advance());
+        return index(cpu.read_word(base), cpu.y.value());
+    }};
 };
 
 auto rel = [](auto& cpu)
 {
-    auto instruction_address = cpu.pc.value() - 1;
-    auto offset = cpu.read_signed(cpu.pc.advance());
-    return index(instruction_address, offset);
+    return memory_based_address_mode{cpu, [](auto& cpu )
+    {
+        auto instruction_address = cpu.pc.value() - 1;
+        auto offset = cpu.read_signed(cpu.pc.advance());
+        return index(instruction_address, offset);
+    }};
 };
 
-auto imp = [](auto& ) -> std::tuple<uint16_t,bool>
+auto imp = [](auto& )
 {
-    throw std::logic_error("Calling operand function for implied addressing mode");
+    return implied_address_mode{};
 };
 
 }
@@ -600,7 +668,7 @@ void cpu::tick()
 
         current_instruction = decode(opcode)
             .value_or(cpu::instruction{
-                [opcode](auto...) -> bool { throw unsupported_opcode(opcode); },
+                [opcode](auto...) -> int { throw unsupported_opcode(opcode); },
                 imp
             });
     }
