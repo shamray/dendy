@@ -92,6 +92,28 @@ auto cmp = [](auto& cpu, auto address_mode)
     return additional_cycles;
 };
 
+auto cpx = [](auto& cpu, auto address_mode)
+{
+    auto [operand, additional_cycles] = address_mode().load_operand();
+
+    [[maybe_unused]]
+    auto alu_result = arith_register{&cpu.p};
+
+    adc_impl(alu_result, cpu.x.value(), -operand, cpu.p, false);
+    return additional_cycles;
+};
+
+auto cpy = [](auto& cpu, auto address_mode)
+{
+    auto [operand, additional_cycles] = address_mode().load_operand();
+
+    [[maybe_unused]]
+    auto alu_result = arith_register{&cpu.p};
+
+    adc_impl(alu_result, cpu.y.value(), -operand, cpu.p, false);
+    return additional_cycles;
+};
+
 auto inc = [](auto& cpu, auto address_mode)
 {
     auto am = address_mode();
@@ -659,6 +681,14 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0xD9, { cmp, aby, 4 }},
         {0xC1, { cmp, izx, 6 }},
         {0xD1, { cmp, izy, 5 }},
+
+        {0xE0, { cpx, imm, 2 }},
+        {0xE4, { cpx, zp , 3 }},
+        {0xEC, { cpx, abs, 4 }},
+
+        {0xC0, { cpy, imm, 2 }},
+        {0xC4, { cpy, zp , 3 }},
+        {0xCC, { cpy, abs, 4 }},
 
         {0xE6, { inc, zp , 5 }},
         {0xF6, { inc, zpx, 6 }},

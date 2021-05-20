@@ -703,6 +703,96 @@ TEST_CASE_METHOD(cpu_test, "CMP")
     }
 }
 
+TEST_CASE_METHOD(cpu_test, "CPX")
+{
+    load(prgadr, std::array{0xe0, 0x2a});
+
+    SECTION("X < M")
+    {
+        cpu.x.assign(0x29);
+        tick(2);
+
+        CHECK       (cpu.p.test(nes::cpu_flag::negative));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::zero));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::carry));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+    }
+    SECTION("X = M")
+    {
+        cpu.x.assign(0x2A);
+        tick(2);
+
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::negative));
+        CHECK       (cpu.p.test(nes::cpu_flag::zero));
+        CHECK       (cpu.p.test(nes::cpu_flag::carry));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+    }
+    SECTION("X > M")
+    {
+        cpu.x.assign(0x2B);
+        tick(2);
+
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::negative));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::zero));
+        CHECK       (cpu.p.test(nes::cpu_flag::carry));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+    }
+    SECTION("V = 0")
+    {
+        load(prgadr, std::array{0xc9, 0xd0});
+
+        cpu.x.assign(0x70);
+        tick(2);
+
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "CPY")
+{
+    load(prgadr, std::array{0xc0, 0x2a});
+
+    SECTION("X < M")
+    {
+        cpu.y.assign(0x29);
+        tick(2);
+
+        CHECK       (cpu.p.test(nes::cpu_flag::negative));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::zero));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::carry));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+    }
+    SECTION("X = M")
+    {
+        cpu.y.assign(0x2A);
+        tick(2);
+
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::negative));
+        CHECK       (cpu.p.test(nes::cpu_flag::zero));
+        CHECK       (cpu.p.test(nes::cpu_flag::carry));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+    }
+    SECTION("X > M")
+    {
+        cpu.y.assign(0x2B);
+        tick(2);
+
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::negative));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::zero));
+        CHECK       (cpu.p.test(nes::cpu_flag::carry));
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+    }
+    SECTION("V = 0")
+    {
+        load(prgadr, std::array{0xc9, 0xd0});
+
+        cpu.y.assign(0x70);
+        tick(2);
+
+        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+    }
+}
+
 TEST_CASE_METHOD(cpu_test, "JMP-ABS")
 {
     load(prgadr, std::array{0x4c, 0x34, 0x12});
