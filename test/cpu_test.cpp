@@ -871,6 +871,21 @@ TEST_CASE_METHOD(cpu_test, "RTS")
     CHECK(cpu.s.value() == 0xfd);
 }
 
+TEST_CASE_METHOD(cpu_test, "JSR-RTS, New instruction on new page")
+{
+    load(0xc5fd, std::array{0x20, 0x00, 0xa0});
+    load(0xa000, std::array{0x60});
+    cpu.pc.assign(0xc5fd);
+    tick(6);
+
+    CHECK(mem[0x1fd] == 0xc5);
+    CHECK(mem[0x1fc] == 0xff);
+
+    tick(6);
+    CHECK(cpu.pc.value() == 0xc600);
+
+}
+
 TEST_CASE_METHOD(cpu_test, "BPL, offset > 0")
 {
     load(prgadr, std::array{0x10, 0x20}); // +32

@@ -414,9 +414,11 @@ auto jmp = [](auto& cpu, auto address_mode)
 auto jsr = [](auto& cpu, auto address_mode)
 {
     auto [address, _] = address_mode().fetch_address();
-    cpu.write(cpu.s.push(), cpu.pc.hi());
-    cpu.write(cpu.s.push(), cpu.pc.lo() - 1);
+    auto prev_pc = nes::program_counter{static_cast<uint16_t >(cpu.pc.value() - 1)};
+    cpu.write(cpu.s.push(), prev_pc.hi());
+    cpu.write(cpu.s.push(), prev_pc.lo());
     cpu.pc.assign(address);
+
     return 0;
 };
 
@@ -426,13 +428,19 @@ auto rts = [](auto& cpu, auto _)
     auto hi = cpu.read(cpu.s.pop());
     auto address = (hi << 8) | lo;
     cpu.pc.assign(address + 1);
+
     return 0;
 };
 
 auto rti = [](auto& cpu, auto _)
 {
     plp(cpu, _);
-    rts(cpu, _);
+
+    auto lo = cpu.read(cpu.s.pop());
+    auto hi = cpu.read(cpu.s.pop());
+    auto address = (hi << 8) | lo;
+    cpu.pc.assign(address);
+
     return 0;
 };
 

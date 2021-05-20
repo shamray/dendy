@@ -77,6 +77,9 @@ inline std::ostream& operator<< (std::ostream& s, const arith_register& r)
 class program_counter
 {
 public:
+    program_counter() = default;
+    explicit program_counter(uint16_t val) : val_{val} {}
+
     void assign(uint16_t val) { val_ = val; }
     auto advance(int16_t increment = 1)
     {
