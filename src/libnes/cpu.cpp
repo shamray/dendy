@@ -467,7 +467,14 @@ auto brk = [](auto& cpu, auto _)
     return 0;
 };
 
-auto nop = [](auto&, auto) { return false; };
+auto i_n = [](auto&, auto address_mode)
+{
+    auto [_, additional_cycles] = address_mode().fetch_address();
+    return additional_cycles;
+};
+
+
+auto nop = [](auto&, auto) { return 0; };
 
 
 // Addressing modes
@@ -642,6 +649,35 @@ cpu::cpu(std::vector<uint8_t>& memory)
     : memory_{memory}
     , instruction_set{
         {0xEA, { nop, imp, 2 }},
+
+        {0x1A, { nop, imp, 2 }},
+        {0x3A, { nop, imp, 2 }},
+        {0x5A, { nop, imp, 2 }},
+        {0x7A, { nop, imp, 2 }},
+        {0xDA, { nop, imp, 2 }},
+        {0xFA, { nop, imp, 2 }},
+
+        {0x04, { i_n, zp , 3 }},
+        {0x44, { i_n, zp , 3 }},
+        {0x64, { i_n, zp , 3 }},
+        {0x0C, { i_n, abs, 4 }},
+
+        {0x14, { i_n, zpx, 4 }},
+        {0x34, { i_n, zpx, 4 }},
+        {0x54, { i_n, zpx, 4 }},
+        {0x74, { i_n, zpx, 4 }},
+        {0xD4, { i_n, zpx, 4 }},
+        {0xF4, { i_n, zpx, 4 }},
+
+        {0x1C, { i_n, abx, 4 }},
+        {0x3C, { i_n, abx, 4 }},
+        {0x5C, { i_n, abx, 4 }},
+        {0x7C, { i_n, abx, 4 }},
+        {0xDC, { i_n, abx, 4 }},
+        {0xFC, { i_n, abx, 4 }},
+
+        {0x80, { i_n, imm, 2 }},
+        {0x89, { i_n, imm, 2 }},
 
         {0xA9, { lda, imm, 2 }},
         {0xA5, { lda, zp , 3 }},
