@@ -1054,10 +1054,23 @@ TEST_CASE_METHOD(cpu_test, "DEY")
 TEST_CASE_METHOD(cpu_test, "ASL-ACC")
 {
     load(prgadr, std::array{0x0a}); // ASL A
-    cpu.a.assign(0x2);
 
-    tick(2);
-    CHECK((int)cpu.a.value() == 0x4);
+    SECTION("Bit 1")
+    {
+        cpu.a.assign(0x02);
+
+        tick(2);
+        CHECK((int)cpu.a.value() == 0x4);
+
+    }
+    SECTION("Bit 7")
+    {
+        cpu.a.assign(0x80);
+
+        tick(2);
+        CHECK(cpu.p.test(nes::cpu_flag::zero));
+        CHECK(cpu.p.test(nes::cpu_flag::carry));
+    }
 }
 
 TEST_CASE_METHOD(cpu_test, "ASL-ZPX")
@@ -1068,4 +1081,86 @@ TEST_CASE_METHOD(cpu_test, "ASL-ZPX")
 
     tick(6);
     CHECK((int)mem[0x0013] == 0xAA);
+}
+
+TEST_CASE_METHOD(cpu_test, "LSR")
+{
+    load(prgadr, std::array{0x4a}); // LSR A
+
+    SECTION("Bit 1")
+    {
+        cpu.a.assign(0x2);
+
+        tick(2);
+        CHECK((int)cpu.a.value() == 0x1);
+    }
+    SECTION("Bit 0")
+    {
+        cpu.a.assign(0x1);
+
+        tick(2);
+        CHECK((int)cpu.a.value() == 0x0);
+        CHECK(cpu.p.test(nes::cpu_flag::zero));
+        CHECK(cpu.p.test(nes::cpu_flag::carry));
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "ROL")
+{
+    load(prgadr, std::array{0x2a}); // ROL A
+
+    SECTION("Bit 0")
+    {
+        cpu.a.assign(0x01);
+
+        tick(2);
+        CHECK((int)cpu.a.value() == 0x2);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
+    }
+    SECTION("Bit 7")
+    {
+        cpu.a.assign(0x80);
+
+        tick(2);
+        CHECK((int)cpu.a.value() == 0x00);
+        CHECK(cpu.p.test(nes::cpu_flag::carry));
+    }
+    SECTION("Bit 8 (Carry)")
+    {
+        cpu.a.assign(0x00);
+        cpu.p.set(nes::cpu_flag::carry);
+
+        tick(2);
+        CHECK((int)cpu.a.value() == 0x01);
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "ROR")
+{
+    load(prgadr, std::array{0x6a}); // ROR A
+
+    SECTION("Bit 7")
+    {
+        cpu.a.assign(0x80);
+
+        tick(2);
+        CHECK((int)cpu.a.value() == 0x40);
+    }
+    SECTION("Bit 8 (Carry)")
+    {
+        cpu.a.assign(0x00);
+        cpu.p.set(nes::cpu_flag::carry);
+
+        tick(2);
+        CHECK((int)cpu.a.value() == 0x80);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
+    }
+    SECTION("Bit 0")
+    {
+        cpu.a.assign(0x01);
+
+        tick(2);
+        CHECK((int)cpu.a.value() == 0x00);
+        CHECK(cpu.p.test(nes::cpu_flag::carry));
+    }
 }

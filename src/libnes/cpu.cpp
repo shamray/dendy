@@ -139,6 +139,36 @@ auto asl = [](auto& cpu, auto address_mode)
     auto am = address_mode();
     auto [operand, _] = am.load_operand();
     am.store_operand(operand << 1);
+    cpu.p.set(cpu_flag::carry, (operand & 0x80) != 0);
+    return 0;
+};
+
+auto lsr = [](auto& cpu, auto address_mode)
+{
+    auto am = address_mode();
+    auto [operand, _] = am.load_operand();
+    am.store_operand(operand >> 1);
+    cpu.p.set(cpu_flag::carry, (operand & 0x01) != 0);
+    return 0;
+};
+
+auto rol = [](auto& cpu, auto address_mode)
+{
+    auto am = address_mode();
+    auto [operand, _] = am.load_operand();
+    auto carry_bit = cpu.p.test(cpu_flag::carry) ? uint8_t{0x01} : uint8_t{};
+    am.store_operand((operand << 1) | carry_bit);
+    cpu.p.set(cpu_flag::carry, (operand & 0x80) != 0);
+    return 0;
+};
+
+auto ror = [](auto& cpu, auto address_mode)
+{
+    auto am = address_mode();
+    auto [operand, _] = am.load_operand();
+    auto carry_bit = cpu.p.test(cpu_flag::carry) ? uint8_t{0x80} : uint8_t{};
+    am.store_operand((operand >> 1) | carry_bit);
+    cpu.p.set(cpu_flag::carry, (operand & 0x01) != 0);
     return 0;
 };
 
@@ -533,7 +563,7 @@ auto rel = [](auto& cpu)
 class accumulator_address_mode
 {
 public:
-    accumulator_address_mode(cpu& c) : cpu_(c) {}
+    explicit accumulator_address_mode(cpu& c) : cpu_(c) {}
 
     [[nodiscard]]
     auto load_operand() const
@@ -651,6 +681,24 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0x16, { asl, zpx, 6 }},
         {0x0E, { asl, abs, 6 }},
         {0x1E, { asl, abx, 7 }},
+
+        {0x4A, { lsr, acc, 2 }},
+        {0x46, { lsr, zp , 5 }},
+        {0x56, { lsr, zpx, 6 }},
+        {0x4E, { lsr, abs, 6 }},
+        {0x5E, { lsr, abx, 7 }},
+
+        {0x2A, { rol, acc, 2 }},
+        {0x26, { rol, zp , 5 }},
+        {0x36, { rol, zpx, 6 }},
+        {0x2E, { rol, abs, 6 }},
+        {0x3E, { rol, abx, 7 }},
+
+        {0x6A, { ror, acc, 2 }},
+        {0x66, { ror, zp , 5 }},
+        {0x76, { ror, zpx, 6 }},
+        {0x6E, { ror, abs, 6 }},
+        {0x7E, { ror, abx, 7 }},
 
         {0x29, { ana, imm, 2 }},
         {0x25, { ana, zp , 3 }},

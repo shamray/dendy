@@ -91,13 +91,13 @@ public:
     [[nodiscard]] auto value() const { return val_; }
 
 private:
-    uint16_t val_;
+    uint16_t val_{0};
 };
 
 class stack_register
 {
 public:
-    explicit stack_register(uint16_t stack_base, uint8_t initial_value)
+    stack_register(uint16_t stack_base, uint8_t initial_value)
         : val_(initial_value)
         , stack_base_(stack_base)
     {}
