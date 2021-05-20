@@ -127,7 +127,7 @@ public:
     arith_register a{&p};
     arith_register x{&p};
     arith_register y{&p};
-    
+
     struct instruction
     {
         instruction(auto op, auto am, int cycles = 1)

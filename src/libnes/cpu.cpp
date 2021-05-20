@@ -134,6 +134,14 @@ auto dey = [](auto& cpu, auto )
     return 0;
 };
 
+auto asl = [](auto& cpu, auto address_mode)
+{
+    auto am = address_mode();
+    auto [operand, _] = am.load_operand();
+    am.store_operand(operand << 1);
+    return 0;
+};
+
 auto ana = [](auto& cpu, auto address_mode)
 {
     auto [operand, additional_cycles] = address_mode().load_operand();
@@ -393,6 +401,7 @@ struct memory_based_address_mode
 {
     memory_based_address_mode(cpu& c, fettch_addr_t fetch_addr) : cpu_(c), fetch_addr_(fetch_addr) {}
 
+    [[nodiscard]]
     auto load_operand()
     {
         fetch_address();
@@ -521,6 +530,32 @@ auto rel = [](auto& cpu)
     }};
 };
 
+class accumulator_address_mode
+{
+public:
+    accumulator_address_mode(cpu& c) : cpu_(c) {}
+
+    [[nodiscard]]
+    auto load_operand() const
+    {
+        return std::tuple{cpu_.a.value(), 0};
+    }
+
+    auto store_operand(uint8_t operand)
+    {
+        cpu_.a.assign(operand);
+        return 0;
+    }
+
+private:
+    cpu& cpu_;
+};
+
+auto acc = [](auto& cpu)
+{
+    return accumulator_address_mode{cpu};
+};
+
 auto imp = [](auto& )
 {
     return implied_address_mode{};
@@ -610,6 +645,12 @@ cpu::cpu(std::vector<uint8_t>& memory)
 
         {0xCA, { dex, imp, 2 }},
         {0x88, { dey, imp, 2 }},
+
+        {0x0A, { asl, acc, 2 }},
+        {0x06, { asl, zp , 5 }},
+        {0x16, { asl, zpx, 6 }},
+        {0x0E, { asl, abs, 6 }},
+        {0x1E, { asl, abx, 7 }},
 
         {0x29, { ana, imm, 2 }},
         {0x25, { ana, zp , 3 }},

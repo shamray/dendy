@@ -1050,3 +1050,22 @@ TEST_CASE_METHOD(cpu_test, "DEY")
     tick(2);
     CHECK((int)cpu.y.value() == 0x41);
 }
+
+TEST_CASE_METHOD(cpu_test, "ASL-ACC")
+{
+    load(prgadr, std::array{0x0a}); // ASL A
+    cpu.a.assign(0x2);
+
+    tick(2);
+    CHECK((int)cpu.a.value() == 0x4);
+}
+
+TEST_CASE_METHOD(cpu_test, "ASL-ZPX")
+{
+    load(prgadr, std::array{0x16, 0x10}); // ASL $10,X
+    cpu.x.assign(0x3);
+    load(0x0013, std::array{0x55});
+
+    tick(6);
+    CHECK((int)mem[0x0013] == 0xAA);
+}
