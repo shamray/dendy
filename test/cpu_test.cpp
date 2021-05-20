@@ -879,7 +879,7 @@ TEST_CASE_METHOD(cpu_test, "BPL, offset > 0")
     {
         cpu.p.reset(nes::cpu_flag::negative);
         tick(3);
-        CHECK(cpu.pc.value() == 0x8020);
+        CHECK(cpu.pc.value() == 0x8022);
     }
     SECTION("Else")
     {
@@ -895,7 +895,7 @@ TEST_CASE_METHOD(cpu_test, "BPL, offset < 0, page cross")
 
     cpu.p.reset(nes::cpu_flag::negative);
     tick(4);
-    CHECK(cpu.pc.value() == 0x7fce);
+    CHECK(cpu.pc.value() == 0x7fd0);
 }
 
 TEST_CASE_METHOD(cpu_test, "BMI")
@@ -906,7 +906,7 @@ TEST_CASE_METHOD(cpu_test, "BMI")
     {
         cpu.p.set(nes::cpu_flag::negative);
         tick(3);
-        CHECK(cpu.pc.value() == 0x8020);
+        CHECK(cpu.pc.value() == 0x8022);
     }
     SECTION("Else")
     {
@@ -924,7 +924,7 @@ TEST_CASE_METHOD(cpu_test, "BVC")
     {
         cpu.p.reset(nes::cpu_flag::overflow);
         tick(3);
-        CHECK(cpu.pc.value() == 0x8020);
+        CHECK(cpu.pc.value() == 0x8022);
     }
     SECTION("Else")
     {
@@ -942,7 +942,7 @@ TEST_CASE_METHOD(cpu_test, "BVS")
     {
         cpu.p.set(nes::cpu_flag::overflow);
         tick(3);
-        CHECK(cpu.pc.value() == 0x8020);
+        CHECK(cpu.pc.value() == 0x8022);
     }
     SECTION("Else")
     {
@@ -960,7 +960,7 @@ TEST_CASE_METHOD(cpu_test, "BCC")
     {
         cpu.p.reset(nes::cpu_flag::carry);
         tick(3);
-        CHECK(cpu.pc.value() == 0x8020);
+        CHECK(cpu.pc.value() == 0x8022);
     }
     SECTION("Else")
     {
@@ -978,7 +978,7 @@ TEST_CASE_METHOD(cpu_test, "BCS")
     {
         cpu.p.set(nes::cpu_flag::carry);
         tick(3);
-        CHECK(cpu.pc.value() == 0x8020);
+        CHECK(cpu.pc.value() == 0x8022);
     }
     SECTION("Else")
     {
@@ -996,7 +996,7 @@ TEST_CASE_METHOD(cpu_test, "BNE")
     {
         cpu.p.reset(nes::cpu_flag::zero);
         tick(3);
-        CHECK(cpu.pc.value() == 0x8020);
+        CHECK(cpu.pc.value() == 0x8022);
     }
     SECTION("Else")
     {
@@ -1014,7 +1014,7 @@ TEST_CASE_METHOD(cpu_test, "BEQ")
     {
         cpu.p.set(nes::cpu_flag::zero);
         tick(3);
-        CHECK(cpu.pc.value() == 0x8020);
+        CHECK(cpu.pc.value() == 0x8022);
     }
     SECTION("Else")
     {

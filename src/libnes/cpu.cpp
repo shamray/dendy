@@ -592,9 +592,8 @@ auto rel = [](auto& cpu)
 {
     return memory_based_address_mode{cpu, [](auto& cpu )
     {
-        auto instruction_address = cpu.pc.value() - 1;
         auto offset = cpu.read_signed(cpu.pc.advance());
-        return index(instruction_address, offset);
+        return index(cpu.pc.value(), offset);
     }};
 };
 
