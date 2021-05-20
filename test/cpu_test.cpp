@@ -325,6 +325,36 @@ TEST_CASE_METHOD(cpu_test, "STA-ABS")
     CHECK(mem[0xd077] == 0x55);
 }
 
+TEST_CASE_METHOD(cpu_test, "STX")
+{
+    load(prgadr, std::array{0x86, 0x10}); // STX $10
+    cpu.x.assign(0x42);
+
+    tick(3);
+
+    CHECK(mem[0x0010] == 0x42);
+}
+
+TEST_CASE_METHOD(cpu_test, "LDY")
+{
+    load(prgadr, std::array{0xac, 0x10, 0xd0}); // LDY $D010
+    load(0xd010, std::array{0xba});
+
+    tick(4);
+
+    CHECK(cpu.y.value() == 0xba);
+}
+
+TEST_CASE_METHOD(cpu_test, "STY")
+{
+    load(prgadr, std::array{0x8c, 0x77, 0xd0}); // STY $D077
+    cpu.y.assign(0xba);
+
+    tick(4);
+
+    CHECK(mem[0xd077] == 0xba);
+}
+
 TEST_CASE_METHOD(cpu_test, "TAX")
 {
     load(prgadr, std::array{0xaa}); // TAX

@@ -230,9 +230,13 @@ auto bit = [](auto& cpu, auto address_mode)
 auto lda = [](auto& cpu, auto address_mode)
 {
     auto [operand, additional_cycles] = address_mode().load_operand();
-
     cpu.a = operand;
     return additional_cycles;
+};
+
+auto sta = [](auto& cpu, auto address_mode)
+{
+    return address_mode().store_operand(cpu.a.value());
 };
 
 auto ldx = [](auto& cpu, auto address_mode)
@@ -242,9 +246,21 @@ auto ldx = [](auto& cpu, auto address_mode)
     return additional_cycles;
 };
 
-auto sta = [](auto& cpu, auto address_mode)
+auto stx = [](auto& cpu, auto address_mode)
 {
-    return address_mode().store_operand(cpu.a.value());
+    return address_mode().store_operand(cpu.x.value());
+};
+
+auto ldy = [](auto& cpu, auto address_mode)
+{
+    auto [operand, additional_cycles] = address_mode().load_operand();
+    cpu.y = operand;
+    return additional_cycles;
+};
+
+auto sty = [](auto& cpu, auto address_mode)
+{
+    return address_mode().store_operand(cpu.y.value());
 };
 
 auto tax = [](auto& cpu, auto )
@@ -637,6 +653,26 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0x81, { sta, izx, 6 }},
         {0x91, { sta, izy, 6 }},
 
+        {0xA2, { ldx, imm, 2 }},
+        {0xA6, { ldx, zp , 3 }},
+        {0xB6, { ldx, zpy, 4 }},
+        {0xAE, { ldx, abs, 4 }},
+        {0xBE, { ldx, aby, 4 }},
+
+        {0x86, { stx, zp , 3 }},
+        {0x96, { stx, zpy, 4 }},
+        {0x8E, { stx, abs, 4 }},
+        {0xA0, { stx, imm, 2 }},
+
+        {0xA4, { ldy, zp , 3 }},
+        {0xB4, { ldy, zpx, 4 }},
+        {0xAC, { ldy, abs, 4 }},
+        {0xBC, { ldy, abx, 4 }},
+
+        {0x84, { sty, imm, 3 }},
+        {0x94, { sty, zp , 4 }},
+        {0x8C, { sty, abs, 4 }},
+
         {0xAA, { tax, imp, 2 }},
         {0x8A, { txa, imp, 2 }},
         {0xA8, { tay, imp, 2 }},
@@ -648,12 +684,6 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0x68, { pla, imp, 4 }},
         {0x08, { php, imp, 3 }},
         {0x28, { plp, imp, 4 }},
-
-        {0xA2, { ldx, imm, 2 }},
-        {0xA6, { ldx, zp , 3 }},
-        {0xB6, { ldx, zpy, 4 }},
-        {0xAE, { ldx, abs, 4 }},
-        {0xBE, { ldx, aby, 4 }},
 
         {0x69, { adc, imm, 2 }},
         {0x65, { adc, zp , 3 }},
@@ -768,6 +798,15 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0xB0, { bcs, rel, 2 }},
         {0xD0, { bne, rel, 2 }},
         {0xF0, { beq, rel, 2 }},
+
+        {0x18, { nop, imp, 2 }},
+        {0x38, { nop, imp, 2 }},
+        {0xD8, { nop, imp, 2 }},
+        {0xF8, { nop, imp, 2 }},
+        {0x58, { nop, imp, 2 }},
+        {0x78, { nop, imp, 2 }},
+        {0xB8, { nop, imp, 2 }},
+        {0xEA, { nop, imp, 2 }},
 
         {0x4C, { jmp, abs, 3 }},
         {0x6C, { jmp, ind, 5 }},
