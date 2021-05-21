@@ -1299,3 +1299,51 @@ TEST_CASE_METHOD(cpu_test, "ROR")
         CHECK(cpu.p.test(nes::cpu_flag::carry));
     }
 }
+
+TEST_CASE_METHOD(cpu_test, "LAX")
+{
+    load(prgadr, std::array{0xa7, 0x10}); // LAX $10
+    load(0x0010, std::array{0x27});
+
+    tick(3);
+    CHECK((int)cpu.a.value() == 0x27);
+    CHECK((int)cpu.x.value() == 0x27);
+}
+
+TEST_CASE_METHOD(cpu_test, "SAX")
+{
+    load(prgadr, std::array{0x87, 0x10}); // SAX $10
+    cpu.a.assign(0x03);
+    cpu.x.assign(0x0e);
+
+    tick(3);
+
+    CHECK(mem[0x0010] == 0x02);
+}
+
+TEST_CASE_METHOD(cpu_test, "DCP")
+{
+    load(prgadr, std::array{0xC7, 0x10}); // DCP $10
+    load(0x0010, std::array{0x43});
+    cpu.a.assign(0x42);
+
+    tick(5);
+
+    CHECK(mem[0x0010] == 0x42);
+    CHECK(cpu.p.test(nes::cpu_flag::zero));
+    CHECK((int)cpu.a.value() == 0x42);
+}
+
+
+TEST_CASE_METHOD(cpu_test, "ISC")
+{
+    load(prgadr, std::array{0xE7, 0x10}); // ISC $10
+    load(0x0010, std::array{0x41});
+    cpu.a.assign(0x42);
+
+    tick(5);
+
+    CHECK(mem[0x0010] == 0x42);
+    CHECK((int)cpu.a.value() == 0x00);
+    CHECK(cpu.p.test(nes::cpu_flag::zero));
+}

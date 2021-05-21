@@ -473,6 +473,43 @@ auto i_n = [](auto&, auto address_mode)
     return additional_cycles;
 };
 
+auto lax = [](auto& cpu, auto address_mode)
+{
+    auto [operand, additional_cycles] = address_mode().load_operand();
+    cpu.a = operand;
+    cpu.x = operand;
+    return additional_cycles;
+};
+
+auto sax = [](auto& cpu, auto address_mode)
+{
+    return address_mode().store_operand(cpu.a.value() & cpu.x.value());
+};
+
+auto isc = [](auto& cpu, auto address_mode)
+{
+    auto am = address_mode();
+    auto [operand, _] = am.load_operand();
+
+    am.store_operand(++operand);
+
+    adc_impl(cpu.a, cpu.a.value(), -operand, cpu.p);
+    return 0;
+};
+
+auto dcp = [](auto& cpu, auto address_mode)
+{
+    auto am = address_mode();
+    auto [operand, _] = am.load_operand();
+
+    am.store_operand(--operand);
+
+    [[maybe_unused]]
+    auto alu_result = arith_register{&cpu.p};
+
+    adc_impl(alu_result, cpu.a.value(), -operand, cpu.p, false);
+    return 0;
+};
 
 auto nop = [](auto&, auto) { return 0; };
 
@@ -679,6 +716,34 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0x80, { i_n, imm, 2 }},
         {0x89, { i_n, imm, 2 }},
 
+        {0xA7, { lax, zp , 3 }},
+        {0xB7, { lax, zpy, 4 }},
+        {0xAF, { lax, abs, 4 }},
+        {0xBF, { lax, aby, 4 }},
+        {0xA3, { lax, izx, 6 }},
+        {0xB3, { lax, izy, 5 }},
+
+        {0x87, { sax, zp , 3 }},
+        {0x97, { sax, zpy, 4 }},
+        {0x8F, { sax, abs, 4 }},
+        {0x83, { sax, izx, 6 }},
+
+        {0xC7, { dcp, zp , 5 }},
+        {0xD7, { dcp, zpx, 6 }},
+        {0xCF, { dcp, abs, 6 }},
+        {0xDF, { dcp, abx, 7 }},
+        {0xDB, { dcp, aby, 7 }},
+        {0xC3, { dcp, izx, 8 }},
+        {0xD3, { dcp, izy, 8 }},
+
+        {0xE7, { isc, zp , 5 }},
+        {0xF7, { isc, zpx, 6 }},
+        {0xEF, { isc, abs, 6 }},
+        {0xFF, { isc, abx, 7 }},
+        {0xFB, { isc, aby, 7 }},
+        {0xE3, { isc, izx, 8 }},
+        {0xF3, { isc, izy, 8 }},
+
         {0xA9, { lda, imm, 2 }},
         {0xA5, { lda, zp , 3 }},
         {0xB5, { lda, zpx, 4 }},
@@ -738,6 +803,7 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0x71, { adc, izy, 5 }},
 
         {0xE9, { sbc, imm, 2 }},
+        {0xEB, { sbc, imm, 2 }},
         {0xE5, { sbc, zp , 3 }},
         {0xF5, { sbc, zpx, 4 }},
         {0xED, { sbc, abs, 4 }},
