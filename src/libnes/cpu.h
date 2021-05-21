@@ -169,6 +169,7 @@ public:
     [[nodiscard]] auto read(uint16_t addr) const { return memory_[addr]; }
     [[nodiscard]] auto read_signed(uint16_t addr) const { return static_cast<int8_t>(memory_[addr]); }
     [[nodiscard]] auto read_word(uint16_t addr) const -> uint16_t;
+    [[nodiscard]] auto read_word_wrapped(uint16_t addr) const -> uint16_t;
 
     auto decode(uint8_t opcode) -> std::optional<instruction>;
 

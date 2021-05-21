@@ -199,6 +199,35 @@ TEST_CASE_METHOD(cpu_test, "LDA-IZX, X > 128")
     CHECK(cpu.a.value() == 0x0f);
 }
 
+TEST_CASE_METHOD(cpu_test, "LDA-IZX, Overflows")
+{
+    load(prgadr, std::array{0xa1, 0xff}); // LDA ($FF,X)
+
+    SECTION("Address on Zero Page Border")
+    {
+        load(0x00ff, std::array{0x00});
+        load(0x0000, std::array{0x04});
+        cpu.x.assign(0x00);
+
+        load(0x0400, std::array{0x5d});
+
+        tick(6);
+
+        CHECK(cpu.a.value() == 0x5d);
+    }
+    SECTION("LDA-IZX, Page Wrap")
+    {
+        load(0x0080, std::array{0x00, 0x02});
+        cpu.x.assign(0x81);
+
+        load(0x0200, std::array{0x5a});
+
+        tick(6);
+
+        CHECK(cpu.a.value() == 0x5a);
+    }
+}
+
 TEST_CASE_METHOD(cpu_test, "LDA-IZY")
 {
     load(prgadr, std::array{0xb1, 0x2a}); // LDA ($2A),Y
@@ -222,6 +251,22 @@ TEST_CASE_METHOD(cpu_test, "LDA-IZY")
 
         CHECK(cpu.a.value() == 0x21);
     }
+}
+
+TEST_CASE_METHOD(cpu_test, "LDA-IZY, Address on Zero Page Border")
+{
+    load(prgadr, std::array{0xb1, 0xff}); // LDA ($FF),Y
+
+    load(0x00ff, std::array{0x46});
+    load(0x0000, std::array{0x01});
+
+    cpu.y.assign(0xff);
+
+    load(0x0245, std::array{0x12});
+
+    tick(6);
+
+    CHECK(cpu.a.value() == 0x12);
 }
 
 TEST_CASE_METHOD(cpu_test, "LDX-IMM")
@@ -353,7 +398,7 @@ TEST_CASE_METHOD(cpu_test, "LDY-IMM")
     CHECK(cpu.y.value() == 0x40);
 }
 
-TEST_CASE_METHOD(cpu_test, "STY")
+TEST_CASE_METHOD(cpu_test, "STY-ABS")
 {
     load(prgadr, std::array{0x8c, 0x77, 0xd0}); // STY $D077
     cpu.y.assign(0xba);
@@ -361,6 +406,16 @@ TEST_CASE_METHOD(cpu_test, "STY")
     tick(4);
 
     CHECK(mem[0xd077] == 0xba);
+}
+
+TEST_CASE_METHOD(cpu_test, "STY-ZP")
+{
+    load(prgadr, std::array{0x84, 0x78}); // STY $78
+    cpu.y.assign(0x46);
+
+    tick(3);
+
+    CHECK(mem[0x0078] == 0x46);
 }
 
 TEST_CASE_METHOD(cpu_test, "TAX")
@@ -1165,6 +1220,18 @@ TEST_CASE_METHOD(cpu_test, "INC")
         CHECK(mem[0xf120] == 0x76);
     }
 }
+
+TEST_CASE_METHOD(cpu_test, "INC, Value Wrap")
+{
+    load(prgadr, std::array{0xe6, 0x78}); // INC $78
+    load(0x0078, std::array{0xff});
+
+    tick(5);
+
+    CHECK(mem[0x0078] == 0x00);
+    CHECK(cpu.p.test(nes::cpu_flag::zero));
+}
+
 
 TEST_CASE_METHOD(cpu_test, "DEC")
 {

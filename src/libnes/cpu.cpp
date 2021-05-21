@@ -120,7 +120,10 @@ auto inc = [](auto& cpu, auto address_mode)
     auto am = address_mode();
     auto [operand, _] = am.load_operand();
 
-    am.store_operand(operand + 1);
+    auto alu_result = arith_register{&cpu.p};
+    alu_result.assign(operand + 1);
+
+    am.store_operand(alu_result.value());
     return 0;
 };
 
@@ -129,7 +132,10 @@ auto dec = [](auto& cpu, auto address_mode)
     auto am = address_mode();
     auto [operand, _] = am.load_operand();
 
-    am.store_operand(operand - 1);
+    auto alu_result = arith_register{&cpu.p};
+    alu_result.assign(operand - 1);
+
+    am.store_operand(alu_result.value());
     return 0;
 };
 
@@ -535,9 +541,12 @@ auto isc = [](auto& cpu, auto address_mode)
     auto am = address_mode();
     auto [operand, _] = am.load_operand();
 
-    am.store_operand(++operand);
+    auto alu_result = arith_register{&cpu.p};
+    alu_result.assign(operand + 1);
 
-    adc_impl(cpu.a, cpu.a.value(), 0xFF - operand, cpu.p);
+    am.store_operand(alu_result.value());
+
+    adc_impl(cpu.a, cpu.a.value(), 0xFF - alu_result.value(), cpu.p);
     return 0;
 };
 
@@ -546,9 +555,12 @@ auto dcp = [](auto& cpu, auto address_mode)
     auto am = address_mode();
     auto [operand, _] = am.load_operand();
 
-    am.store_operand(--operand);
+    auto alu_result = arith_register{&cpu.p};
+    alu_result.assign(operand - 1);
 
-    cmp_impl(cpu.a.value(), operand, cpu.p);
+    am.store_operand(alu_result.value());
+
+    cmp_impl(cpu.a.value(), alu_result.value(), cpu.p);
     return 0;
 };
 
@@ -716,9 +728,7 @@ auto ind = [](auto& cpu)
     return memory_based_address_mode{cpu, [](auto& cpu )
     {
         auto address = cpu.read_word(cpu.pc.advance(2));
-        auto lo = cpu.read(address);
-        auto hi = cpu.read((address / 0x100) * 0x100 + (address + 1) % 0x100);
-        return std::tuple{static_cast<std::uint16_t>((hi << 8) | lo), 0};
+        return std::tuple{cpu.read_word_wrapped(address), 0};
     }};
 };
 
@@ -726,8 +736,8 @@ auto izx = [](auto& cpu)
 {
     return memory_based_address_mode{cpu, [](auto& cpu )
     {
-        auto indexed = cpu.read(cpu.pc.advance()) + cpu.x.value();
-        return std::tuple{cpu.read_word(indexed), 0};
+        auto indexed = (cpu.read(cpu.pc.advance()) + cpu.x.value()) % 0x100;
+        return std::tuple{cpu.read_word_wrapped(indexed), 0};
     }};
 };
 
@@ -736,7 +746,8 @@ auto izy = [](auto& cpu)
     return memory_based_address_mode{cpu, [](auto& cpu )
     {
         auto base = cpu.read(cpu.pc.advance());
-        return index(cpu.read_word(base), cpu.y.value());
+        auto ad = cpu.read_word_wrapped(base);
+        return index(ad, cpu.y.value());
     }};
 };
 
@@ -909,8 +920,8 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0xAC, { ldy, abs, 4 }},
         {0xBC, { ldy, abx, 4 }},
 
-        {0x84, { sty, imm, 3 }},
-        {0x94, { sty, zp , 4 }},
+        {0x84, { sty, zp , 3 }},
+        {0x94, { sty, zpx, 4 }},
         {0x8C, { sty, abs, 4 }},
 
         {0xAA, { tax, imp, 2 }},
@@ -1079,6 +1090,13 @@ auto cpu::read_word(uint16_t addr) const -> uint16_t
     auto lo = read(addr);
     auto hi = read(addr + 1);
 
+    return (hi << 8) | lo;
+}
+
+auto cpu::read_word_wrapped(uint16_t addr) const -> uint16_t
+{
+    auto lo = read(addr);
+    auto hi = read((addr / 0x100) * 0x100 + (addr + 1) % 0x100);
     return (hi << 8) | lo;
 }
 
