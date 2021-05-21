@@ -27,6 +27,11 @@ auto carry(const flags_register& f)
     return f.test(cpu_flag::carry) ? 1_i : 0_i;
 }
 
+auto borrow(const flags_register& f)
+{
+    return f.test(cpu_flag::carry) ? 0_i : -1_i;
+}
+
 auto is_page_crossed(uint16_t base, uint16_t effective_address)
 {
     return (base & 0xFF00) != (effective_address & 0xFF00);
@@ -82,7 +87,7 @@ auto sbc = [](auto& cpu, auto address_mode)
 {
     auto [operand, additional_cycles] = address_mode().load_operand();
 
-    adc_impl(cpu.a, cpu.a.value(), -operand, cpu.p);
+    adc_impl(cpu.a, cpu.a.value(), 0xFF - operand, cpu.p);
     return additional_cycles;
 };
 
@@ -532,7 +537,7 @@ auto isc = [](auto& cpu, auto address_mode)
 
     am.store_operand(++operand);
 
-    adc_impl(cpu.a, cpu.a.value(), -operand, cpu.p);
+    adc_impl(cpu.a, cpu.a.value(), 0xFF - operand, cpu.p);
     return 0;
 };
 

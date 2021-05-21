@@ -605,14 +605,26 @@ TEST_CASE_METHOD(cpu_test, "ADC-ABX")
     tick(4);
     CHECK(cpu.a.value() == 0x5b);
 }
+TEST_CASE_METHOD(cpu_test, "SBC, Borrow")
+{
+    load(prgadr, std::array{0xe9, 0x00}); // SBC #$00
+    cpu.a.assign(0x80);
+    cpu.p.assign(0xA4);
+
+    tick(2);
+
+    CHECK((int)cpu.a.value() == 0x7f);
+    CHECK((int)cpu.p.value() == 0x65);
+}
 
 TEST_CASE_METHOD(cpu_test, "SBC")
 {
+    // SEC
     // STA $00,X
     // TYA
     // SBC $00,X
-    load(prgadr, std::array{0x95, 0x00, 0x98, 0xf5, 0x00}); // A = Y - A
-    int program_cycles = 4 + 2 + 4;
+    load(prgadr, std::array{0x38, 0x95, 0x00, 0x98, 0xf5, 0x00}); // A = Y - A
+    int program_cycles = 2 + 4 + 2 + 4;
 
     SECTION("0x50-0xf0=0x60")
     {
@@ -1364,6 +1376,7 @@ TEST_CASE_METHOD(cpu_test, "ISC")
     load(prgadr, std::array{0xE7, 0x10}); // ISC $10
     load(0x0010, std::array{0x41});
     cpu.a.assign(0x42);
+    cpu.p.set(nes::cpu_flag::carry);
 
     tick(5);
 
