@@ -218,7 +218,8 @@ auto bit = [](auto& cpu, auto address_mode)
     [[maybe_unused]]
     auto alu_result = arith_register{&cpu.p};
     alu_result.assign(cpu.a.value() & operand);
-    cpu.p.set(cpu_flag::overflow, alu_result.value() & (1 << 6));
+    cpu.p.set(cpu_flag::overflow, operand & (1 << 6));
+    cpu.p.set(cpu_flag::negative, operand & (1 << 7));
 
     return additional_cycles;
 };

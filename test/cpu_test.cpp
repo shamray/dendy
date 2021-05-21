@@ -1081,41 +1081,40 @@ TEST_CASE_METHOD(cpu_test, "EOR")
 TEST_CASE_METHOD(cpu_test, "BIT")
 {
     load(prgadr, std::array{0x24, 0x00}); // BIT $00
-    load(0x0000, std::array{0xFE});
 
-    SECTION("Bit 0 = 0")
+    SECTION("Bit 0, Mask match")
     {
-        cpu.a.assign(0x01);
-
-        tick(3);
-        CHECK      (cpu.p.test(nes::cpu_flag::zero));
-        CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
-        CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
-    }
-    SECTION("Bit 2 = 1")
-    {
-        cpu.a.assign(0x02);
+        load(0x0000, std::array{0x01});
+        cpu.a.assign(0x0F);
 
         tick(3);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
-        CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
-        CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
+    }
+    SECTION("Bit 0, Mask mismatch")
+    {
+        load(0x0000, std::array{0x01});
+        cpu.a.assign(0x0E);
+
+        tick(3);
+        CHECK(cpu.p.test(nes::cpu_flag::zero));
     }
     SECTION("Bit 6 = 1")
     {
-        cpu.a.assign(0x40);
+        load(0x0000, std::array{0x40});
+        cpu.a.assign(0x0E);
 
         tick(3);
-        CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
+
         CHECK      (cpu.p.test(nes::cpu_flag::overflow));
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::negative));
     }
     SECTION("Bit 7 = 1")
     {
-        cpu.a.assign(0x80);
+        load(0x0000, std::array{0x80});
+        cpu.a.assign(0x0E);
 
         tick(3);
-        CHECK_FALSE(cpu.p.test(nes::cpu_flag::zero));
+
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::overflow));
         CHECK      (cpu.p.test(nes::cpu_flag::negative));
     }
