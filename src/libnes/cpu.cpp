@@ -568,13 +568,14 @@ auto slo = [](auto& cpu, auto address_mode)
 {
     auto am = address_mode();
     auto [operand, _] = am.load_operand();
+    auto set_carry = (operand & 0x80) != 0;
 
     operand <<= 1;
     am.store_operand(operand);
 
     cpu.a.assign(cpu.a.value() | operand);
 
-    cpu.p.set(cpu_flag::carry, (operand & 0x80) != 0);
+    cpu.p.set(cpu_flag::carry, set_carry);
     return 0;
 };
 
@@ -582,13 +583,14 @@ auto sre = [](auto& cpu, auto address_mode)
 {
     auto am = address_mode();
     auto [operand, _] = am.load_operand();
+    auto set_carry = (operand & 0x01) != 0;
 
     operand >>= 1;
     am.store_operand(operand);
 
     cpu.a.assign(cpu.a.value() ^ operand);
 
-    cpu.p.set(cpu_flag::carry, (operand & 0x01) != 0);
+    cpu.p.set(cpu_flag::carry, set_carry);
     return 0;
 };
 

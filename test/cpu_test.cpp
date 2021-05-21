@@ -1464,6 +1464,21 @@ TEST_CASE_METHOD(cpu_test, "SLO")
     CHECK((int)cpu.a.value() == 0x07);
 }
 
+TEST_CASE_METHOD(cpu_test, "SLO, Carry bit")
+{
+    load(prgadr, std::array{0x03, 0x45}); // SLO ($45,X)
+    load(0x0047, std::array{0x47, 0x06});
+    load(0x0647, std::array{0xA5});
+    cpu.x.assign(0x02);
+    cpu.a.assign(0xB3);
+
+    tick(8);
+
+    CHECK((int)mem[0x0647] == 0x4A);
+    CHECK((int)cpu.a.value() == 0xFB);
+    CHECK(cpu.p.test(nes::cpu_flag::carry));
+}
+
 TEST_CASE_METHOD(cpu_test, "SRE")
 {
     load(prgadr, std::array{0x47, 0x10}); // SRE $10
