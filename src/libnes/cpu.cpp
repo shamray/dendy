@@ -48,19 +48,24 @@ auto arith_result(int x)
     return std::tuple{r, c};
 }
 
-void adc_impl(auto& result, uint8_t accum, uint8_t operand, flags_register& flags, bool set_overflow=true)
+void adc_impl(auto& result, uint8_t accum, uint8_t operand, flags_register& flags)
 {
     auto [r, c] = arith_result(
             accum + operand + carry(flags)
     );
     flags.set(cpu_flag::carry, c);
 
-    if (set_overflow) {
-        auto v = ((operand ^ r) & (r ^ accum) & 0x80) != 0;
-        flags.set(cpu_flag::overflow, v);
-    }
+    auto v = ((operand ^ r) & (r ^ accum) & 0x80) != 0;
+    flags.set(cpu_flag::overflow, v);
 
     result = r;
+}
+
+void cmp_impl(uint8_t accum, uint8_t operand, flags_register& flags)
+{
+    auto alu_result = arith_register{&flags};
+    alu_result.assign(accum - operand);
+    flags.set(cpu_flag::carry, accum >= operand);
 }
 
 // Operations
@@ -85,10 +90,7 @@ auto cmp = [](auto& cpu, auto address_mode)
 {
     auto [operand, additional_cycles] = address_mode().load_operand();
 
-    [[maybe_unused]]
-    auto alu_result = arith_register{&cpu.p};
-
-    adc_impl(alu_result, cpu.a.value(), -operand, cpu.p, false);
+    cmp_impl(cpu.a.value(), operand, cpu.p);
     return additional_cycles;
 };
 
@@ -96,10 +98,7 @@ auto cpx = [](auto& cpu, auto address_mode)
 {
     auto [operand, additional_cycles] = address_mode().load_operand();
 
-    [[maybe_unused]]
-    auto alu_result = arith_register{&cpu.p};
-
-    adc_impl(alu_result, cpu.x.value(), -operand, cpu.p, false);
+    cmp_impl(cpu.x.value(), operand, cpu.p);
     return additional_cycles;
 };
 
@@ -107,10 +106,7 @@ auto cpy = [](auto& cpu, auto address_mode)
 {
     auto [operand, additional_cycles] = address_mode().load_operand();
 
-    [[maybe_unused]]
-    auto alu_result = arith_register{&cpu.p};
-
-    adc_impl(alu_result, cpu.y.value(), -operand, cpu.p, false);
+    cmp_impl(cpu.y.value(), operand, cpu.p);
     return additional_cycles;
 };
 
@@ -546,10 +542,7 @@ auto dcp = [](auto& cpu, auto address_mode)
 
     am.store_operand(--operand);
 
-    [[maybe_unused]]
-    auto alu_result = arith_register{&cpu.p};
-
-    adc_impl(alu_result, cpu.a.value(), -operand, cpu.p, false);
+    cmp_impl(cpu.a.value(), operand, cpu.p);
     return 0;
 };
 

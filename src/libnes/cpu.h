@@ -37,7 +37,7 @@ public:
     [[nodiscard]] auto value() const { return static_cast<uint8_t>(bits_.to_ulong()); }
 
 private:
-    std::bitset<8> bits_;
+    std::bitset<8> bits_{0x20};
 };
 
 class arith_register

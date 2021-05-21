@@ -500,7 +500,7 @@ TEST_CASE_METHOD(cpu_test, "PLP")
     load(0x01fd, std::array{0xDF}); // all flags
     cpu.s.assign(0xfc);
 
-    REQUIRE(cpu.p.value() == 0x00);
+    REQUIRE((cpu.p.value() & 0xdf) == 0x00);
 
     tick(4);
 
@@ -731,6 +731,17 @@ TEST_CASE_METHOD(cpu_test, "CMP")
 
         CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
     }
+}
+
+TEST_CASE_METHOD(cpu_test, "CMP, Carry flag interference")
+{
+    load(prgadr, std::array{0xc9, 0x6f});
+    cpu.a.assign(0x6f);
+    cpu.p.set(nes::cpu_flag::carry);
+
+    tick(2);
+
+    CHECK(cpu.p.test(nes::cpu_flag::zero));
 }
 
 TEST_CASE_METHOD(cpu_test, "CPX")
