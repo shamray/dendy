@@ -404,6 +404,48 @@ auto beq = [](auto& cpu, auto address_mode)
     return additional_cycles + 1;
 };
 
+auto clc = [](auto& cpu, auto )
+{
+    cpu.p.reset(cpu_flag::carry);
+    return 0;
+};
+
+auto sec = [](auto& cpu, auto )
+{
+    cpu.p.set(cpu_flag::carry);
+    return 0;
+};
+
+auto cld = [](auto& cpu, auto )
+{
+    cpu.p.reset(cpu_flag::decimal);
+    return 0;
+};
+
+auto sed = [](auto& cpu, auto )
+{
+    cpu.p.set(cpu_flag::decimal);
+    return 0;
+};
+
+auto cli = [](auto& cpu, auto )
+{
+    cpu.p.reset(cpu_flag::int_disable);
+    return 0;
+};
+
+auto sei = [](auto& cpu, auto )
+{
+    cpu.p.set(cpu_flag::int_disable);
+    return 0;
+};
+
+auto clv = [](auto& cpu, auto )
+{
+    cpu.p.reset(cpu_flag::overflow);
+    return 0;
+};
+
 auto jmp = [](auto& cpu, auto address_mode)
 {
     auto [address, _] = address_mode().fetch_address();
@@ -999,14 +1041,13 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0xD0, { bne, rel, 2 }},
         {0xF0, { beq, rel, 2 }},
 
-        {0x18, { nop, imp, 2 }},
-        {0x38, { nop, imp, 2 }},
-        {0xD8, { nop, imp, 2 }},
-        {0xF8, { nop, imp, 2 }},
-        {0x58, { nop, imp, 2 }},
-        {0x78, { nop, imp, 2 }},
-        {0xB8, { nop, imp, 2 }},
-        {0xEA, { nop, imp, 2 }},
+        {0x18, { clc, imp, 2 }},
+        {0x38, { sec, imp, 2 }},
+        {0xD8, { cld, imp, 2 }},
+        {0xF8, { sed, imp, 2 }},
+        {0x58, { cli, imp, 2 }},
+        {0x78, { sei, imp, 2 }},
+        {0xB8, { clv, imp, 2 }},
 
         {0x4C, { jmp, abs, 3 }},
         {0x6C, { jmp, ind, 5 }},
