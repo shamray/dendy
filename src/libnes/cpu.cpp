@@ -897,8 +897,8 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0x86, { stx, zp , 3 }},
         {0x96, { stx, zpy, 4 }},
         {0x8E, { stx, abs, 4 }},
-        {0xA0, { stx, imm, 2 }},
 
+        {0xA0, { ldy, imm, 2 }},
         {0xA4, { ldy, zp , 3 }},
         {0xB4, { ldy, zpx, 4 }},
         {0xAC, { ldy, abs, 4 }},

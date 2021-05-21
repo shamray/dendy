@@ -335,7 +335,7 @@ TEST_CASE_METHOD(cpu_test, "STX")
     CHECK(mem[0x0010] == 0x42);
 }
 
-TEST_CASE_METHOD(cpu_test, "LDY")
+TEST_CASE_METHOD(cpu_test, "LDY-ABS")
 {
     load(prgadr, std::array{0xac, 0x10, 0xd0}); // LDY $D010
     load(0xd010, std::array{0xba});
@@ -343,6 +343,14 @@ TEST_CASE_METHOD(cpu_test, "LDY")
     tick(4);
 
     CHECK(cpu.y.value() == 0xba);
+}
+
+TEST_CASE_METHOD(cpu_test, "LDY-IMM")
+{
+    load(prgadr, std::array{0xa0, 0x40}); // LDY $40
+
+    tick(2);
+    CHECK(cpu.y.value() == 0x40);
 }
 
 TEST_CASE_METHOD(cpu_test, "STY")
@@ -791,40 +799,46 @@ TEST_CASE_METHOD(cpu_test, "CPX")
 
 TEST_CASE_METHOD(cpu_test, "CPY")
 {
-    load(prgadr, std::array{0xc0, 0x2a});
+    load(prgadr, std::array{0xc0, 0x40});
+    cpu.p.assign(0x65);
 
-    SECTION("X < M")
+    auto v = cpu.p.test(nes::cpu_flag::overflow);
+
+    SECTION("Y < M")
     {
-        cpu.y.assign(0x29);
+        cpu.y.assign(0x39);
         tick(2);
 
         CHECK       (cpu.p.test(nes::cpu_flag::negative));
         CHECK_FALSE (cpu.p.test(nes::cpu_flag::zero));
         CHECK_FALSE (cpu.p.test(nes::cpu_flag::carry));
-        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+        CHECK       (cpu.p.test(nes::cpu_flag::overflow) == v);
     }
-    SECTION("X = M")
+    SECTION("Y = M")
     {
-        cpu.y.assign(0x2A);
+        cpu.y.assign(0x40);
         tick(2);
+
+        CHECK((int)cpu.p.value() == 0x67);
 
         CHECK_FALSE (cpu.p.test(nes::cpu_flag::negative));
         CHECK       (cpu.p.test(nes::cpu_flag::zero));
         CHECK       (cpu.p.test(nes::cpu_flag::carry));
-        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+        CHECK       (cpu.p.test(nes::cpu_flag::overflow) == v);
     }
-    SECTION("X > M")
+    SECTION("Y > M")
     {
-        cpu.y.assign(0x2B);
+        cpu.y.assign(0x41);
         tick(2);
 
         CHECK_FALSE (cpu.p.test(nes::cpu_flag::negative));
         CHECK_FALSE (cpu.p.test(nes::cpu_flag::zero));
         CHECK       (cpu.p.test(nes::cpu_flag::carry));
-        CHECK_FALSE (cpu.p.test(nes::cpu_flag::overflow));
+        CHECK       (cpu.p.test(nes::cpu_flag::overflow) == v);
     }
     SECTION("V = 0")
     {
+        cpu.p.reset(nes::cpu_flag::overflow);
         load(prgadr, std::array{0xc9, 0xd0});
 
         cpu.y.assign(0x70);
