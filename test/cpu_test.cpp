@@ -1318,7 +1318,7 @@ TEST_CASE_METHOD(cpu_test, "SAX")
 
     tick(3);
 
-    CHECK(mem[0x0010] == 0x02);
+    CHECK((int)mem[0x0010] == 0x02);
 }
 
 TEST_CASE_METHOD(cpu_test, "DCP")
@@ -1329,7 +1329,7 @@ TEST_CASE_METHOD(cpu_test, "DCP")
 
     tick(5);
 
-    CHECK(mem[0x0010] == 0x42);
+    CHECK((int)mem[0x0010] == 0x42);
     CHECK(cpu.p.test(nes::cpu_flag::zero));
     CHECK((int)cpu.a.value() == 0x42);
 }
@@ -1343,7 +1343,109 @@ TEST_CASE_METHOD(cpu_test, "ISC")
 
     tick(5);
 
-    CHECK(mem[0x0010] == 0x42);
+    CHECK((int)mem[0x0010] == 0x42);
     CHECK((int)cpu.a.value() == 0x00);
     CHECK(cpu.p.test(nes::cpu_flag::zero));
+}
+
+TEST_CASE_METHOD(cpu_test, "SLO")
+{
+    load(prgadr, std::array{0x07, 0x10}); // SLO $10
+    load(0x0010, std::array{0x03});
+    cpu.a.assign(0x1);
+
+    tick(5);
+
+    CHECK((int)mem[0x0010] == 0x06);
+    CHECK((int)cpu.a.value() == 0x07);
+}
+
+TEST_CASE_METHOD(cpu_test, "SRE")
+{
+    load(prgadr, std::array{0x47, 0x10}); // SRE $10
+    load(0x0010, std::array{0x06});
+    cpu.a.assign(0x1);
+
+    tick(5);
+
+    CHECK((int)mem[0x0010] == 0x03);
+    CHECK((int)cpu.a.value() == 0x02);
+}
+
+TEST_CASE_METHOD(cpu_test, "RLA")
+{
+    load(prgadr, std::array{0x27, 0x10}); // RLA, $10
+
+    SECTION("Bit 0")
+    {
+        load(0x0010, std::array{0x01});
+        cpu.a.assign(0xFF);
+
+        tick(5);
+
+        CHECK((int)mem[0x0010] == 0x2);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
+        CHECK((int)cpu.a.value() == 0x2);
+    }
+    SECTION("Bit 7")
+    {
+        load(0x0010, std::array{0x80});
+        cpu.a.assign(0xFF);
+
+        tick(5);
+
+        CHECK((int)mem[0x0010] == 0x00);
+        CHECK(cpu.p.test(nes::cpu_flag::carry));
+        CHECK((int)cpu.a.value() == 0x00);
+    }
+    SECTION("Bit 8 (Carry)")
+    {
+        load(0x0010, std::array{0x00});
+        cpu.p.set(nes::cpu_flag::carry);
+        cpu.a.assign(0xFF);
+
+        tick(5);
+
+        CHECK((int)mem[0x0010] == 0x01);
+        CHECK((int)cpu.a.value() == 0x01);
+    }
+}
+
+TEST_CASE_METHOD(cpu_test, "RRA")
+{
+    load(prgadr, std::array{0x67, 0x10}); // RRA, $10
+
+    SECTION("Bit 7")
+    {
+        load(0x0010, std::array{0x80});
+        cpu.a.assign(0x01);
+
+        tick(5);
+
+        CHECK((int)mem[0x0010] == 0x40);
+        CHECK((int)cpu.a.value() == 0x41);
+    }
+    SECTION("Bit 8 (Carry)")
+    {
+        load(0x0010, std::array{0x00});
+        cpu.p.set(nes::cpu_flag::carry);
+        cpu.a.assign(0x01);
+
+        tick(5);
+
+        CHECK((int)mem[0x0010] == 0x80);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
+        CHECK((int)cpu.a.value() == 0x82);
+    }
+    SECTION("Bit 0")
+    {
+        load(0x0010, std::array{0x01});
+        cpu.a.assign(0x01);
+
+        tick(5);
+
+        CHECK((int)mem[0x0010] == 0x00);
+        CHECK(cpu.p.test(nes::cpu_flag::carry));
+        CHECK((int)cpu.a.value() == 0x01);
+    }
 }

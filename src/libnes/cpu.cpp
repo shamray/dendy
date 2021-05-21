@@ -511,6 +511,65 @@ auto dcp = [](auto& cpu, auto address_mode)
     return 0;
 };
 
+auto slo = [](auto& cpu, auto address_mode)
+{
+    auto am = address_mode();
+    auto [operand, _] = am.load_operand();
+
+    operand <<= 1;
+    am.store_operand(operand);
+
+    cpu.a.assign(cpu.a.value() | operand);
+
+    cpu.p.set(cpu_flag::carry, (operand & 0x80) != 0);
+    return 0;
+};
+
+auto sre = [](auto& cpu, auto address_mode)
+{
+    auto am = address_mode();
+    auto [operand, _] = am.load_operand();
+
+    operand >>= 1;
+    am.store_operand(operand);
+
+    cpu.a.assign(cpu.a.value() ^ operand);
+
+    cpu.p.set(cpu_flag::carry, (operand & 0x01) != 0);
+    return 0;
+};
+
+auto rla = [](auto& cpu, auto address_mode)
+{
+    auto am = address_mode();
+    auto [operand, _] = am.load_operand();
+    auto carry_bit = cpu.p.test(cpu_flag::carry) ? uint8_t{0x01} : uint8_t{};
+    auto set_carry = (operand & 0x80) != 0;
+
+    operand = (operand << 1) | carry_bit;
+    am.store_operand(operand);
+    cpu.a.assign(operand & cpu.a.value());
+
+    cpu.p.set(cpu_flag::carry, set_carry);
+    return 0;
+};
+
+auto rra = [](auto& cpu, auto address_mode)
+{
+    auto am = address_mode();
+    auto [operand, _] = am.load_operand();
+    auto carry_bit = cpu.p.test(cpu_flag::carry) ? uint8_t{0x80} : uint8_t{};
+    auto set_carry = (operand & 0x01) != 0;
+
+    operand = (operand >> 1) | carry_bit;
+    am.store_operand(operand);
+    adc_impl(cpu.a, cpu.a.value(), operand, cpu.p);
+
+    cpu.p.set(cpu_flag::carry, set_carry);
+    return 0;
+};
+
+
 auto nop = [](auto&, auto) { return 0; };
 
 
@@ -743,6 +802,38 @@ cpu::cpu(std::vector<uint8_t>& memory)
         {0xFB, { isc, aby, 7 }},
         {0xE3, { isc, izx, 8 }},
         {0xF3, { isc, izy, 8 }},
+
+        {0x07, { slo, zp , 5 }},
+        {0x17, { slo, zpx, 6 }},
+        {0x0F, { slo, abs, 6 }},
+        {0x1F, { slo, abx, 7 }},
+        {0x1B, { slo, aby, 7 }},
+        {0x03, { slo, izx, 8 }},
+        {0x13, { slo, izy, 8 }},
+
+        {0x47, { sre, zp , 5 }},
+        {0x57, { sre, zpx, 6 }},
+        {0x4F, { sre, abs, 6 }},
+        {0x5F, { sre, abx, 7 }},
+        {0x5B, { sre, aby, 7 }},
+        {0x43, { sre, izx, 8 }},
+        {0x53, { sre, izy, 8 }},
+
+        {0x27, { rla, zp , 5 }},
+        {0x37, { rla, zpx, 6 }},
+        {0x2F, { rla, abs, 6 }},
+        {0x3F, { rla, abx, 7 }},
+        {0x3B, { rla, aby, 7 }},
+        {0x23, { rla, izx, 8 }},
+        {0x33, { rla, izy, 8 }},
+
+        {0x67, { rra, zp , 5 }},
+        {0x77, { rra, zpx, 6 }},
+        {0x6F, { rra, abs, 6 }},
+        {0x7F, { rra, abx, 7 }},
+        {0x7B, { rra, aby, 7 }},
+        {0x63, { rra, izx, 8 }},
+        {0x73, { rra, izy, 8 }},
 
         {0xA9, { lda, imm, 2 }},
         {0xA5, { lda, zp , 3 }},
