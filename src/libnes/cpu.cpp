@@ -1,4 +1,4 @@
-#include "libnes/cpu.h"
+#include "libnes/cpu.hpp"
 
 #include <stdexcept>
 #include <unordered_map>

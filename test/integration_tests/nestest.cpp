@@ -5,7 +5,7 @@
 #include <ctime>
 #include <chrono>
 
-#include "libnes/cpu.h"
+#include "libnes/cpu.hpp"
 
 constexpr auto operator""_Kb(size_t const x)
 {
