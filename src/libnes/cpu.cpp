@@ -328,7 +328,7 @@ auto php = [](auto& cpu, auto )
 auto plp = [](auto& cpu, auto )
 {
     auto flags_value = cpu.read(cpu.s.pop());
-    cpu.p.assign(flags_value);
+    cpu.p.assign(flags_value & 0xEF);
     return 0;
 };
 

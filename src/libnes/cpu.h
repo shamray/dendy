@@ -29,7 +29,7 @@ class flags_register
     constexpr static auto pos(cpu_flag f) { return static_cast<size_t>(f); }
 
 public:
-    void assign(uint8_t bits) { bits_ = bits; }
+    void assign(uint8_t bits) { bits_ = bits | 0x20;  }
     void set(cpu_flag f, bool value = true) { bits_.set(pos(f), value); }
     void reset(cpu_flag f) { bits_.reset(pos(f)); }
 
