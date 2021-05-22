@@ -1530,6 +1530,19 @@ TEST_CASE_METHOD(cpu_test, "RLA")
     }
 }
 
+TEST_CASE_METHOD(cpu_test, "RRA, Carry")
+{
+    load(prgadr, std::array{0x67, 0x10}); // RRA, $10
+    load(0x010, std::array{0xa5});
+    cpu.a.assign(0xb2);
+    cpu.p.assign(0xe4);
+
+    tick(5);
+
+    CHECK((int)cpu.a.value() == 0x05);
+    CHECK((int)cpu.p.value() == 0x25);
+}
+
 TEST_CASE_METHOD(cpu_test, "RRA")
 {
     load(prgadr, std::array{0x67, 0x10}); // RRA, $10
@@ -1554,7 +1567,7 @@ TEST_CASE_METHOD(cpu_test, "RRA")
 
         CHECK((int)mem[0x0010] == 0x80);
         CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
-        CHECK((int)cpu.a.value() == 0x82);
+        CHECK((int)cpu.a.value() == 0x81);
     }
     SECTION("Bit 0")
     {
@@ -1564,7 +1577,7 @@ TEST_CASE_METHOD(cpu_test, "RRA")
         tick(5);
 
         CHECK((int)mem[0x0010] == 0x00);
-        CHECK(cpu.p.test(nes::cpu_flag::carry));
-        CHECK((int)cpu.a.value() == 0x01);
+        CHECK_FALSE(cpu.p.test(nes::cpu_flag::carry));
+        CHECK((int)cpu.a.value() == 0x02);
     }
 }

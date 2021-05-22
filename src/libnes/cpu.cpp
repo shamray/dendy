@@ -603,9 +603,10 @@ auto rla = [](auto& cpu, auto address_mode)
 
     operand = (operand << 1) | carry_bit;
     am.store_operand(operand);
-    cpu.a.assign(operand & cpu.a.value());
 
     cpu.p.set(cpu_flag::carry, set_carry);
+    cpu.a.assign(operand & cpu.a.value());
+
     return 0;
 };
 
@@ -618,9 +619,10 @@ auto rra = [](auto& cpu, auto address_mode)
 
     operand = (operand >> 1) | carry_bit;
     am.store_operand(operand);
-    adc_impl(cpu.a, cpu.a.value(), operand, cpu.p);
 
     cpu.p.set(cpu_flag::carry, set_carry);
+    adc_impl(cpu.a, cpu.a.value(), operand, cpu.p);
+
     return 0;
 };
 
