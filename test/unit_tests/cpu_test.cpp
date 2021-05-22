@@ -549,12 +549,12 @@ TEST_CASE_METHOD(cpu_test, "PLA")
 TEST_CASE_METHOD(cpu_test, "PHP")
 {
     load(prgadr, std::array{0x08}); // PHP
-    cpu.p.assign(0x42); // zero, overflow
+    cpu.p.assign(0x62); // zero, overflow
 
     tick(3);
 
-    CHECK(cpu.s.value() == 0xfc);
-    CHECK(mem[0x01fd] == 0x42);
+    CHECK((int)cpu.s.value() == 0xfc);
+    CHECK((int)mem[0x01fd] == 0x62);
 }
 
 TEST_CASE_METHOD(cpu_test, "PLP")
@@ -572,9 +572,9 @@ TEST_CASE_METHOD(cpu_test, "PLP")
     CHECK(cpu.p.test(nes::cpu_flag::zero));
     CHECK(cpu.p.test(nes::cpu_flag::int_disable));
     CHECK(cpu.p.test(nes::cpu_flag::decimal));
-    CHECK(cpu.p.test(nes::cpu_flag::break_called));
     CHECK(cpu.p.test(nes::cpu_flag::overflow));
     CHECK(cpu.p.test(nes::cpu_flag::negative));
+    CHECK_FALSE(cpu.p.test(nes::cpu_flag::break_called));
 }
 
 TEST_CASE_METHOD(cpu_test, "ADC-IMM")

@@ -17,7 +17,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 find_package(Catch2 REQUIRED)
 
 add_library(libnes
-	"src/libnes/cpu.h" 
+	"src/libnes/cpu.h"
 	"src/libnes/cpu.cpp"
 )
 
