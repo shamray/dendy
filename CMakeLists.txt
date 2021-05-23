@@ -9,12 +9,19 @@ if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
 endif()
 
 include("${CMAKE_BINARY_DIR}/conan.cmake")
-conan_cmake_configure(REQUIRES catch2/[>=2.13] GENERATORS cmake_find_package)
+conan_cmake_configure(
+	REQUIRES
+		catch2/[>=2.13]
+		sdl2/[>=2.0.14]@bincrafters/stable
+	GENERATORS
+		cmake_find_package
+)
 conan_cmake_autodetect(settings)
-conan_cmake_install(PATH_OR_REFERENCE . BUILD missing REMOTE conan-center SETTINGS ${settings})
+conan_cmake_install(PATH_OR_REFERENCE . BUILD missing SETTINGS ${settings})
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 find_package(Catch2 REQUIRED)
+find_package(SDL2 REQUIRED)
 
 include(Catch)
 enable_testing()
