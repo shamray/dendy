@@ -2,6 +2,8 @@ add_library(libnes
     libnes/cpu.hpp
     libnes/cpu.cpp
     libnes/cpu_registers.hpp
+    libnes/ppu.hpp
+    libnes/ppu.cpp
 )
 
 target_include_directories(libnes PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
