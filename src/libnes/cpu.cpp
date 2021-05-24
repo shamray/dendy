@@ -68,7 +68,7 @@ void adc_impl(auto& result, uint8_t accum, uint8_t operand, flags_register& flag
 
 void cmp_impl(uint8_t accum, uint8_t operand, flags_register& flags)
 {
-    auto alu_result = arith_register{&flags};
+    auto alu_result = arith_register{flags};
     alu_result.assign(accum - operand);
     flags.set(cpu_flag::carry, accum >= operand);
 }
@@ -120,7 +120,7 @@ auto inc = [](auto& cpu, auto address_mode)
     auto am = address_mode;
     auto [operand, _] = am.load_operand();
 
-    auto alu_result = arith_register{&cpu.p};
+    auto alu_result = arith_register{cpu.p};
     alu_result.assign(operand + 1);
 
     am.store_operand(alu_result.value());
@@ -132,7 +132,7 @@ auto dec = [](auto& cpu, auto address_mode)
     auto am = address_mode;
     auto [operand, _] = am.load_operand();
 
-    auto alu_result = arith_register{&cpu.p};
+    auto alu_result = arith_register{cpu.p};
     alu_result.assign(operand - 1);
 
     am.store_operand(alu_result.value());
@@ -227,7 +227,7 @@ auto bit = [](auto& cpu, auto address_mode)
     auto [operand, additional_cycles] = address_mode.load_operand();
 
     [[maybe_unused]]
-    auto alu_result = arith_register{&cpu.p};
+    auto alu_result = arith_register{cpu.p};
     alu_result.assign(cpu.a.value() & operand);
     cpu.p.set(cpu_flag::overflow, operand & (1 << 6));
     cpu.p.set(cpu_flag::negative, operand & (1 << 7));
@@ -539,7 +539,7 @@ auto isc = [](auto& cpu, auto address_mode)
     auto am = address_mode;
     auto [operand, _] = am.load_operand();
 
-    auto alu_result = arith_register{&cpu.p};
+    auto alu_result = arith_register{cpu.p};
     alu_result.assign(operand + 1);
 
     am.store_operand(alu_result.value());
@@ -553,7 +553,7 @@ auto dcp = [](auto& cpu, auto address_mode)
     auto am = address_mode;
     auto [operand, _] = am.load_operand();
 
-    auto alu_result = arith_register{&cpu.p};
+    auto alu_result = arith_register{cpu.p};
     alu_result.assign(operand - 1);
 
     am.store_operand(alu_result.value());

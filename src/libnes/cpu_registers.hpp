@@ -38,9 +38,7 @@ private:
 class arith_register
 {
 public:
-    arith_register() = default;
-    explicit arith_register(flags_register* f) : flags_{f} {}
-    explicit arith_register(uint8_t val, flags_register* f = nullptr) : val_{val}, flags_{f} {}
+    explicit arith_register(flags_register& f) : flags_{f} {}
 
     [[nodiscard]] auto value() const { return val_; }
 
@@ -53,15 +51,13 @@ public:
     void assign(uint8_t new_val)
     {
         val_ = new_val;
-        if (flags_) {
-            flags_->set(cpu_flag::zero, val_ == 0);
-            flags_->set(cpu_flag::negative, (val_ & 0x80) != 0);
-        }
+        flags_.set(cpu_flag::zero, val_ == 0);
+        flags_.set(cpu_flag::negative, (val_ & 0x80) != 0);
     }
 
 private:
     uint8_t val_{0};
-    flags_register* flags_{nullptr};
+    flags_register& flags_;
 };
 
 inline std::ostream& operator<< (std::ostream& s, const arith_register& r)

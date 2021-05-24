@@ -20,9 +20,9 @@ public:
     stack_register s{0x0100, 0xFD};
     flags_register p;
 
-    arith_register a{&p};
-    arith_register x{&p};
-    arith_register y{&p};
+    arith_register a{p};
+    arith_register x{p};
+    arith_register y{p};
 
     struct instruction
     {
