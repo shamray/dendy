@@ -1,0 +1,2 @@
+add_executable(grab_ppu_registers grab_ppu_registers.cpp)
+target_link_libraries(grab_ppu_registers libnes)
