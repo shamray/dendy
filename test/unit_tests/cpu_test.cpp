@@ -20,9 +20,17 @@ auto create_memory()
 class cpu_test
 {
 public:
+    struct test_bus
+    {
+        void write(uint16_t addr, uint8_t value) { mem[addr] = value; }
+        uint8_t read(uint16_t addr) const { return mem[addr]; }
+
+        std::vector<uint8_t>& mem;
+    };
+
     cpu_test()
         : mem{create_memory()}
-        , cpu{mem}
+        , cpu{b}
     {
     }
 
@@ -39,8 +47,10 @@ public:
         CHECK(cpu.is_executing() != expected_to_finish);
     }
 
+
     std::vector<uint8_t> mem;
-    nes::cpu cpu;
+    test_bus b{mem};
+    nes::cpu<test_bus> cpu;
     uint16_t prgadr{0x8000};
 
 };

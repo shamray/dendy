@@ -12,11 +12,19 @@ constexpr auto operator""_Kb(size_t const x)
     return x * 1024;
 }
 
-class test_cpu: public nes::cpu
+struct test_bus
+{
+    void write(uint16_t addr, uint8_t value) { mem[addr] = value; }
+    uint8_t read(uint16_t addr) const { return mem[addr]; }
+
+    std::vector<uint8_t>& mem;
+};
+
+class test_cpu: public nes::cpu<test_bus>
 {
 public:
-    explicit test_cpu(std::vector<uint8_t>& memory)
-        : nes::cpu(memory)
+    explicit test_cpu(test_bus& bus)
+        : nes::cpu<test_bus>(bus)
     {
         pc.assign(0xC000);
 
@@ -60,7 +68,8 @@ auto load_nestest()
 TEST_CASE("The ultimate NES CPU test ROM (aka nestest)")
 {
     auto m = load_nestest();
-    auto cpu = test_cpu{m};
+    auto bus = test_bus{m};
+    auto cpu = test_cpu{bus};
 
     auto log = std::ofstream{"nestest.log"};
     auto start_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
