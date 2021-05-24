@@ -26,8 +26,8 @@ public:
 
     struct instruction
     {
-        instruction(auto op, auto am, int cycles = 1)
-            : command_{[op, am](auto& cpu){ return op(cpu, [&cpu, am](){ return am(cpu); }); }}
+        instruction(auto operation, auto address_mode, int cycles = 1)
+            : command_{[operation, address_mode](auto& cpu){ return operation(cpu, address_mode(cpu)); }}
             , c_{cycles}
         {}
         instruction() = default;
@@ -69,7 +69,7 @@ public:
 private:
     std::vector<uint8_t>& memory_;
     instruction current_instruction;
-    std::unordered_map<uint8_t, cpu::instruction> instruction_set;
+    const std::unordered_map<uint8_t, cpu::instruction> instruction_set;
 };
 
 }

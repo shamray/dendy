@@ -77,7 +77,7 @@ void cmp_impl(uint8_t accum, uint8_t operand, flags_register& flags)
 
 auto adc = [](auto& cpu, auto address_mode)
 {
-    auto [operand, additional_cycles] = address_mode().load_operand();
+    auto [operand, additional_cycles] = address_mode.load_operand();
 
     adc_impl(cpu.a, cpu.a.value(), operand, cpu.p);
     return additional_cycles;
@@ -85,7 +85,7 @@ auto adc = [](auto& cpu, auto address_mode)
 
 auto sbc = [](auto& cpu, auto address_mode)
 {
-    auto [operand, additional_cycles] = address_mode().load_operand();
+    auto [operand, additional_cycles] = address_mode.load_operand();
 
     adc_impl(cpu.a, cpu.a.value(), 0xFF - operand, cpu.p);
     return additional_cycles;
@@ -93,7 +93,7 @@ auto sbc = [](auto& cpu, auto address_mode)
 
 auto cmp = [](auto& cpu, auto address_mode)
 {
-    auto [operand, additional_cycles] = address_mode().load_operand();
+    auto [operand, additional_cycles] = address_mode.load_operand();
 
     cmp_impl(cpu.a.value(), operand, cpu.p);
     return additional_cycles;
@@ -101,7 +101,7 @@ auto cmp = [](auto& cpu, auto address_mode)
 
 auto cpx = [](auto& cpu, auto address_mode)
 {
-    auto [operand, additional_cycles] = address_mode().load_operand();
+    auto [operand, additional_cycles] = address_mode.load_operand();
 
     cmp_impl(cpu.x.value(), operand, cpu.p);
     return additional_cycles;
@@ -109,7 +109,7 @@ auto cpx = [](auto& cpu, auto address_mode)
 
 auto cpy = [](auto& cpu, auto address_mode)
 {
-    auto [operand, additional_cycles] = address_mode().load_operand();
+    auto [operand, additional_cycles] = address_mode.load_operand();
 
     cmp_impl(cpu.y.value(), operand, cpu.p);
     return additional_cycles;
@@ -117,7 +117,7 @@ auto cpy = [](auto& cpu, auto address_mode)
 
 auto inc = [](auto& cpu, auto address_mode)
 {
-    auto am = address_mode();
+    auto am = address_mode;
     auto [operand, _] = am.load_operand();
 
     auto alu_result = arith_register{&cpu.p};
@@ -129,7 +129,7 @@ auto inc = [](auto& cpu, auto address_mode)
 
 auto dec = [](auto& cpu, auto address_mode)
 {
-    auto am = address_mode();
+    auto am = address_mode;
     auto [operand, _] = am.load_operand();
 
     auto alu_result = arith_register{&cpu.p};
@@ -165,7 +165,7 @@ auto dey = [](auto& cpu, auto )
 
 auto asl = [](auto& cpu, auto address_mode)
 {
-    auto am = address_mode();
+    auto am = address_mode;
     auto [operand, _] = am.load_operand();
     am.store_operand(operand << 1);
     cpu.p.set(cpu_flag::carry, (operand & 0x80) != 0);
@@ -174,7 +174,7 @@ auto asl = [](auto& cpu, auto address_mode)
 
 auto lsr = [](auto& cpu, auto address_mode)
 {
-    auto am = address_mode();
+    auto am = address_mode;
     auto [operand, _] = am.load_operand();
     am.store_operand(operand >> 1);
     cpu.p.set(cpu_flag::carry, (operand & 0x01) != 0);
@@ -183,7 +183,7 @@ auto lsr = [](auto& cpu, auto address_mode)
 
 auto rol = [](auto& cpu, auto address_mode)
 {
-    auto am = address_mode();
+    auto am = address_mode;
     auto [operand, _] = am.load_operand();
     auto carry_bit = cpu.p.test(cpu_flag::carry) ? uint8_t{0x01} : uint8_t{};
     am.store_operand((operand << 1) | carry_bit);
@@ -193,7 +193,7 @@ auto rol = [](auto& cpu, auto address_mode)
 
 auto ror = [](auto& cpu, auto address_mode)
 {
-    auto am = address_mode();
+    auto am = address_mode;
     auto [operand, _] = am.load_operand();
     auto carry_bit = cpu.p.test(cpu_flag::carry) ? uint8_t{0x80} : uint8_t{};
     am.store_operand((operand >> 1) | carry_bit);
@@ -203,28 +203,28 @@ auto ror = [](auto& cpu, auto address_mode)
 
 auto ana = [](auto& cpu, auto address_mode)
 {
-    auto [operand, additional_cycles] = address_mode().load_operand();
+    auto [operand, additional_cycles] = address_mode.load_operand();
     cpu.a.assign(cpu.a.value() & operand);
     return additional_cycles;
 };
 
 auto ora = [](auto& cpu, auto address_mode)
 {
-    auto [operand, additional_cycles] = address_mode().load_operand();
+    auto [operand, additional_cycles] = address_mode.load_operand();
     cpu.a.assign(cpu.a.value() | operand);
     return additional_cycles;
 };
 
 auto eor = [](auto& cpu, auto address_mode)
 {
-    auto [operand, additional_cycles] = address_mode().load_operand();
+    auto [operand, additional_cycles] = address_mode.load_operand();
     cpu.a.assign(cpu.a.value() ^ operand);
     return additional_cycles;
 };
 
 auto bit = [](auto& cpu, auto address_mode)
 {
-    auto [operand, additional_cycles] = address_mode().load_operand();
+    auto [operand, additional_cycles] = address_mode.load_operand();
 
     [[maybe_unused]]
     auto alu_result = arith_register{&cpu.p};
@@ -237,38 +237,38 @@ auto bit = [](auto& cpu, auto address_mode)
 
 auto lda = [](auto& cpu, auto address_mode)
 {
-    auto [operand, additional_cycles] = address_mode().load_operand();
+    auto [operand, additional_cycles] = address_mode.load_operand();
     cpu.a = operand;
     return additional_cycles;
 };
 
 auto sta = [](auto& cpu, auto address_mode)
 {
-    return address_mode().store_operand(cpu.a.value());
+    return address_mode.store_operand(cpu.a.value());
 };
 
 auto ldx = [](auto& cpu, auto address_mode)
 {
-    auto [operand, additional_cycles] = address_mode().load_operand();
+    auto [operand, additional_cycles] = address_mode.load_operand();
     cpu.x = operand;
     return additional_cycles;
 };
 
 auto stx = [](auto& cpu, auto address_mode)
 {
-    return address_mode().store_operand(cpu.x.value());
+    return address_mode.store_operand(cpu.x.value());
 };
 
 auto ldy = [](auto& cpu, auto address_mode)
 {
-    auto [operand, additional_cycles] = address_mode().load_operand();
+    auto [operand, additional_cycles] = address_mode.load_operand();
     cpu.y = operand;
     return additional_cycles;
 };
 
 auto sty = [](auto& cpu, auto address_mode)
 {
-    return address_mode().store_operand(cpu.y.value());
+    return address_mode.store_operand(cpu.y.value());
 };
 
 auto tax = [](auto& cpu, auto )
@@ -334,7 +334,7 @@ auto plp = [](auto& cpu, auto )
 
 auto bpl = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = address_mode().fetch_address();
+    auto [address, additional_cycles] = address_mode.fetch_address();
     if (cpu.p.test(cpu_flag::negative)) {
         return additional_cycles;
     }
@@ -344,7 +344,7 @@ auto bpl = [](auto& cpu, auto address_mode)
 
 auto bmi = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = address_mode().fetch_address();
+    auto [address, additional_cycles] = address_mode.fetch_address();
     if (!cpu.p.test(cpu_flag::negative)) {
         return additional_cycles;
     }
@@ -354,7 +354,7 @@ auto bmi = [](auto& cpu, auto address_mode)
 
 auto bvc = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = address_mode().fetch_address();
+    auto [address, additional_cycles] = address_mode.fetch_address();
     if (cpu.p.test(cpu_flag::overflow)) {
         return additional_cycles;
     }
@@ -364,7 +364,7 @@ auto bvc = [](auto& cpu, auto address_mode)
 
 auto bvs = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = address_mode().fetch_address();
+    auto [address, additional_cycles] = address_mode.fetch_address();
     if (!cpu.p.test(cpu_flag::overflow)) {
         return additional_cycles;
     }
@@ -374,7 +374,7 @@ auto bvs = [](auto& cpu, auto address_mode)
 
 auto bcc = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = address_mode().fetch_address();
+    auto [address, additional_cycles] = address_mode.fetch_address();
     if (cpu.p.test(cpu_flag::carry)) {
         return additional_cycles;
     }
@@ -384,7 +384,7 @@ auto bcc = [](auto& cpu, auto address_mode)
 
 auto bcs = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = address_mode().fetch_address();
+    auto [address, additional_cycles] = address_mode.fetch_address();
     if (!cpu.p.test(cpu_flag::carry)) {
         return additional_cycles;
     }
@@ -394,7 +394,7 @@ auto bcs = [](auto& cpu, auto address_mode)
 
 auto bne = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = address_mode().fetch_address();
+    auto [address, additional_cycles] = address_mode.fetch_address();
     if (cpu.p.test(cpu_flag::zero)) {
         return additional_cycles;
     }
@@ -404,7 +404,7 @@ auto bne = [](auto& cpu, auto address_mode)
 
 auto beq = [](auto& cpu, auto address_mode)
 {
-    auto [address, additional_cycles] = address_mode().fetch_address();
+    auto [address, additional_cycles] = address_mode.fetch_address();
     if (!cpu.p.test(cpu_flag::zero)) {
         return additional_cycles;
     }
@@ -456,14 +456,14 @@ auto clv = [](auto& cpu, auto )
 
 auto jmp = [](auto& cpu, auto address_mode)
 {
-    auto [address, _] = address_mode().fetch_address();
+    auto [address, _] = address_mode.fetch_address();
     cpu.pc.assign(address);
     return 0;
 };
 
 auto jsr = [](auto& cpu, auto address_mode)
 {
-    auto [address, _] = address_mode().fetch_address();
+    auto [address, _] = address_mode.fetch_address();
     auto prev_pc = nes::program_counter{static_cast<uint16_t >(cpu.pc.value() - 1)};
     cpu.write(cpu.s.push(), prev_pc.hi());
     cpu.write(cpu.s.push(), prev_pc.lo());
@@ -507,9 +507,7 @@ struct reset_vector
 
 auto brk = [](auto& cpu, auto _)
 {
-    jsr(cpu, [&cpu] {
-        return reset_vector{cpu};
-    });
+    jsr(cpu, reset_vector{cpu});
     php(cpu, _);
     cpu.p.set(cpu_flag::break_called);
     cpu.p.set(cpu_flag::int_disable);
@@ -519,13 +517,13 @@ auto brk = [](auto& cpu, auto _)
 
 auto i_n = [](auto&, auto address_mode)
 {
-    auto [_, additional_cycles] = address_mode().fetch_address();
+    auto [_, additional_cycles] = address_mode.fetch_address();
     return additional_cycles;
 };
 
 auto lax = [](auto& cpu, auto address_mode)
 {
-    auto [operand, additional_cycles] = address_mode().load_operand();
+    auto [operand, additional_cycles] = address_mode.load_operand();
     cpu.a = operand;
     cpu.x = operand;
     return additional_cycles;
@@ -533,12 +531,12 @@ auto lax = [](auto& cpu, auto address_mode)
 
 auto sax = [](auto& cpu, auto address_mode)
 {
-    return address_mode().store_operand(cpu.a.value() & cpu.x.value());
+    return address_mode.store_operand(cpu.a.value() & cpu.x.value());
 };
 
 auto isc = [](auto& cpu, auto address_mode)
 {
-    auto am = address_mode();
+    auto am = address_mode;
     auto [operand, _] = am.load_operand();
 
     auto alu_result = arith_register{&cpu.p};
@@ -552,7 +550,7 @@ auto isc = [](auto& cpu, auto address_mode)
 
 auto dcp = [](auto& cpu, auto address_mode)
 {
-    auto am = address_mode();
+    auto am = address_mode;
     auto [operand, _] = am.load_operand();
 
     auto alu_result = arith_register{&cpu.p};
@@ -566,7 +564,7 @@ auto dcp = [](auto& cpu, auto address_mode)
 
 auto slo = [](auto& cpu, auto address_mode)
 {
-    auto am = address_mode();
+    auto am = address_mode;
     auto [operand, _] = am.load_operand();
     auto set_carry = (operand & 0x80) != 0;
 
@@ -581,7 +579,7 @@ auto slo = [](auto& cpu, auto address_mode)
 
 auto sre = [](auto& cpu, auto address_mode)
 {
-    auto am = address_mode();
+    auto am = address_mode;
     auto [operand, _] = am.load_operand();
     auto set_carry = (operand & 0x01) != 0;
 
@@ -596,7 +594,7 @@ auto sre = [](auto& cpu, auto address_mode)
 
 auto rla = [](auto& cpu, auto address_mode)
 {
-    auto am = address_mode();
+    auto am = address_mode;
     auto [operand, _] = am.load_operand();
     auto carry_bit = cpu.p.test(cpu_flag::carry) ? uint8_t{0x01} : uint8_t{};
     auto set_carry = (operand & 0x80) != 0;
@@ -612,7 +610,7 @@ auto rla = [](auto& cpu, auto address_mode)
 
 auto rra = [](auto& cpu, auto address_mode)
 {
-    auto am = address_mode();
+    auto am = address_mode;
     auto [operand, _] = am.load_operand();
     auto carry_bit = cpu.p.test(cpu_flag::carry) ? uint8_t{0x80} : uint8_t{};
     auto set_carry = (operand & 0x01) != 0;
