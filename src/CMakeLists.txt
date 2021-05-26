@@ -4,7 +4,7 @@ add_library(libnes
     libnes/cpu_registers.hpp
     libnes/ppu.hpp
     libnes/ppu.cpp
-)
+    libnes/cpu_address_modes.hpp libnes/cpu_operations.hpp)
 
 target_include_directories(libnes PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_features(libnes PUBLIC cxx_std_20)
