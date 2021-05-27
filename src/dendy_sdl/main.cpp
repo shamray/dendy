@@ -58,14 +58,12 @@ private:
 
 }
 
-auto load_dummy_texture(auto renderer)
-{
+auto load_dummy_texture(auto renderer) {
     auto surface = SDL_LoadBMP("link.bmp");
     return SDL_CreateTextureFromSurface(renderer, surface);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     auto frontend = sdl::frontend::create();
     auto window = sdl::window("Dendy");
     auto texture = load_dummy_texture(window.renderer());
