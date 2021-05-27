@@ -5,7 +5,10 @@
 namespace nes
 {
 
+inline namespace literals
+{
 constexpr auto operator "" _i(unsigned long long x) { return static_cast<uint8_t>(x); }
+}
 
 inline namespace details
 {

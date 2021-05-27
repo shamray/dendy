@@ -2,13 +2,11 @@
 #include <catch2/catch.hpp>
 
 #include "libnes/cpu.hpp"
+#include "libnes/literals.hpp"
 
 #include <array>
 
-constexpr auto operator""_Kb(size_t const x) 
-{
-    return x * 1024;
-}
+using namespace nes::literals;
 
 auto create_memory()
 {

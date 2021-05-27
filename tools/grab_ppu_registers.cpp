@@ -11,10 +11,6 @@
 
 using namespace std::string_literals;
 
-constexpr auto operator""_Kb(size_t const x) {
-    return x * 1024;
-}
-
 auto load_rom(auto filename) {
     auto memory = std::vector<uint8_t>(64_Kb, 0);
     auto romfile = std::ifstream{filename, std::ifstream::binary};

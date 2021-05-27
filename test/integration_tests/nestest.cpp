@@ -6,11 +6,9 @@
 #include <chrono>
 
 #include "libnes/cpu.hpp"
+#include "libnes/literals.hpp"
 
-constexpr auto operator""_Kb(size_t const x)
-{
-    return x * 1024;
-}
+using namespace nes::literals;
 
 struct test_bus
 {
