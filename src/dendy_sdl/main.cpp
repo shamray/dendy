@@ -1,6 +1,8 @@
 #include <SDL2/SDL.h>
 #include <stdexcept>
 
+#include "libnes/ppu.hpp"
+
 namespace sdl
 {
 class frontend
@@ -14,8 +16,7 @@ public:
 
     auto static create() { return frontend{}; }
 
-    bool process_events()
-    {
+    bool process_events() {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
             switch (e.type)
@@ -31,9 +32,8 @@ public:
 class window
 {
 public:
-    window(const char* title)
-    {
-        window_ = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 256 * 2, 240 * 2, 0);
+    window(const char* title) {
+        window_ = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 600 * 2, 480 * 2, 0);
         if (window_ == nullptr)
             throw std::runtime_error("Cannot create window");
 
@@ -44,10 +44,9 @@ public:
 
     auto renderer() const { return renderer_; }
 
-    void render(SDL_Texture* screen)
-    {
+    void render(SDL_Texture* screen) {
         SDL_RenderClear(renderer_);
-        SDL_RenderCopy(renderer_, screen, NULL, NULL);
+        SDL_RenderCopy(renderer_, screen, nullptr, nullptr);
         SDL_RenderPresent(renderer_);
     }
 
@@ -63,17 +62,42 @@ auto load_dummy_texture(auto renderer) {
     return SDL_CreateTextureFromSurface(renderer, surface);
 }
 
+auto load_texture(const auto& frame_bufer) {
+
+}
+
 int main(int argc, char *argv[]) {
     auto frontend = sdl::frontend::create();
     auto window = sdl::window("Dendy");
-    auto texture = load_dummy_texture(window.renderer());
+
+//    auto texture = load_dummy_texture(window.renderer());
+    auto texture = SDL_CreateTexture (window.renderer(),
+                                     SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
+                                     256, 240);
+
+    auto ppu = nes::ppu{};
+
+    const auto FPS   = 60;
+    const auto DELAY = static_cast<int>(1000.0f / FPS);
+    uint32_t frameStart, frameTime;
 
     for (;;) {
+        frameStart = SDL_GetTicks();
+
         auto stop = frontend.process_events();
         if (stop)
             break;
 
+        do {
+            ppu.tick();
+        } while(!ppu.is_frame_ready());
+        SDL_UpdateTexture(texture, nullptr, ppu.frame_buffer.data(), 256 * sizeof(uint32_t));
+
         window.render(texture);
+
+        frameTime = SDL_GetTicks() - frameStart;
+        if (frameTime < DELAY)
+            SDL_Delay((int)(DELAY - frameTime));
     }
 
     return 0;
