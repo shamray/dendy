@@ -18,7 +18,7 @@ public:
     uint8_t data;
     uint8_t oam_dma;
 
-    void tick() {}
+    void tick();
 
     std::array<uint32_t, 256 * 240> frame_buffer;
 };
