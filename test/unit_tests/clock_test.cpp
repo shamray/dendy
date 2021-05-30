@@ -87,4 +87,28 @@ TEST_CASE("master clock, one tick") {
         CONSTEXPR auto pop_1_tick = clock_pop_ticks(after_1_tick, 1);
         CHECK(TEST(pop_1_tick.ticks_happened() == 0));
     }
+
+    SECTION("pop ten tick events") {
+        CONSTEXPR auto pop_ticks = clock_pop_ticks(after_1_tick, 10);
+        CHECK(TEST(pop_ticks.ticks_happened() == 0));
+    }
+}
+
+TEST_CASE("master clock, two tick") {
+    CONSTEXPR auto clock = nes::clock{};
+    CONSTEXPR auto after_2_ticks = clock_push_ticks(clock, 2);
+
+    SECTION("has two tick event") {
+        CHECK(TEST(after_2_ticks.ticks_happened() == 2));
+    }
+
+    SECTION("pop one tick event") {
+        CONSTEXPR auto pop_1_tick = clock_pop_ticks(after_2_ticks, 1);
+        CHECK(TEST(pop_1_tick.ticks_happened() == 1));
+    }
+
+    SECTION("pop two tick events") {
+        CONSTEXPR auto pop_2_ticks = clock_pop_ticks(after_2_ticks, 2);
+        CHECK(TEST(pop_2_ticks.ticks_happened() == 0));
+    }
 }
