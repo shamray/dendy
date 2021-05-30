@@ -1,5 +1,7 @@
 add_executable(unit_tests
     unit_tests/cpu_test.cpp
+    unit_tests/clock_test.cpp
+    unit_tests/main.cpp
 )
 
 target_link_libraries(unit_tests
