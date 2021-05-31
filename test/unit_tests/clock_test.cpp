@@ -1,10 +1,10 @@
 #include <catch2/catch.hpp>
 
 /*
-TEST_CASE("primary_clock") {
-    auto master_clock = nes::primary_clock{21.477272_MHz};
-    auto cpu_clock = nes::primary_clock{master_clock, 12};
-    auto ppu_clock = nes::primary_clock{master_clock, 4};
+TEST_CASE("clock") {
+    auto master_clock = nes::clock{21.477272_MHz};
+    auto cpu_clock = nes::clock{master_clock, 12};
+    auto ppu_clock = nes::clock{master_clock, 4};
 
     do {
         master_clock.tick();
@@ -23,47 +23,17 @@ TEST_CASE("primary_clock") {
 namespace nes
 {
 
-class primary_clock
+class clock
 {
 public:
-    primary_clock() = default;
+    clock() = default;
+    clock(clock& source, int division_factor) : division_factor_(division_factor) {
+        source.add_watcher([this](){ tick(); });
+    }
 
     void tick() noexcept {
         ++ticks_;
         std::ranges::for_each(watchers_, [](auto f) { f(); });
-    }
-
-    auto pop_tick() noexcept {
-        if (ticks_ == 0)
-            return false;
-
-        --ticks_;
-        return true;
-    }
-
-    [[nodiscard]]
-    auto ticks_happened() const noexcept {
-        return ticks_;
-    }
-
-    auto add_watcher(auto watcher) {
-        watchers_.push_back(watcher);
-    }
-
-private:
-    int ticks_{0};
-    std::vector<std::function<void()>> watchers_;
-};
-
-class secondary_clock
-{
-public:
-    secondary_clock(primary_clock& source, int division_factor) : division_factor_(division_factor) {
-        source.add_watcher([this](){ on_primary_tick(); });
-    }
-
-    void on_primary_tick() {
-        ++ticks_;
     }
 
     [[nodiscard]]
@@ -79,28 +49,34 @@ public:
         return true;
     }
 
+    void add_watcher(auto watcher) {
+        watchers_.push_back(watcher);
+    }
+
 private:
-    int division_factor_{1};
     int ticks_{0};
+    int division_factor_{1};
+    std::vector<std::function<void()>> watchers_;
 };
+
 }
 
-auto clock_push_ticks(nes::primary_clock clock, int times) {
+auto clock_push_ticks(nes::clock clock, int times) {
     for (auto i = 0; i < times; ++i) {
         clock.tick();
     }
     return clock;
 }
 
-auto clock_pop_ticks(nes::primary_clock clock, int times) {
+auto clock_pop_ticks(nes::clock clock, int times) {
     for (auto i = 0; i < times; ++i) {
         clock.pop_tick();
     }
     return clock;
 }
 
-TEST_CASE("master primary_clock, one tick") {
-    auto clock = nes::primary_clock{};
+TEST_CASE("master clock, one tick") {
+    auto clock = nes::clock{};
     auto after_1_tick = clock_push_ticks(clock, 1);
 
     SECTION("has one tick event") {
@@ -118,8 +94,8 @@ TEST_CASE("master primary_clock, one tick") {
     }
 }
 
-TEST_CASE("master primary_clock, two ticks") {
-    auto clock = nes::primary_clock{};
+TEST_CASE("master clock, two ticks") {
+    auto clock = nes::clock{};
     auto after_2_ticks = clock_push_ticks(clock, 2);
 
     SECTION("has two tick event") {
@@ -137,9 +113,9 @@ TEST_CASE("master primary_clock, two ticks") {
     }
 }
 
-TEST_CASE("divided primary_clock") {
-    auto master_clock = nes::primary_clock{};
-    nes::secondary_clock slave_clock(master_clock, 3);
+TEST_CASE("divided clock") {
+    auto master_clock = nes::clock{};
+    nes::clock slave_clock(master_clock, 3);
     master_clock.tick();
     master_clock.tick();
 
