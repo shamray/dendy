@@ -1,4 +1,4 @@
-#include "libnes/cpu.hpp"
+#include <libnes/cpu.hpp>
 
 #include <string>
 

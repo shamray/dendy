@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
-#include "libnes/cpu.hpp"
-#include "libnes/literals.hpp"
+#include <libnes/cpu.hpp>
+#include <libnes/literals.hpp>
 
 #include <array>
 

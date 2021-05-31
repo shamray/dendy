@@ -1,6 +1,6 @@
 #pragma once
 
-#include "libnes/cpu_registers.hpp"
+#include <libnes/cpu_registers.hpp>
 
 namespace nes
 {

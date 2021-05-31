@@ -7,7 +7,7 @@
 #include <iomanip>
 #include <string>
 
-#include "libnes/cpu.hpp"
+#include <libnes/cpu.hpp>
 
 using namespace std::string_literals;
 

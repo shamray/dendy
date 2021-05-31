@@ -1,4 +1,4 @@
-#include "libnes/ppu.hpp"
+#include <libnes/ppu.hpp>
 #include <random>
 
 namespace nes

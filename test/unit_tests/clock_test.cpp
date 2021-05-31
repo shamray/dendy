@@ -1,5 +1,5 @@
 #include <catch2/catch.hpp>
-
+#include <libnes/clock.hpp>
 /*
 TEST_CASE("clock") {
     auto master_clock = nes::clock{21.477272_MHz};
@@ -18,48 +18,6 @@ TEST_CASE("clock") {
 }
  */
 
-#include <ranges>
-
-namespace nes
-{
-
-class clock
-{
-public:
-    clock() = default;
-    clock(clock& source, int division_factor) : division_factor_(division_factor) {
-        source.add_watcher([this](){ tick(); });
-    }
-
-    void tick() noexcept {
-        ++ticks_;
-        std::ranges::for_each(watchers_, [](auto f) { f(); });
-    }
-
-    [[nodiscard]]
-    auto ticks_happened() const noexcept {
-        return ticks_ / division_factor_;
-    }
-
-    auto pop_tick() noexcept {
-        if (ticks_happened() == 0)
-            return false;
-
-        --ticks_;
-        return true;
-    }
-
-    void add_watcher(auto watcher) {
-        watchers_.push_back(watcher);
-    }
-
-private:
-    int ticks_{0};
-    int division_factor_{1};
-    std::vector<std::function<void()>> watchers_;
-};
-
-}
 
 auto clock_push_ticks(nes::clock clock, int times) {
     for (auto i = 0; i < times; ++i) {

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "libnes/cpu_address_modes.hpp"
-#include "libnes/cpu_operations.hpp"
-#include "libnes/cpu_registers.hpp"
+#include <libnes/cpu_address_modes.hpp>
+#include <libnes/cpu_operations.hpp>
+#include <libnes/cpu_registers.hpp>
 
 #include <cstdint>
 #include <vector>

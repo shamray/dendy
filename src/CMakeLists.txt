@@ -1,4 +1,5 @@
 add_library(libnes
+    libnes/clock.hpp
     libnes/cpu.hpp
     libnes/cpu.cpp
     libnes/cpu_registers.hpp

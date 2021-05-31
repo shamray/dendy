@@ -5,8 +5,8 @@
 #include <ctime>
 #include <chrono>
 
-#include "libnes/cpu.hpp"
-#include "libnes/literals.hpp"
+#include <libnes/cpu.hpp>
+#include <libnes/literals.hpp>
 
 using namespace nes::literals;
 
