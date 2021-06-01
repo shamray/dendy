@@ -29,6 +29,11 @@ public:
 private:
     void render_frame();
 
+    void prerender_scanline() noexcept {};
+    void visible_scanline() noexcept {};
+    void postrender_scanline() noexcept {};
+    void vertical_blank_line() noexcept {};
+
 private:
     struct {
         int line {-1};

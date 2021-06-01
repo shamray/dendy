@@ -9,7 +9,33 @@ const auto VERTICAL_BLANK_SCANLINES = 20;
 const auto POST_RENDER_SCANLINES = 1;
 const auto SCANLINE_DOTS = 341;
 
+[[nodiscard]] constexpr auto is_prerender(auto scanline) noexcept {
+    return scanline == -1;
+}
+
+[[nodiscard]] constexpr auto is_visible(auto scanline) noexcept {
+    return scanline >= 0 and scanline < VISIBLE_SCANLINES;
+}
+
+[[nodiscard]] constexpr auto is_postrender(auto scanline) noexcept {
+    return scanline >= VISIBLE_SCANLINES and scanline < VISIBLE_SCANLINES + POST_RENDER_SCANLINES;
+}
+
+[[nodiscard]] constexpr auto is_vblank(auto scanline) noexcept {
+    return scanline >= VISIBLE_SCANLINES + POST_RENDER_SCANLINES and scanline < VISIBLE_SCANLINES + POST_RENDER_SCANLINES + VERTICAL_BLANK_SCANLINES;
+}
+
 void ppu::tick() noexcept {
+    if (is_prerender(scan_line())) {
+        prerender_scanline();
+    } else if (is_visible(scan_line())) {
+        visible_scanline();
+    } else if (is_postrender(scan_line())) {
+        postrender_scanline();
+    } else if (is_vblank(scan_line())) {
+        vertical_blank_line();
+    }
+
     if (++scan_.cycle >= SCANLINE_DOTS) {
         scan_.cycle = 0;
 
