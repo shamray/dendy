@@ -36,6 +36,8 @@ void ppu::tick() noexcept {
         vertical_blank_line();
     }
 
+    frame_is_ready_ = false;
+
     if (++scan_.cycle >= SCANLINE_DOTS) {
         scan_.cycle = 0;
 
@@ -43,6 +45,7 @@ void ppu::tick() noexcept {
             scan_.line = -1;
             frame_is_odd_ = not frame_is_odd_;
             render_frame();
+            frame_is_ready_ = true;
         }
     }
 }

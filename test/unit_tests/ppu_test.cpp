@@ -44,6 +44,26 @@ TEST_CASE("scanline cycles") {
         tick(ppu, 341 * 262);
         CHECK(ppu.scan_line() == -1);
         CHECK(ppu.scan_cycle() == 0);
+        CHECK(ppu.is_frame_ready());
+    }
+
+    SECTION("frame ready") {
+        CHECK_FALSE(ppu.is_frame_ready());
+
+        tick(ppu, 341 * 262);
+        CHECK(ppu.is_frame_ready());
+
+        tick(ppu, 341 * 262);
+        CHECK(ppu.is_frame_ready());
+    }
+
+    SECTION("even/odd frames") {
+        CHECK_FALSE(ppu.is_odd_frame());
+
+        tick(ppu, 341 * 262);
         CHECK(ppu.is_odd_frame());
+
+        tick(ppu, 341 * 262);
+        CHECK_FALSE(ppu.is_odd_frame());
     }
 }

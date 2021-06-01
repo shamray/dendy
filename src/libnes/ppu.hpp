@@ -23,6 +23,7 @@ public:
     [[nodiscard]] constexpr auto scan_line() const noexcept { return scan_.line; }
     [[nodiscard]] constexpr auto scan_cycle() const noexcept { return scan_.cycle; }
     [[nodiscard]] constexpr auto is_odd_frame() const noexcept { return frame_is_odd_; }
+    [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return frame_is_ready_; }
 
     std::array<uint32_t, 256 * 240> frame_buffer;
 
@@ -39,7 +40,8 @@ private:
         int line {-1};
         int cycle {0};
     } scan_;
-    bool frame_is_odd_{0};
+    bool frame_is_odd_{false};
+    bool frame_is_ready_{false};
 };
 
 }
