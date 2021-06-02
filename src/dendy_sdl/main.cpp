@@ -1,7 +1,13 @@
-#include <SDL2/SDL.h>
-#include <stdexcept>
+#include <libnes/ppu.hpp>
+#include <libnes/literals.hpp>
 
-#include "libnes/ppu.hpp"
+#include <SDL2/SDL.h>
+
+#include <stdexcept>
+#include <array>
+#include <random>
+
+using namespace nes::literals;
 
 namespace sdl
 {
@@ -33,7 +39,7 @@ class window
 {
 public:
     window(const char* title) {
-        window_ = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 600 * 2, 480 * 2, 0);
+        window_ = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 600, 480, 0);
         if (window_ == nullptr)
             throw std::runtime_error("Cannot create window");
 
@@ -66,6 +72,14 @@ auto load_texture(const auto& frame_bufer) {
 
 }
 
+struct dummy_bus
+{
+    void chr_write(uint16_t addr, uint8_t value) { mem[addr] = value; }
+    uint8_t chr_read(uint16_t addr) const { return mem[addr]; }
+
+    std::array<uint8_t, 2_Kb> mem;
+};
+
 int main(int argc, char *argv[]) {
     auto frontend = sdl::frontend::create();
     auto window = sdl::window("Dendy");
@@ -75,7 +89,8 @@ int main(int argc, char *argv[]) {
                                      SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
                                      256, 240);
 
-    auto ppu = nes::ppu{};
+    auto bus = dummy_bus{};
+    auto ppu = nes::ppu{bus};
 
     const auto FPS   = 60;
     const auto DELAY = static_cast<int>(1000.0f / FPS);
@@ -91,6 +106,15 @@ int main(int argc, char *argv[]) {
         do {
             ppu.tick();
         } while(!ppu.is_frame_ready());
+
+        ppu.render_noise([](){
+            static std::random_device rd;
+            static std::mt19937 gen(rd());
+
+            auto distrib = std::uniform_int_distribution<short>(0, 255);
+
+            return static_cast<uint8_t>(distrib(gen));
+        });
         SDL_UpdateTexture(texture, nullptr, ppu.frame_buffer.data(), 256 * sizeof(uint32_t));
 
         window.render(texture);

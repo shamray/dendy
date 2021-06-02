@@ -1,5 +1,8 @@
 #include <libnes/ppu.hpp>
+#include <libnes/literals.hpp>
 #include <catch2/catch.hpp>
+
+using namespace nes::literals;
 
 void tick(auto& ppu, int times = 1) {
     for (auto i = 0; i < times; ++i) {
@@ -7,8 +10,17 @@ void tick(auto& ppu, int times = 1) {
     }
 }
 
+struct dummy_bus
+{
+    void chr_write(uint16_t addr, uint8_t value) { mem[addr] = value; }
+    uint8_t chr_read(uint16_t addr) const { return mem[addr]; }
+
+    std::array<uint8_t, 2_Kb> mem;
+};
+dummy_bus bus;
+
 TEST_CASE("scanline cycles") {
-    auto ppu = nes::ppu{};
+    auto ppu = nes::ppu{bus};
 
     SECTION("at power up") {
         CHECK(ppu.scan_line() == -1);
