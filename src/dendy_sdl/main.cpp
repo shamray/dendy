@@ -9,6 +9,7 @@
 #include <cassert>
 #include <memory>
 #include <unordered_map>
+#include <fstream>
 
 using namespace nes::literals;
 
@@ -136,11 +137,12 @@ public:
         if (renderer_ == nullptr)
             throw std::runtime_error("Cannot create renderer");
 
-        chr_ = SDL_CreateTexture (renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 128, 128);
+        chr_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 128, 128);
     }
 
-    void render() {
+    void render(const auto& pattern_table) {
         SDL_RenderClear(renderer_);
+        SDL_UpdateTexture(chr_, nullptr, pattern_table.data(), 128 * sizeof(uint32_t));
         SDL_RenderCopy(renderer_, chr_, nullptr, nullptr);
         SDL_RenderPresent(renderer_);
     }
@@ -169,10 +171,31 @@ auto load_texture(const auto& frame_bufer) {
 struct dummy_bus
 {
     void chr_write(uint16_t addr, uint8_t value) { mem[addr] = value; }
-    uint8_t chr_read(uint16_t addr) const { return mem[addr]; }
+    uint8_t chr_read(uint16_t addr) const {
+        return mem[addr];
+    }
 
-    std::array<uint8_t, 2_Kb> mem;
+    std::array<uint8_t, 8_Kb> mem;
 };
+
+auto load_rom(auto filename) {
+    auto memory = std::vector<uint8_t>(64_Kb, 0);
+    auto romfile = std::ifstream{filename, std::ifstream::binary};
+    assert(romfile.is_open());
+
+    romfile.seekg(16); // header
+
+    auto prg = std::array<uint8_t, 16_Kb>{};
+    romfile.read(reinterpret_cast<char*>(prg.data()), prg.size());
+
+    std::ranges::copy(prg, memory.begin() + 0x8000);
+    std::ranges::copy(prg, memory.begin() + 0xC000);
+
+    auto chr = std::array<uint8_t, 8_Kb>{};
+    romfile.read(reinterpret_cast<char*>(chr.data()), chr.size());
+
+    return chr;
+}
 
 int main(int argc, char *argv[]) {
     auto frontend = sdl::frontend::create();
@@ -180,7 +203,7 @@ int main(int argc, char *argv[]) {
 
     auto chr = std::array{sdl::chr_window("CHR 0"), sdl::chr_window("CHR 1")};
 
-    auto bus = dummy_bus{};
+    auto bus = dummy_bus{load_rom("rom/tanks.nes")};
     auto ppu = nes::ppu{bus};
 
     const auto FPS   = 60;
@@ -211,6 +234,10 @@ int main(int argc, char *argv[]) {
             return static_cast<uint8_t>(distrib(gen));
         });
         window.render(ppu.frame_buffer);
+
+        for (auto i = 0; i < chr.size(); ++i) {
+            chr[i].render(ppu.display_pattern_table(i));
+        }
 
         frameTime = SDL_GetTicks() - frameStart;
         if (frameTime < DELAY)

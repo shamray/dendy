@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <array>
+#include <cassert>
 
 namespace nes {
 
@@ -14,7 +15,9 @@ concept ppu_bus = requires(B b, uint16_t address, uint8_t value) {
 template<ppu_bus bus_t>
 class ppu {
 public:
-    ppu(bus_t &bus) {}
+    ppu(bus_t &bus)
+        : bus_(bus)
+    {}
 
     uint8_t control;
     uint8_t status;
@@ -46,6 +49,40 @@ public:
         }
     }
 
+    auto get_palette_color(uint8_t pixel) {
+        constexpr auto dummy_palette = std::array<uint32_t, 4>{0xFF000000, 0xFF0000FF, 0xFFFF0000, 0xFFFFFFFF};
+        return dummy_palette[pixel];
+    }
+
+    auto display_pattern_table(auto i) {
+        auto result = std::array<uint32_t, 128 * 128>{};
+
+        for (uint16_t tile_y = 0; tile_y < 16; ++tile_y) {
+            for (uint16_t tile_x = 0; tile_x < 16; ++tile_x) {
+
+                auto offset = static_cast<uint16_t>(tile_y * 256 + tile_x * 16);
+
+                for (uint16_t row = 0; row < 8; ++row) {
+
+                    auto tile_lsb = bus_.chr_read(i * 0x1000 + offset + row + 0);
+                    auto tile_msb = bus_.chr_read(i * 0x1000 + offset + row + 8);
+
+                    for (uint16_t col = 0; col < 8; col++) {
+                        auto pixel = static_cast<uint8_t>((tile_lsb & 0x01) | ((tile_msb & 0x01) <<1));
+
+                        auto result_offset = (tile_y * 8 + row) * 128 + tile_x * 8 + (7 - col);
+                        auto result_color = get_palette_color(pixel);
+
+                        result[result_offset] = result_color;
+
+                        tile_lsb >>= 1; tile_msb >>= 1;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
 private:
     void prerender_scanline() noexcept {};
 
@@ -62,6 +99,7 @@ private:
     } scan_;
     bool frame_is_odd_{false};
     bool frame_is_ready_{false};
+    bus_t bus_;
 };
 
 const auto VISIBLE_SCANLINES = 240;
