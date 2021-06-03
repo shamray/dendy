@@ -6,11 +6,43 @@
 #include <stdexcept>
 #include <array>
 #include <random>
+#include <cassert>
+#include <memory>
+#include <unordered_map>
 
 using namespace nes::literals;
 
 namespace sdl
 {
+
+class window {
+public:
+    virtual ~window() {
+        SDL_DestroyWindow(window_);
+    }
+
+    void process_event(const SDL_Event e) {
+        assert(e.type == SDL_WINDOWEVENT);
+        assert(SDL_GetWindowID(window_) == e.window.windowID);
+
+        switch(e.window.event) {
+            case SDL_WINDOWEVENT_CLOSE:
+                close();
+        }
+    }
+
+    virtual void close() {
+        SDL_HideWindow(window_);
+    }
+
+    [[nodiscard]] auto id() const { return SDL_GetWindowID(window_); }
+    [[nodiscard]] auto quit() const { return quit_; }
+
+protected:
+    bool quit_{false};
+    SDL_Window* window_{nullptr};
+};
+
 class frontend
 {
     frontend()  { SDL_Init(SDL_INIT_VIDEO); }
@@ -22,23 +54,44 @@ public:
 
     auto static create() { return frontend{}; }
 
-    bool process_events() {
+    auto process_window_event(const SDL_Event& e) {
+        auto found = windows_.find(e.window.windowID);
+        if (found == std::end(windows_))
+            return false;
+
+        auto window = found->second;
+        window->process_event(e);
+        return window->quit();
+    }
+
+    auto process_events() {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
             switch (e.type)
             {
+                case SDL_WINDOWEVENT:
+                    if (process_window_event(e))
+                        return true;
+                    break;
                 case SDL_QUIT: return true;
                 case SDL_KEYDOWN: break;
             }
         }
         return false;
     }
+
+    void add_window(window* w) {
+        windows_.insert(std::pair{w->id(), w});
+    }
+
+private:
+    std::unordered_map<std::uint32_t, window*> windows_;
 };
 
-class window
+class main_window: public window
 {
 public:
-    window(const char* title) {
+    main_window(const char* title) {
         window_ = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 600, 480, 0);
         if (window_ == nullptr)
             throw std::runtime_error("Cannot create window");
@@ -46,19 +99,60 @@ public:
         renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_ACCELERATED);
         if (renderer_ == nullptr)
             throw std::runtime_error("Cannot create renderer");
+
+        screen_ = SDL_CreateTexture (renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 256, 240);
     }
 
-    auto renderer() const { return renderer_; }
-
-    void render(SDL_Texture* screen) {
+    void render(const auto& frame_buffer) {
         SDL_RenderClear(renderer_);
-        SDL_RenderCopy(renderer_, screen, nullptr, nullptr);
+        SDL_UpdateTexture(screen_, nullptr, frame_buffer.data(), 256 * sizeof(uint32_t));
+        SDL_RenderCopy(renderer_, screen_, nullptr, nullptr);
         SDL_RenderPresent(renderer_);
     }
 
+    void close() override {
+        quit_ = true;
+    }
+
+    ~main_window() override {
+        SDL_DestroyTexture(screen_);
+        SDL_DestroyRenderer(renderer_);
+    }
+
 private:
-    SDL_Window* window_{nullptr};
     SDL_Renderer* renderer_{nullptr};
+    SDL_Texture* screen_{nullptr};
+};
+
+class chr_window: public window
+{
+public:
+    chr_window(const char* title) {
+        window_ = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 512, 512, SDL_WINDOW_UTILITY);
+        if (window_ == nullptr)
+            throw std::runtime_error("Cannot create window");
+
+        renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_ACCELERATED);
+        if (renderer_ == nullptr)
+            throw std::runtime_error("Cannot create renderer");
+
+        chr_ = SDL_CreateTexture (renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 128, 128);
+    }
+
+    void render() {
+        SDL_RenderClear(renderer_);
+        SDL_RenderCopy(renderer_, chr_, nullptr, nullptr);
+        SDL_RenderPresent(renderer_);
+    }
+
+    ~chr_window() override {
+        SDL_DestroyTexture(chr_);
+        SDL_DestroyRenderer(renderer_);
+    }
+
+private:
+    SDL_Renderer* renderer_{nullptr};
+    SDL_Texture* chr_{nullptr};
 };
 
 }
@@ -82,12 +176,9 @@ struct dummy_bus
 
 int main(int argc, char *argv[]) {
     auto frontend = sdl::frontend::create();
-    auto window = sdl::window("Dendy");
+    auto window = sdl::main_window("Dendy");
 
-//    auto texture = load_dummy_texture(window.renderer());
-    auto texture = SDL_CreateTexture (window.renderer(),
-                                     SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
-                                     256, 240);
+    auto chr = std::array{sdl::chr_window("CHR 0"), sdl::chr_window("CHR 1")};
 
     auto bus = dummy_bus{};
     auto ppu = nes::ppu{bus};
@@ -95,6 +186,10 @@ int main(int argc, char *argv[]) {
     const auto FPS   = 60;
     const auto DELAY = static_cast<int>(1000.0f / FPS);
     uint32_t frameStart, frameTime;
+
+    frontend.add_window(&window);
+    frontend.add_window(&chr[0]);
+    frontend.add_window(&chr[1]);
 
     for (;;) {
         frameStart = SDL_GetTicks();
@@ -115,9 +210,7 @@ int main(int argc, char *argv[]) {
 
             return static_cast<uint8_t>(distrib(gen));
         });
-        SDL_UpdateTexture(texture, nullptr, ppu.frame_buffer.data(), 256 * sizeof(uint32_t));
-
-        window.render(texture);
+        window.render(ppu.frame_buffer);
 
         frameTime = SDL_GetTicks() - frameStart;
         if (frameTime < DELAY)
