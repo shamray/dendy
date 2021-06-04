@@ -129,7 +129,7 @@ class chr_window: public window
 {
 public:
     chr_window(const char* title) {
-        window_ = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 512, 512, SDL_WINDOW_UTILITY);
+        window_ = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256, SDL_WINDOW_UTILITY);
         if (window_ == nullptr)
             throw std::runtime_error("Cannot create window");
 
@@ -179,16 +179,38 @@ struct dummy_bus
 };
 
 auto load_rom(auto filename) {
-    auto memory = std::vector<uint8_t>(64_Kb, 0);
+    auto memory = std::array<uint8_t, 64_Kb>{};
     auto romfile = std::ifstream{filename, std::ifstream::binary};
     assert(romfile.is_open());
 
-    romfile.seekg(16); // header
+    struct {
+        char name[4];
+        uint8_t prg_rom_chunks;
+        uint8_t chr_rom_chunks;
+        uint8_t mapper1;
+        uint8_t mapper2;
+        uint8_t prg_ram_size;
+        uint8_t tv_system1;
+        uint8_t tv_system2;
+        char unused[5];
+    } header;
+    static_assert(sizeof(header) == 16);
+    romfile.read(reinterpret_cast<char*>(&header), sizeof(header));
+
+    if (header.prg_rom_chunks > 2)
+        throw std::runtime_error("unsupported mapper, too many PRG sections");
+
+    if (header.chr_rom_chunks > 1)
+        throw std::runtime_error("unsupported mapper, too many CHR sections");
 
     auto prg = std::array<uint8_t, 16_Kb>{};
     romfile.read(reinterpret_cast<char*>(prg.data()), prg.size());
 
     std::ranges::copy(prg, memory.begin() + 0x8000);
+
+    if (header.prg_rom_chunks > 1) {
+        romfile.read(reinterpret_cast<char*>(prg.data()), prg.size());
+    }
     std::ranges::copy(prg, memory.begin() + 0xC000);
 
     auto chr = std::array<uint8_t, 8_Kb>{};
@@ -203,7 +225,7 @@ int main(int argc, char *argv[]) {
 
     auto chr = std::array{sdl::chr_window("CHR 0"), sdl::chr_window("CHR 1")};
 
-    auto bus = dummy_bus{load_rom("rom/tanks.nes")};
+    auto bus = dummy_bus{load_rom("rom/smb.nes")};
     auto ppu = nes::ppu{bus};
 
     const auto FPS   = 60;
