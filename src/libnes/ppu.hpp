@@ -48,6 +48,12 @@ public:
     uint8_t data;
     uint8_t oam_dma;
 
+    bool nmi{false};
+
+    int address_latch{0};
+    uint16_t address;
+    uint8_t data_buffer;
+
     void tick() noexcept;
 
     [[nodiscard]] constexpr auto scan_line() const noexcept { return scan_.line; }
@@ -180,7 +186,14 @@ void ppu<bus_t>::tick() noexcept {
     if (++scan_.cycle >= SCANLINE_DOTS) {
         scan_.cycle = 0;
 
-        if (++scan_.line >= VISIBLE_SCANLINES + POST_RENDER_SCANLINES + VERTICAL_BLANK_SCANLINES) {
+        ++scan_.line;
+
+        if (scan_.line == VISIBLE_SCANLINES + POST_RENDER_SCANLINES) {
+            status |= 0x80;
+            if (control & 0x80)
+                nmi = true;
+        }
+        else if (scan_.line >= VISIBLE_SCANLINES + POST_RENDER_SCANLINES + VERTICAL_BLANK_SCANLINES) {
             scan_.line = -1;
             frame_is_odd_ = not frame_is_odd_;
             frame_is_ready_ = true;

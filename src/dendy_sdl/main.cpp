@@ -1,4 +1,6 @@
 #include <libnes/ppu.hpp>
+#include <libnes/cpu.hpp>
+#include <libnes/clock.hpp>
 #include <libnes/literals.hpp>
 
 #include <SDL2/SDL.h>
@@ -10,6 +12,7 @@
 #include <memory>
 #include <unordered_map>
 #include <fstream>
+#include <tuple>
 
 using namespace nes::literals;
 
@@ -170,12 +173,45 @@ auto load_texture(const auto& frame_bufer) {
 
 struct dummy_bus
 {
-    void chr_write(uint16_t addr, uint8_t value) { mem[addr] = value; }
-    uint8_t chr_read(uint16_t addr) const {
+    dummy_bus(std::tuple<std::array<uint8_t, 64_Kb>, std::array<uint8_t, 8_Kb>>&& rom)
+        : mem{std::move(std::get<0>(rom))}
+        , chr{std::move(std::get<1>(rom))}
+    {}
+
+    auto nmi() {
+        if (not nmi_on)
+            return false;
+
+        nmi_on = false;
+        return true;
+    }
+
+    void chr_write(uint16_t addr, uint8_t value)    {
+        chr[addr] = value;
+    }
+    uint8_t chr_read(uint16_t addr) const           { return chr[addr]; }
+
+    void write(uint16_t addr, uint8_t value)    {
+        if (auto found = w_remaps.find(addr); found != std::end(w_remaps)) {
+            return found->second(addr, value);
+        }
+        mem[addr] = value;
+    }
+
+    uint8_t read(uint16_t addr) const {
+        if (auto found = r_remaps.find(addr); found != std::end(r_remaps)) {
+            return found->second(addr);
+        }
         return mem[addr];
     }
 
-    std::array<uint8_t, 8_Kb> mem;
+    std::array<uint8_t, 64_Kb>  mem;
+    std::array<uint8_t, 8_Kb>   chr;
+
+    std::unordered_map<uint16_t, std::function<uint8_t(uint16_t)>> r_remaps;
+    std::unordered_map<uint16_t, std::function<void(uint16_t, uint8_t)>> w_remaps;
+
+    bool nmi_on{false};
 };
 
 auto load_rom(auto filename) {
@@ -216,8 +252,11 @@ auto load_rom(auto filename) {
     auto chr = std::array<uint8_t, 8_Kb>{};
     romfile.read(reinterpret_cast<char*>(chr.data()), chr.size());
 
-    return chr;
+    return std::tuple{memory, chr};
 }
+
+static std::random_device rd;
+static std::mt19937 gen(rd());
 
 int main(int argc, char *argv[]) {
     auto frontend = sdl::frontend::create();
@@ -226,7 +265,88 @@ int main(int argc, char *argv[]) {
     auto chr = std::array{sdl::chr_window("CHR 0"), sdl::chr_window("CHR 1")};
 
     auto bus = dummy_bus{load_rom("rom/smb.nes")};
+    auto cpu = nes::cpu{bus};
     auto ppu = nes::ppu{bus};
+
+    bus.r_remaps.insert(
+        std::pair{
+            uint16_t{0x2002}
+            , [&ppu] (uint16_t ) {
+                auto d = ppu.status & 0xE0;
+                ppu.status &= 0x60;
+                ppu.address_latch = 0;
+                return d;
+            }
+        }
+    );
+
+    bus.r_remaps.insert(
+        std::pair{
+            uint16_t{0x2007}
+            , [&ppu, &bus] (uint16_t ) {
+                auto addr = ppu.address++;
+                if (addr >= 0x2000 && addr <= 0x3EFF) {
+                    assert(false);
+                    // nametables
+                    return uint8_t{};
+                } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
+                    return ppu.read_palette_color(addr & 0x001F);
+                } else {
+                    return bus.chr_read(addr);
+                }
+            }
+        }
+    );
+
+    bus.w_remaps.insert(
+        std::pair{
+            uint16_t{0x2000}
+            , [&ppu] (uint16_t, uint8_t value) {
+                ppu.control = value;
+            }
+        }
+    );
+
+    bus.w_remaps.insert(
+        std::pair{
+            uint16_t{0x2006}
+            , [&ppu] (uint16_t , uint8_t value) {
+                if (ppu.address_latch == 0) {
+                    ppu.address = (ppu.address & 0x00FF) | (value << 8);
+                    ppu.address_latch = 1;
+                } else {
+                    ppu.address = (ppu.address & 0xFF00) | (value << 0);
+                    ppu.address_latch = 0;
+
+                    ppu.address &= 0x3FFF;
+                }
+            }
+        }
+    );
+
+    bus.w_remaps.insert(
+        std::pair{
+            uint16_t{0x2007}
+            , [&ppu, &bus] (uint16_t, uint8_t value) {
+                if (ppu.address >= 0x2000 && ppu.address <= 0x3EFF) {
+                    // nametables
+                    return;
+                } else if (ppu.address >= 0x3F00 && ppu.address <= 0x3FFF) {
+                    ppu.write_palette_color(ppu.address & 0x001F, value);
+                } else {
+                    bus.chr_write(ppu.address, value);
+                }
+                ++ppu.address;
+            }
+        }
+    );
+    auto master_clock = nes::clock{};
+    auto cpu_clock = nes::clock{master_clock, 12};
+    auto ppu_clock = nes::clock{master_clock, 4};
+
+    for (auto i = 0; i < 0x20; ++i) {
+        ppu.write_palette_color(i, 0);
+    }
 
     const auto FPS   = 60;
     const auto DELAY = static_cast<int>(1000.0f / FPS);
@@ -244,21 +364,30 @@ int main(int argc, char *argv[]) {
             break;
 
         do {
-            ppu.tick();
+            master_clock.tick();
+            while(cpu_clock.pop_tick()) {
+                cpu.tick();
+            }
+            while(ppu_clock.pop_tick()) {
+                ppu.tick();
+            }
+            if (ppu.nmi) {
+                bus.nmi_on = true;
+                ppu.nmi = false;
+            }
         } while(!ppu.is_frame_ready());
 
         ppu.render_noise([](){
-            static std::random_device rd;
-            static std::mt19937 gen(rd());
-
             auto distrib = std::uniform_int_distribution<short>(0, 255);
 
             return static_cast<uint8_t>(distrib(gen));
         });
         window.render(ppu.frame_buffer);
 
+        auto distrib = std::uniform_int_distribution<short>(0, 7);
+
         for (auto i = 0; i < chr.size(); ++i) {
-            chr[i].render(ppu.display_pattern_table(i));
+            chr[i].render(ppu.display_pattern_table(i, distrib(gen)));
         }
 
         frameTime = SDL_GetTicks() - frameStart;
