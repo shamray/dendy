@@ -14,6 +14,7 @@ struct test_bus
 {
     void write(uint16_t addr, uint8_t value) { mem[addr] = value; }
     uint8_t read(uint16_t addr) const { return mem[addr]; }
+    bool nmi() const { return false; }
 
     std::vector<uint8_t>& mem;
 };

@@ -19,6 +19,7 @@ template <class B>
 concept bus = requires(B b, uint16_t address, uint8_t value) {
     { b.write(address, value) };
     { b.read(address) } -> std::same_as<uint8_t>;
+    { b.nmi() } -> std::same_as<bool>;
 };
 
 template <bus bus_t>
@@ -76,6 +77,8 @@ public:
     [[nodiscard]] auto read_word_wrapped(uint16_t addr) const -> uint16_t;
 
     auto decode(uint8_t opcode) -> std::optional<instruction>;
+
+    auto interrupt() -> int;
 
 private:
     bus_t& bus_;
@@ -371,13 +374,20 @@ template <bus bus_t> cpu<bus_t>::cpu(bus_t& bus)
 template <bus bus_t> void cpu<bus_t>::tick()
 {
     if (current_instruction.is_finished()) {
-        auto opcode = read(pc.advance());
+        if (not bus_.nmi()) {
+            auto opcode = read(pc.advance());
 
-        current_instruction = decode(opcode)
+            current_instruction = decode(opcode)
                 .value_or(cpu::instruction{
-                        [opcode](auto...) -> int { throw unsupported_opcode(opcode); },
-                        imp
+                    [opcode](auto...) -> int { throw unsupported_opcode(opcode); },
+                    imp
                 });
+        } else {
+            current_instruction = cpu::instruction{
+                [this](auto...) -> int { return interrupt(); },
+                imp
+            };
+        }
     }
 
     current_instruction.execute(*this);
@@ -402,6 +412,15 @@ template <bus bus_t> auto cpu<bus_t>::decode(uint8_t opcode) -> std::optional<in
         return std::nullopt;
 
     return found->second;
+}
+
+template<bus bus_t>
+auto cpu<bus_t>::interrupt() -> int {
+    auto prev_pc = nes::program_counter{static_cast<uint16_t >(pc.value() - 1)};
+    write(s.push(), prev_pc.hi());
+    write(s.push(), prev_pc.lo());
+    pc.assign(0xFFFA);
+    return 7;
 }
 
 }

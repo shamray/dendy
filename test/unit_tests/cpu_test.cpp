@@ -22,7 +22,10 @@ public:
         void write(uint16_t addr, uint8_t value) { mem[addr] = value; }
         uint8_t read(uint16_t addr) const { return mem[addr]; }
 
+        bool nmi() const { return nmi_on; }
+
         std::vector<uint8_t>& mem;
+        bool nmi_on{false};
     };
 
     cpu_test()
@@ -44,6 +47,9 @@ public:
         CHECK(cpu.is_executing() != expected_to_finish);
     }
 
+    void trigger_nmi() {
+        b.nmi_on = true;
+    }
 
     std::vector<uint8_t> mem;
     test_bus b{mem};
@@ -1588,3 +1594,14 @@ TEST_CASE_METHOD(cpu_test, "RRA")
         CHECK((int)cpu.a.value() == 0x02);
     }
 }
+
+TEST_CASE_METHOD(cpu_test, "NMI")
+{
+    trigger_nmi();
+
+    load(prgadr, std::array{0x4c, 0x34, 0x12});
+    tick(8);
+
+    CHECK(cpu.pc.value() == 0xFFFA);
+}
+

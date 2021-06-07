@@ -8,8 +8,10 @@
 #include <string>
 
 #include <libnes/cpu.hpp>
+#include <libnes/literals.hpp>
 
 using namespace std::string_literals;
+using namespace nes::literals;
 
 auto load_rom(auto filename) {
     auto memory = std::vector<uint8_t>(64_Kb, 0);
@@ -29,6 +31,8 @@ auto load_rom(auto filename) {
 struct grabbr {
 
     enum class access_type { read, write };
+
+    auto nmi() const { return false; }
 
     void write(uint16_t addr, uint8_t value) {
         on_access(access_type::write, addr, value);
