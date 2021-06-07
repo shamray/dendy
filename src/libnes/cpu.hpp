@@ -105,6 +105,7 @@ template <bus bus_t> cpu<bus_t>::cpu(bus_t& bus)
         {0x7A, { nop, imp, 2 }},
         {0xDA, { nop, imp, 2 }},
         {0xFA, { nop, imp, 2 }},
+        {0x82, { nop, imp, 2 }},
 
         {0x04, { i_n, zp , 3 }},
         {0x44, { i_n, zp , 3 }},
@@ -416,10 +417,13 @@ template <bus bus_t> auto cpu<bus_t>::decode(uint8_t opcode) -> std::optional<in
 
 template<bus bus_t>
 auto cpu<bus_t>::interrupt() -> int {
-    auto prev_pc = nes::program_counter{static_cast<uint16_t >(pc.value() - 1)};
-    write(s.push(), prev_pc.hi());
-    write(s.push(), prev_pc.lo());
-    pc.assign(0xFFFA);
+    write(s.push(), pc.hi());
+    write(s.push(), pc.lo());
+    pc.assign(read_word(0xFFFA));
+
+    write(s.push(), p.value());
+    p.set(cpu_flag::int_disable);
+
     return 7;
 }
 
