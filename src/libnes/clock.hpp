@@ -3,6 +3,7 @@
 #include <ranges>
 #include <vector>
 #include <functional>
+#include <algorithm>
 
 namespace nes
 {
