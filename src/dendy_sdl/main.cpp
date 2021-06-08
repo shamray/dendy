@@ -13,8 +13,12 @@
 #include <unordered_map>
 #include <fstream>
 #include <tuple>
+#include <string>
+#include <deque>
+#include <numeric>
 
 using namespace nes::literals;
+using namespace std::string_literals;
 
 namespace sdl
 {
@@ -107,6 +111,16 @@ public:
         screen_ = SDL_CreateTexture (renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 256, 240);
     }
 
+    void display_fps(double fps) {
+        fps_.push_back(fps);
+        if (fps_.size() > 100) {
+            fps_.pop_front();
+        }
+        auto average_fps = std::accumulate(fps_.begin(), fps_.end(), 0.0) / fps_.size();
+        auto title = "Dendy | "s + std::to_string(average_fps) + " fps"s;
+        SDL_SetWindowTitle(window_, title.c_str());
+    }
+
     void render(const auto& frame_buffer) {
         SDL_RenderClear(renderer_);
         SDL_UpdateTexture(screen_, nullptr, frame_buffer.data(), 256 * sizeof(uint32_t));
@@ -126,6 +140,8 @@ public:
 private:
     SDL_Renderer* renderer_{nullptr};
     SDL_Texture* screen_{nullptr};
+
+    std::deque<float> fps_;
 };
 
 class chr_window: public window
@@ -386,6 +402,8 @@ int main(int argc, char *argv[]) {
         }
 
         frameTime = SDL_GetTicks() - frameStart;
+
+        window.display_fps(1.0 / frameTime * 1000);
         if (frameTime < DELAY)
             SDL_Delay((int)(DELAY - frameTime));
     }
