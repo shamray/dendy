@@ -57,6 +57,7 @@ private:
 
 class ppu {
 public:
+    ppu() = default;
     ppu(const pattern_table::memory_bank& chr)
         : chr_{&chr}
     {}
