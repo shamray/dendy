@@ -118,7 +118,65 @@ public:
         return COLORS[rpc];
     }
 
-    auto chr_read(uint16_t addr) const { return chr_.read(addr); } //TODO: get rid of
+    [[nodiscard]] auto read(uint16_t addr) -> std::optional<uint8_t> const {
+        switch (addr) {
+            case 0x2002: {
+                auto d = status & 0xE0;
+                status &= 0x60;
+                address_latch = 0;
+                return d;
+            }
+            case 0x2007: {
+                auto addr = address++;
+                if (addr >= 0x2000 && addr <= 0x3EFF) {
+                    assert(false);
+                    // nametables
+                    return uint8_t{};
+                } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
+                    return read_palette_color(addr & 0x001F);
+                } else {
+                    return chr_.read(addr);
+                }
+            }
+            default: return std::nullopt;
+        }
+    }
+
+    auto write(uint16_t addr, uint8_t value) -> bool {
+        switch (addr) {
+            case 0x2000: {
+                control = value;
+                return true;
+            }
+            case 0x2006: {
+                if (address_latch == 0) {
+                    address = (address & 0x00FF) | (value << 8);
+                    address_latch = 1;
+                } else {
+                    address = (address & 0xFF00) | (value << 0);
+                    address_latch = 0;
+
+                    address &= 0x3FFF;
+                }
+                return true;
+            }
+            case 0x2007: {
+                if (address >= 0x2000 && address <= 0x3EFF) {
+                    // nametables
+                } else if (address >= 0x3F00 && address <= 0x3FFF) {
+                    write_palette_color(address & 0x001F, value);
+                } else {
+                    // ppu chr write
+                }
+                ++address;
+
+                return true;
+            }
+            default: return false;
+        }
+    }
+
+    void connect_pattern_table(auto new_bank) noexcept { chr_.connect(new_bank); }
 
     auto display_pattern_table(auto i, auto palette) const -> std::array<uint32_t, 128 * 128>;
 

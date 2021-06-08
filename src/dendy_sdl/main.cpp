@@ -189,40 +189,40 @@ auto load_texture(const auto& frame_bufer) {
 
 struct dummy_bus
 {
-    dummy_bus(std::tuple<std::array<uint8_t, 64_Kb>, std::array<uint8_t, 8_Kb>>&& rom)
+    dummy_bus(std::tuple<std::array<uint8_t, 64_Kb>, std::array<uint8_t, 8_Kb>>&& rom, nes::ppu& ppu)
         : mem{std::move(std::get<0>(rom))}
         , chr{std::move(std::get<1>(rom))}
-    {}
+        , ppu{ppu}
+    {
+        ppu.connect_pattern_table(&chr);
+    }
 
     auto nmi() {
-        if (not nmi_on)
+        if (not ppu.nmi)
             return false;
 
-        nmi_on = false;
+        ppu.nmi = false;
         return true;
     }
 
-    void write(uint16_t addr, uint8_t value)    {
-        if (auto found = w_remaps.find(addr); found != std::end(w_remaps)) {
-            return found->second(addr, value);
-        }
+    void write(uint16_t addr, uint8_t value) {
+        if (ppu.write(addr, value))
+            return;
+
         mem[addr] = value;
     }
 
     uint8_t read(uint16_t addr) const {
-        if (auto found = r_remaps.find(addr); found != std::end(r_remaps)) {
-            return found->second(addr);
-        }
+        if (auto r = ppu.read(addr); r.has_value())
+            return r.value();
+
         return mem[addr];
     }
 
     std::array<uint8_t, 64_Kb>  mem;
     std::array<uint8_t, 8_Kb>   chr;
 
-    std::unordered_map<uint16_t, std::function<uint8_t(uint16_t)>> r_remaps;
-    std::unordered_map<uint16_t, std::function<void(uint16_t, uint8_t)>> w_remaps;
-
-    bool nmi_on{false};
+    nes::ppu& ppu;
 };
 
 auto load_rom(auto filename) {
@@ -275,82 +275,9 @@ int main(int argc, char *argv[]) {
 
     auto chr = std::array{sdl::chr_window("CHR 0"), sdl::chr_window("CHR 1")};
 
-    auto bus = dummy_bus{load_rom("rom/smb.nes")};
+    auto ppu = nes::ppu{};
+    auto bus = dummy_bus{load_rom("rom/smb.nes"), ppu};
     auto cpu = nes::cpu{bus};
-    auto ppu = nes::ppu{bus.chr};
-
-    bus.r_remaps.insert(
-        std::pair{
-            uint16_t{0x2002}
-            , [&ppu] (uint16_t ) {
-                auto d = ppu.status & 0xE0;
-                ppu.status &= 0x60;
-                ppu.address_latch = 0;
-                return d;
-            }
-        }
-    );
-
-    bus.r_remaps.insert(
-        std::pair{
-            uint16_t{0x2007}
-            , [&ppu] (uint16_t ) {
-                auto addr = ppu.address++;
-                if (addr >= 0x2000 && addr <= 0x3EFF) {
-                    assert(false);
-                    // nametables
-                    return uint8_t{};
-                } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
-                    return ppu.read_palette_color(addr & 0x001F);
-                } else {
-                    return ppu.chr_read(addr);
-                }
-            }
-        }
-    );
-
-    bus.w_remaps.insert(
-        std::pair{
-            uint16_t{0x2000}
-            , [&ppu] (uint16_t, uint8_t value) {
-                ppu.control = value;
-            }
-        }
-    );
-
-    bus.w_remaps.insert(
-        std::pair{
-            uint16_t{0x2006}
-            , [&ppu] (uint16_t , uint8_t value) {
-                if (ppu.address_latch == 0) {
-                    ppu.address = (ppu.address & 0x00FF) | (value << 8);
-                    ppu.address_latch = 1;
-                } else {
-                    ppu.address = (ppu.address & 0xFF00) | (value << 0);
-                    ppu.address_latch = 0;
-
-                    ppu.address &= 0x3FFF;
-                }
-            }
-        }
-    );
-
-    bus.w_remaps.insert(
-        std::pair{
-            uint16_t{0x2007}
-            , [&ppu] (uint16_t, uint8_t value) {
-                if (ppu.address >= 0x2000 && ppu.address <= 0x3EFF) {
-                    // nametables
-                    return;
-                } else if (ppu.address >= 0x3F00 && ppu.address <= 0x3FFF) {
-                    ppu.write_palette_color(ppu.address & 0x001F, value);
-                } else {
-                    // ppu chr write
-                }
-                ++ppu.address;
-            }
-        }
-    );
 
     for (auto i = 0; i < 0x20; ++i) {
         ppu.write_palette_color(i, 0);
@@ -377,11 +304,6 @@ int main(int argc, char *argv[]) {
             ppu.tick();
             ppu.tick();
             ppu.tick();
-
-            if (ppu.nmi) {
-                bus.nmi_on = true;
-                ppu.nmi = false;
-            }
         } while(!ppu.is_frame_ready());
 
         ppu.render_noise([](){
