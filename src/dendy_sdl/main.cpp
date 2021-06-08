@@ -351,9 +351,6 @@ int main(int argc, char *argv[]) {
             }
         }
     );
-    auto master_clock = nes::clock{};
-    auto cpu_clock = nes::clock{master_clock, 12};
-    auto ppu_clock = nes::clock{master_clock, 4};
 
     for (auto i = 0; i < 0x20; ++i) {
         ppu.write_palette_color(i, 0);
@@ -375,13 +372,12 @@ int main(int argc, char *argv[]) {
             break;
 
         do {
-            master_clock.tick();
-            while(cpu_clock.pop_tick()) {
-                cpu.tick();
-            }
-            while(ppu_clock.pop_tick()) {
-                ppu.tick();
-            }
+            cpu.tick();
+
+            ppu.tick();
+            ppu.tick();
+            ppu.tick();
+
             if (ppu.nmi) {
                 bus.nmi_on = true;
                 ppu.nmi = false;
