@@ -186,11 +186,6 @@ struct dummy_bus
         return true;
     }
 
-    void chr_write(uint16_t addr, uint8_t value)    {
-        chr[addr] = value;
-    }
-    uint8_t chr_read(uint16_t addr) const           { return chr[addr]; }
-
     void write(uint16_t addr, uint8_t value)    {
         if (auto found = w_remaps.find(addr); found != std::end(w_remaps)) {
             return found->second(addr, value);
@@ -266,7 +261,7 @@ int main(int argc, char *argv[]) {
 
     auto bus = dummy_bus{load_rom("rom/smb.nes")};
     auto cpu = nes::cpu{bus};
-    auto ppu = nes::ppu{bus};
+    auto ppu = nes::ppu{bus.chr};
 
     bus.r_remaps.insert(
         std::pair{
@@ -283,7 +278,7 @@ int main(int argc, char *argv[]) {
     bus.r_remaps.insert(
         std::pair{
             uint16_t{0x2007}
-            , [&ppu, &bus] (uint16_t ) {
+            , [&ppu] (uint16_t ) {
                 auto addr = ppu.address++;
                 if (addr >= 0x2000 && addr <= 0x3EFF) {
                     assert(false);
@@ -292,7 +287,7 @@ int main(int argc, char *argv[]) {
                 } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
                     return ppu.read_palette_color(addr & 0x001F);
                 } else {
-                    return bus.chr_read(addr);
+                    return ppu.chr_read(addr);
                 }
             }
         }
@@ -327,14 +322,14 @@ int main(int argc, char *argv[]) {
     bus.w_remaps.insert(
         std::pair{
             uint16_t{0x2007}
-            , [&ppu, &bus] (uint16_t, uint8_t value) {
+            , [&ppu] (uint16_t, uint8_t value) {
                 if (ppu.address >= 0x2000 && ppu.address <= 0x3EFF) {
                     // nametables
                     return;
                 } else if (ppu.address >= 0x3F00 && ppu.address <= 0x3FFF) {
                     ppu.write_palette_color(ppu.address & 0x001F, value);
                 } else {
-                    bus.chr_write(ppu.address, value);
+                    // ppu chr write
                 }
                 ++ppu.address;
             }

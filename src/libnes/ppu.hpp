@@ -1,8 +1,11 @@
 #pragma once
 
-#include <vector>
 #include <array>
+#include <optional>
+#include <stdexcept>
 #include <cassert>
+
+#include <libnes/literals.hpp>
 
 namespace nes {
 
@@ -25,17 +28,37 @@ constexpr auto COLORS = std::to_array<uint32_t>({
     0xFF00FCFC, 0xFFF8D8F8, 0xFF000000, 0xFF000000
 });
 
-template<class B>
-concept ppu_bus = requires(B b, uint16_t address, uint8_t value) {
-    { b.chr_write(address, value) };
-    { b.chr_read(address) } -> std::same_as<uint8_t>;
+class pattern_table {
+public:
+    using memory_bank = std::array<uint8_t, 8_Kb>;
+
+    pattern_table() = default;
+    pattern_table(const memory_bank* bank)
+        : bank_{bank}
+    {}
+
+    constexpr void connect(const memory_bank* new_bank) {
+        bank_ = new_bank;
+    }
+
+    [[nodiscard]] constexpr auto is_connected() const { return bank_ != nullptr; }
+
+    [[nodiscard]] constexpr auto read(uint16_t addr) const {
+        if (bank_ == nullptr)
+            throw std::range_error("No CHR bank connected");
+
+        return bank_->at(addr);
+    }
+    constexpr void write(uint16_t, uint8_t )    {}
+
+private:
+    const memory_bank* bank_{nullptr};
 };
 
-template<ppu_bus bus_t>
 class ppu {
 public:
-    ppu(bus_t &bus)
-        : bus_(bus)
+    ppu(const pattern_table::memory_bank& chr)
+        : chr_{&chr}
     {}
 
     uint8_t control;
@@ -57,11 +80,8 @@ public:
     void tick() noexcept;
 
     [[nodiscard]] constexpr auto scan_line() const noexcept { return scan_.line; }
-
     [[nodiscard]] constexpr auto scan_cycle() const noexcept { return scan_.cycle; }
-
     [[nodiscard]] constexpr auto is_odd_frame() const noexcept { return frame_is_odd_; }
-
     [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return frame_is_ready_; }
 
     std::array<uint32_t, 256 * 240> frame_buffer;
@@ -97,42 +117,14 @@ public:
         return COLORS[rpc];
     }
 
-    auto display_pattern_table(auto i, auto palette) {
-        auto result = std::array<uint32_t, 128 * 128>{};
+    auto chr_read(uint16_t addr) const { return chr_.read(addr); } //TODO: get rid of
 
-        for (uint16_t tile_y = 0; tile_y < 16; ++tile_y) {
-            for (uint16_t tile_x = 0; tile_x < 16; ++tile_x) {
-
-                auto offset = static_cast<uint16_t>(tile_y * 256 + tile_x * 16);
-
-                for (uint16_t row = 0; row < 8; ++row) {
-
-                    auto tile_lsb = bus_.chr_read(i * 0x1000 + offset + row + 0);
-                    auto tile_msb = bus_.chr_read(i * 0x1000 + offset + row + 8);
-
-                    for (uint16_t col = 0; col < 8; col++) {
-                        auto pixel = static_cast<uint8_t>((tile_lsb & 0x01) | ((tile_msb & 0x01) <<1));
-
-                        auto result_offset = (tile_y * 8 + row) * 128 + tile_x * 8 + (7 - col);
-                        auto result_color = get_palette_color(pixel, palette);
-
-                        result[result_offset] = result_color;
-
-                        tile_lsb >>= 1; tile_msb >>= 1;
-                    }
-                }
-            }
-        }
-        return result;
-    }
+    auto display_pattern_table(auto i, auto palette) const -> std::array<uint32_t, 128 * 128>;
 
 private:
     void prerender_scanline() noexcept {};
-
     void visible_scanline() noexcept {};
-
     void postrender_scanline() noexcept {};
-
     void vertical_blank_line() noexcept {};
 
 private:
@@ -140,10 +132,11 @@ private:
         int line{-1};
         int cycle{0};
     } scan_;
+
     bool frame_is_odd_{false};
     bool frame_is_ready_{false};
-    bus_t bus_;
 
+    pattern_table chr_;
     std::array<uint8_t, 32> palette_;
 };
 
@@ -169,8 +162,7 @@ const auto SCANLINE_DOTS = 341;
            scanline < VISIBLE_SCANLINES + POST_RENDER_SCANLINES + VERTICAL_BLANK_SCANLINES;
 }
 
-template<ppu_bus bus_t>
-void ppu<bus_t>::tick() noexcept {
+inline void ppu::tick() noexcept {
     if (is_prerender(scan_line())) {
         prerender_scanline();
     } else if (is_visible(scan_line())) {
@@ -199,5 +191,34 @@ void ppu<bus_t>::tick() noexcept {
             frame_is_ready_ = true;
         }
     }
+}
+
+inline auto ppu::display_pattern_table(auto i, auto palette) const -> std::array<uint32_t, 128 * 128> {
+    auto result = std::array<uint32_t, 128 * 128>{};
+
+    for (uint16_t tile_y = 0; tile_y < 16; ++tile_y) {
+        for (uint16_t tile_x = 0; tile_x < 16; ++tile_x) {
+
+            auto offset = static_cast<uint16_t>(tile_y * 256 + tile_x * 16);
+
+            for (uint16_t row = 0; row < 8; ++row) {
+
+                auto tile_lsb = chr_.read(i * 0x1000 + offset + row + 0);
+                auto tile_msb = chr_.read(i * 0x1000 + offset + row + 8);
+
+                for (uint16_t col = 0; col < 8; col++) {
+                    auto pixel = static_cast<uint8_t>((tile_lsb & 0x01) | ((tile_msb & 0x01) <<1));
+
+                    auto result_offset = (tile_y * 8 + row) * 128 + tile_x * 8 + (7 - col);
+                    auto result_color = get_palette_color(pixel, palette);
+
+                    result[result_offset] = result_color;
+
+                    tile_lsb >>= 1; tile_msb >>= 1;
+                }
+            }
+        }
+    }
+    return result;
 }
 }
