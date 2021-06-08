@@ -1597,11 +1597,12 @@ TEST_CASE_METHOD(cpu_test, "RRA")
 
 TEST_CASE_METHOD(cpu_test, "NMI")
 {
+    load(0xfffa, std::array{0x00, 0xb0});
     trigger_nmi();
 
     load(prgadr, std::array{0x4c, 0x34, 0x12});
     tick(8);
 
-    CHECK(cpu.pc.value() == 0xFFFA);
+    CHECK(cpu.pc.value() == 0xb000);
 }
 
