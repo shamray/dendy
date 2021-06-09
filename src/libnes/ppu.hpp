@@ -75,6 +75,7 @@ public:
     constexpr void write(uint16_t addr, uint8_t value) {
         auto i = bank_index(addr);
         auto j = bank_offset(addr);
+
         vram_[i][j] = value;
     }
     [[nodiscard]] constexpr auto read(uint16_t addr) const {
@@ -200,14 +201,15 @@ public:
                 return true;
             }
             case 0x2007: {
-                if (address >= 0x2000 && address <= 0x3EFF) {
-                    // nametables
+                if (address >= 0x2000 && address <= 0x3000) {
+                    vram_.write(address & 0xFFF, value);
                 } else if (address >= 0x3F00 && address <= 0x3FFF) {
                     write_palette_color(address & 0x001F, value);
                 } else {
                     // ppu chr write
                 }
-                ++address;
+                auto inc = (control & 0x04) ? 32 : 1;
+                address += inc;
 
                 return true;
             }
@@ -220,10 +222,34 @@ public:
     auto display_pattern_table(auto i, auto palette) const -> std::array<uint32_t, 128 * 128>;
 
 private:
-    void prerender_scanline() noexcept {};
-    void visible_scanline() noexcept {};
-    void postrender_scanline() noexcept {};
-    void vertical_blank_line() noexcept {};
+    constexpr void prerender_scanline() noexcept {};
+    constexpr void visible_scanline() {
+        auto y = scan_.line;
+        auto x = scan_.cycle - 2;
+
+        if (y < 240 and x >= 0 and x < 256) {
+            auto tile_x = x / 8;
+            auto tile_y = y / 8;
+
+            auto row = y % 8;
+            auto col = x % 8;
+
+            auto offset = static_cast<uint16_t>((tile_y * 32 + tile_x) | ((control & 0x03) << 10));
+            auto ch = vram_.read(offset);
+
+            auto ix = (control & 0x10) >> 4;
+
+            auto tile_lsb = chr_.read(ix * 0x1000 + ch * 0x10+ row + 0);
+            auto tile_msb = chr_.read(ix * 0x1000 + ch * 0x10 + row + 8);
+            tile_lsb >>= (7 - col); tile_msb >>= (7 - col);
+
+            auto pixel = static_cast<uint8_t>((tile_lsb & 0x01) | ((tile_msb & 0x01) <<1));
+
+            frame_buffer[y * 256 + x] = get_palette_color(pixel, RANDOM);
+        }
+    };
+    constexpr void postrender_scanline() noexcept {};
+    constexpr void vertical_blank_line() noexcept {};
 
 private:
     struct {
@@ -235,7 +261,10 @@ private:
     bool frame_is_ready_{false};
 
     pattern_table chr_;
+    name_table vram_;
     std::array<uint8_t, 32> palette_;
+
+    int RANDOM{4};
 };
 
 const auto VISIBLE_SCANLINES = 240;
@@ -292,6 +321,7 @@ inline void ppu::tick() noexcept {
 }
 
 inline auto ppu::display_pattern_table(auto i, auto palette) const -> std::array<uint32_t, 128 * 128> {
+    RANDOM = palette;
     auto result = std::array<uint32_t, 128 * 128>{};
 
     for (uint16_t tile_y = 0; tile_y < 16; ++tile_y) {

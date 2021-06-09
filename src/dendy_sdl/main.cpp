@@ -276,7 +276,7 @@ int main(int argc, char *argv[]) {
     auto chr = std::array{sdl::chr_window("CHR 0"), sdl::chr_window("CHR 1")};
 
     auto ppu = nes::ppu{};
-    auto bus = dummy_bus{load_rom("rom/smb.nes"), ppu};
+    auto bus = dummy_bus{load_rom("rom/dk.nes"), ppu};
     auto cpu = nes::cpu{bus};
 
     for (auto i = 0; i < 0x20; ++i) {
@@ -306,11 +306,11 @@ int main(int argc, char *argv[]) {
             ppu.tick();
         } while(!ppu.is_frame_ready());
 
-        ppu.render_noise([](){
-            auto distrib = std::uniform_int_distribution<short>(0, 255);
-
-            return static_cast<uint8_t>(distrib(gen));
-        });
+//        ppu.render_noise([](){
+//            auto distrib = std::uniform_int_distribution<short>(0, 255);
+//
+//            return static_cast<uint8_t>(distrib(gen));
+//        });
         window.render(ppu.frame_buffer);
 
         auto distrib = std::uniform_int_distribution<short>(0, 7);
