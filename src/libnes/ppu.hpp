@@ -245,7 +245,20 @@ private:
 
             auto pixel = static_cast<uint8_t>((tile_lsb & 0x01) | ((tile_msb & 0x01) <<1));
 
-            frame_buffer[y * 256 + x] = get_palette_color(pixel, RANDOM);
+            auto attr_byte_index = (0x3c0 + tile_y / 4 * 8 + tile_x / 4) | ((control & 0x03) << 10);
+            auto attr_byte = vram_.read(attr_byte_index);
+
+            auto palette = [tile_x, tile_y](auto attr_byte) {
+                if ((tile_x % 4) >> 1) {
+                    attr_byte = attr_byte >> 2;
+                }
+                if ((tile_y % 4) >> 1) {
+                    attr_byte = attr_byte >> 4;
+                }
+                return attr_byte & 0x03;
+            }(attr_byte);
+
+            frame_buffer[y * 256 + x] = get_palette_color(pixel, palette);
         }
     };
     constexpr void postrender_scanline() noexcept {};
