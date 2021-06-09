@@ -55,6 +55,45 @@ private:
     const memory_bank* bank_{nullptr};
 };
 
+enum class name_table_mirroring { horizontal, vertical };
+
+class name_table
+{
+    [[nodiscard]] constexpr auto bank_index(uint16_t addr) const noexcept {
+        using enum name_table_mirroring;
+        switch(mirroring) {
+            case horizontal:    return (addr >> 11) & 0x01;
+            case vertical:      return (addr >> 10) & 0x01;
+        }
+    }
+
+    [[nodiscard]] constexpr auto bank_offset(uint16_t addr) const noexcept {
+        return addr & 0x3FF;
+    }
+
+public:
+    constexpr void write(uint16_t addr, uint8_t value) {
+        auto i = bank_index(addr);
+        auto j = bank_offset(addr);
+        vram_[i][j] = value;
+    }
+    [[nodiscard]] constexpr auto read(uint16_t addr) const {
+        auto i = bank_index(addr);
+        auto j = bank_offset(addr);
+        return vram_[i][j];
+    }
+
+    [[nodiscard]] constexpr auto table(int bank) const -> auto& {
+        return vram_[bank & 1];
+    }
+
+    name_table_mirroring mirroring{name_table_mirroring::vertical};
+
+private:
+    using bank = std::array<uint8_t, 2_Kb>;
+    std::array<bank, 2> vram_;
+};
+
 class ppu {
 public:
     ppu() = default;
