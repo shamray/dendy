@@ -10,17 +10,9 @@ void tick(auto& ppu, int times = 1) {
     }
 }
 
-struct dummy_bus
-{
-    void chr_write(uint16_t addr, uint8_t value) { chr[addr] = value; }
-    uint8_t chr_read(uint16_t addr) const { return chr[addr]; }
-
-    std::array<uint8_t, 2_Kb> chr;
-};
-dummy_bus bus;
-
 TEST_CASE("scanline cycles") {
-    auto ppu = nes::ppu{};
+    std::array<uint8_t, 8_Kb> chr;
+    auto ppu = nes::ppu{chr};
 
     SECTION("at power up") {
         CHECK(ppu.scan_line() == -1);

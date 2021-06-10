@@ -59,12 +59,13 @@ enum class name_table_mirroring { horizontal, vertical };
 
 class name_table
 {
-    [[nodiscard]] constexpr auto bank_index(uint16_t addr) const noexcept {
+    [[nodiscard]] constexpr auto bank_index(uint16_t addr) const {
         using enum name_table_mirroring;
         switch(mirroring) {
             case horizontal:    return (addr >> 11) & 0x01;
             case vertical:      return (addr >> 10) & 0x01;
         }
+        throw std::logic_error("Unhandled mirroring scenario");
     }
 
     [[nodiscard]] constexpr auto bank_offset(uint16_t addr) const noexcept {
@@ -155,7 +156,7 @@ public:
 
     auto get_palette_color(uint8_t pixel, uint8_t palette) {
         auto rpc = read_palette_color((palette << 2) + pixel);
-        return COLORS[rpc];
+        return COLORS[rpc & 0x3F];
     }
 
     [[nodiscard]] auto read(uint16_t addr) -> std::optional<uint8_t> const {
@@ -222,7 +223,8 @@ public:
     auto display_pattern_table(auto i, auto palette) const -> std::array<uint32_t, 128 * 128>;
 
 private:
-    constexpr void prerender_scanline() noexcept {};
+    constexpr void prerender_scanline() noexcept {}
+
     constexpr void visible_scanline() {
         auto y = scan_.line;
         auto x = scan_.cycle - 2;
@@ -260,8 +262,13 @@ private:
 
             frame_buffer[y * 256 + x] = get_palette_color(pixel, palette);
         }
-    };
-    constexpr void postrender_scanline() noexcept {};
+    }
+
+    constexpr void postrender_scanline() noexcept {
+        status |= 0x80;
+        if (control & 0x80)
+            nmi = true;
+    }
     constexpr void vertical_blank_line() noexcept {};
 
 private:
@@ -276,8 +283,6 @@ private:
     pattern_table chr_;
     name_table vram_;
     std::array<uint8_t, 32> palette_;
-
-    int RANDOM{4};
 };
 
 const auto VISIBLE_SCANLINES = 240;
@@ -318,14 +323,7 @@ inline void ppu::tick() noexcept {
     if (++scan_.cycle >= SCANLINE_DOTS) {
         scan_.cycle = 0;
 
-        ++scan_.line;
-
-        if (scan_.line == VISIBLE_SCANLINES + POST_RENDER_SCANLINES) {
-            status |= 0x80;
-            if (control & 0x80)
-                nmi = true;
-        }
-        else if (scan_.line >= VISIBLE_SCANLINES + POST_RENDER_SCANLINES + VERTICAL_BLANK_SCANLINES) {
+        if (++scan_.line >= VISIBLE_SCANLINES + POST_RENDER_SCANLINES + VERTICAL_BLANK_SCANLINES) {
             scan_.line = -1;
             frame_is_odd_ = not frame_is_odd_;
             frame_is_ready_ = true;
@@ -334,7 +332,6 @@ inline void ppu::tick() noexcept {
 }
 
 inline auto ppu::display_pattern_table(auto i, auto palette) const -> std::array<uint32_t, 128 * 128> {
-    RANDOM = palette;
     auto result = std::array<uint32_t, 128 * 128>{};
 
     for (uint16_t tile_y = 0; tile_y < 16; ++tile_y) {
