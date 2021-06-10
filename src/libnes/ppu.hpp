@@ -124,7 +124,7 @@ public:
     [[nodiscard]] constexpr auto scan_line() const noexcept { return scan_.line; }
     [[nodiscard]] constexpr auto scan_cycle() const noexcept { return scan_.cycle; }
     [[nodiscard]] constexpr auto is_odd_frame() const noexcept { return frame_is_odd_; }
-    [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return frame_is_ready_; }
+    [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return scan_.line == -1 && scan_.cycle == 0; }
 
     std::array<uint32_t, 256 * 240> frame_buffer;
 
@@ -278,7 +278,6 @@ private:
     } scan_;
 
     bool frame_is_odd_{false};
-    bool frame_is_ready_{false};
 
     pattern_table chr_;
     name_table vram_;
@@ -318,15 +317,12 @@ inline void ppu::tick() noexcept {
         vertical_blank_line();
     }
 
-    frame_is_ready_ = false;
-
     if (++scan_.cycle >= SCANLINE_DOTS) {
         scan_.cycle = 0;
 
         if (++scan_.line >= VISIBLE_SCANLINES + POST_RENDER_SCANLINES + VERTICAL_BLANK_SCANLINES) {
             scan_.line = -1;
             frame_is_odd_ = not frame_is_odd_;
-            frame_is_ready_ = true;
         }
     }
 }

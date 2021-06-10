@@ -52,9 +52,10 @@ TEST_CASE("scanline cycles") {
     }
 
     SECTION("frame ready") {
+        tick(ppu, 1);
         CHECK_FALSE(ppu.is_frame_ready());
 
-        tick(ppu, 341 * 262);
+        tick(ppu, 341 * 262 - 1);
         CHECK(ppu.is_frame_ready());
 
         tick(ppu, 341 * 262);
