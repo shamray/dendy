@@ -124,7 +124,7 @@ public:
     [[nodiscard]] constexpr auto scan_line() const noexcept { return scan_.line; }
     [[nodiscard]] constexpr auto scan_cycle() const noexcept { return scan_.cycle; }
     [[nodiscard]] constexpr auto is_odd_frame() const noexcept { return frame_is_odd_; }
-    [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return scan_.line == -1 && scan_.cycle == 0; }
+    [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return scan_.line == -1 and scan_.cycle == 0; }
 
     std::array<uint32_t, 256 * 240> frame_buffer;
 
@@ -169,11 +169,11 @@ public:
             }
             case 0x2007: {
                 auto addr = address++;
-                if (addr >= 0x2000 && addr <= 0x3EFF) {
-                    assert(false);
-                    // nametables
-                    return uint8_t{};
-                } else if (addr >= 0x3F00 && addr <= 0x3FFF) {
+                if (addr >= 0x2000 and addr <= 0x2FFF) {
+                    return vram_.read(addr & 0xFFF);
+                } else if (addr >= 0x3000 and addr <= 0x3EFF) {
+                    throw std::range_error("not implemented");
+                } else if (addr >= 0x3F00 and addr <= 0x3FFF) {
                     return read_palette_color(addr & 0x001F);
                 } else {
                     return chr_.read(addr);
@@ -202,9 +202,9 @@ public:
                 return true;
             }
             case 0x2007: {
-                if (address >= 0x2000 && address <= 0x3000) {
+                if (address >= 0x2000 and address <= 0x3000) {
                     vram_.write(address & 0xFFF, value);
-                } else if (address >= 0x3F00 && address <= 0x3FFF) {
+                } else if (address >= 0x3F00 and address <= 0x3FFF) {
                     write_palette_color(address & 0x001F, value);
                 } else {
                     // ppu chr write

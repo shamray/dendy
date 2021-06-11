@@ -274,7 +274,7 @@ int main(int argc, char *argv[]) {
     auto window = sdl::main_window("Dendy");
 
     auto ppu = nes::ppu{};
-    auto bus = dummy_bus{load_rom("rom/dk.nes"), ppu};
+    auto bus = dummy_bus{load_rom("rom/pm.nes"), ppu};
     auto cpu = nes::cpu{bus};
 
     for (auto i = 0; i < 0x20; ++i) {
