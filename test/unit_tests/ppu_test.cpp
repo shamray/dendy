@@ -6,70 +6,69 @@ using namespace nes::literals;
 
 void tick(auto& ppu, int times = 1) {
     for (auto i = 0; i < times; ++i) {
-        ppu.tick();
+        ppu.advance();
     }
 }
 
 TEST_CASE("scanline cycles") {
-    std::array<uint8_t, 8_Kb> chr;
-    auto ppu = nes::ppu{chr};
+    auto scan = nes::crt_scan{341, 240, 1, 20};
 
     SECTION("at power up") {
-        CHECK(ppu.scan_line() == -1);
-        CHECK(ppu.scan_cycle() == 0);
-        CHECK_FALSE(ppu.is_odd_frame());
+        CHECK(scan.line() == -1);
+        CHECK(scan.cycle() == 0);
+        CHECK_FALSE(scan.is_odd_frame());
     }
 
     SECTION("one dot") {
-        tick(ppu);
-        CHECK(ppu.scan_line() == -1);
-        CHECK(ppu.scan_cycle() == 1);
+        tick(scan);
+        CHECK(scan.line() == -1);
+        CHECK(scan.cycle() == 1);
     }
 
     SECTION("full line") {
-        tick(ppu, 340);
-        CHECK(ppu.scan_line() == -1);
-        CHECK(ppu.scan_cycle() == 340);
+        tick(scan, 340);
+        CHECK(scan.line() == -1);
+        CHECK(scan.cycle() == 340);
     }
 
     SECTION("next line") {
-        tick(ppu, 341);
-        CHECK(ppu.scan_line() == 0);
-        CHECK(ppu.scan_cycle() == 0);
+        tick(scan, 341);
+        CHECK(scan.line() == 0);
+        CHECK(scan.cycle() == 0);
     }
 
     SECTION("last line") {
-        tick(ppu, 341 * 261);
-        CHECK(ppu.scan_line() == 260);
-        CHECK(ppu.scan_cycle() == 0);
+        tick(scan, 341 * 261);
+        CHECK(scan.line() == 260);
+        CHECK(scan.cycle() == 0);
     }
 
     SECTION("next frame") {
-        tick(ppu, 341 * 262);
-        CHECK(ppu.scan_line() == -1);
-        CHECK(ppu.scan_cycle() == 0);
-        CHECK(ppu.is_frame_ready());
+        tick(scan, 341 * 262);
+        CHECK(scan.line() == -1);
+        CHECK(scan.cycle() == 0);
+        CHECK(scan.is_frame_finished());
     }
 
     SECTION("frame ready") {
-        tick(ppu, 1);
-        CHECK_FALSE(ppu.is_frame_ready());
+        tick(scan, 1);
+        CHECK_FALSE(scan.is_frame_finished());
 
-        tick(ppu, 341 * 262 - 1);
-        CHECK(ppu.is_frame_ready());
+        tick(scan, 341 * 262 - 1);
+        CHECK(scan.is_frame_finished());
 
-        tick(ppu, 341 * 262);
-        CHECK(ppu.is_frame_ready());
+        tick(scan, 341 * 262);
+        CHECK(scan.is_frame_finished());
     }
 
     SECTION("even/odd frames") {
-        CHECK_FALSE(ppu.is_odd_frame());
+        CHECK_FALSE(scan.is_odd_frame());
 
-        tick(ppu, 341 * 262);
-        CHECK(ppu.is_odd_frame());
+        tick(scan, 341 * 262);
+        CHECK(scan.is_odd_frame());
 
-        tick(ppu, 341 * 262);
-        CHECK_FALSE(ppu.is_odd_frame());
+        tick(scan, 341 * 262);
+        CHECK_FALSE(scan.is_odd_frame());
     }
 }
 

@@ -96,12 +96,73 @@ private:
     std::array<bank, 2> vram_;
 };
 
+class crt_scan
+{
+public:
+    constexpr crt_scan(int dots, int visible_scanlines, int postrender_scanlines, int vblank_scanlines) noexcept
+        : dots_{dots}
+        , visible_scanlines_{visible_scanlines}
+        , postrender_scanlines_{postrender_scanlines}
+        , vblank_scanlines_{vblank_scanlines}
+    {}
+
+    [[nodiscard]] constexpr auto line() const noexcept { return line_; }
+    [[nodiscard]] constexpr auto cycle() const noexcept { return cycle_; }
+    [[nodiscard]] constexpr auto is_odd_frame() const noexcept { return frame_is_odd_; }
+    [[nodiscard]] constexpr auto is_frame_finished() const noexcept { return line_ == -1 and cycle_ == 0; }
+
+    [[nodiscard]] constexpr auto is_prerender() const noexcept {
+        return line_ == -1;
+    }
+
+    [[nodiscard]] constexpr auto is_visible() const noexcept {
+        return line_ >= 0 and line_ < visible_scanlines_;
+    }
+
+    [[nodiscard]] constexpr auto is_postrender() const noexcept {
+        return line_ >= visible_scanlines_ and line_ < visible_scanlines_ + postrender_scanlines_;
+    }
+
+    [[nodiscard]] constexpr auto is_vblank() const noexcept {
+        return line_ >= visible_scanlines_ + postrender_scanlines_ and
+               line_ < visible_scanlines_ + postrender_scanlines_ + vblank_scanlines_;
+    }
+
+    constexpr void advance() noexcept {
+        if (++cycle_ >= dots_) {
+            cycle_ = 0;
+
+            if (++line_ >= visible_scanlines_ + postrender_scanlines_ + vblank_scanlines_) {
+                line_ = -1;
+                frame_is_odd_ = not frame_is_odd_;
+            }
+        }
+    }
+
+private:
+    const int dots_;
+    const int visible_scanlines_;
+    const int postrender_scanlines_;
+    const int vblank_scanlines_;
+
+    int line_{-1};
+    int cycle_{0};
+    bool frame_is_odd_{false};
+};
+
+const auto VISIBLE_SCANLINES = 240;
+const auto VERTICAL_BLANK_SCANLINES = 20;
+const auto POST_RENDER_SCANLINES = 1;
+const auto SCANLINE_DOTS = 341;
+
 class ppu {
 public:
     ppu() = default;
     ppu(const pattern_table::memory_bank& chr)
         : chr_{&chr}
     {}
+
+    constexpr void connect_pattern_table(auto new_bank) noexcept { chr_.connect(new_bank); }
 
     uint8_t control;
     uint8_t status;
@@ -119,22 +180,14 @@ public:
     uint16_t address;
     uint8_t data_buffer;
 
-    void tick() noexcept;
+    void tick();
 
-    [[nodiscard]] constexpr auto scan_line() const noexcept { return scan_.line; }
-    [[nodiscard]] constexpr auto scan_cycle() const noexcept { return scan_.cycle; }
-    [[nodiscard]] constexpr auto is_odd_frame() const noexcept { return frame_is_odd_; }
-    [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return scan_.line == -1 and scan_.cycle == 0; }
+    [[nodiscard]] constexpr auto scan_line() const noexcept { return scan_.line(); }
+    [[nodiscard]] constexpr auto scan_cycle() const noexcept { return scan_.cycle(); }
+    [[nodiscard]] constexpr auto is_odd_frame() const noexcept { return scan_.is_odd_frame(); }
+    [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return scan_.is_frame_finished(); }
 
     std::array<uint32_t, 256 * 240> frame_buffer;
-
-    void render_noise(auto get_noise) {
-        // The sky above the port was the color of television, tuned to a dead channel
-        for (auto &&pixel: frame_buffer) {
-            auto r = get_noise();
-            pixel = (0xFF << 24) | (r << 16) | (r << 8) | (r);
-        }
-    }
 
     [[nodiscard]] static constexpr auto palette_address(uint8_t address) noexcept {
         address &= 0x1F;
@@ -218,16 +271,23 @@ public:
         }
     }
 
-    void connect_pattern_table(auto new_bank) noexcept { chr_.connect(new_bank); }
-
     auto display_pattern_table(auto i, auto palette) const -> std::array<uint32_t, 128 * 128>;
+
+
+    void render_noise(auto get_noise) {
+        // The sky above the port was the color of television, tuned to a dead channel
+        for (auto &&pixel: frame_buffer) {
+            auto r = get_noise();
+            pixel = (0xFF << 24) | (r << 16) | (r << 8) | (r);
+        }
+    }
 
 private:
     constexpr void prerender_scanline() noexcept {}
 
     constexpr void visible_scanline() {
-        auto y = scan_.line;
-        auto x = scan_.cycle - 2;
+        auto y = scan_.line();
+        auto x = scan_.cycle() - 2;
 
         if (y < 240 and x >= 0 and x < 256) {
             auto tile_x = x / 8;
@@ -272,59 +332,20 @@ private:
     constexpr void vertical_blank_line() noexcept {};
 
 private:
-    struct {
-        int line{-1};
-        int cycle{0};
-    } scan_;
-
-    bool frame_is_odd_{false};
+    crt_scan scan_{SCANLINE_DOTS, VISIBLE_SCANLINES, POST_RENDER_SCANLINES, VERTICAL_BLANK_SCANLINES};
 
     pattern_table chr_;
     name_table vram_;
     std::array<uint8_t, 32> palette_;
 };
 
-const auto VISIBLE_SCANLINES = 240;
-const auto VERTICAL_BLANK_SCANLINES = 20;
-const auto POST_RENDER_SCANLINES = 1;
-const auto SCANLINE_DOTS = 341;
+inline void ppu::tick() {
+    if      (scan_.is_prerender())  { prerender_scanline(); }
+    else if (scan_.is_visible())    { visible_scanline(); }
+    else if (scan_.is_postrender()) { postrender_scanline(); }
+    else if (scan_.is_vblank())     { vertical_blank_line(); }
 
-[[nodiscard]] constexpr auto is_prerender(auto scanline) noexcept {
-    return scanline == -1;
-}
-
-[[nodiscard]] constexpr auto is_visible(auto scanline) noexcept {
-    return scanline >= 0 and scanline < VISIBLE_SCANLINES;
-}
-
-[[nodiscard]] constexpr auto is_postrender(auto scanline) noexcept {
-    return scanline >= VISIBLE_SCANLINES and scanline < VISIBLE_SCANLINES + POST_RENDER_SCANLINES;
-}
-
-[[nodiscard]] constexpr auto is_vblank(auto scanline) noexcept {
-    return scanline >= VISIBLE_SCANLINES + POST_RENDER_SCANLINES and
-           scanline < VISIBLE_SCANLINES + POST_RENDER_SCANLINES + VERTICAL_BLANK_SCANLINES;
-}
-
-inline void ppu::tick() noexcept {
-    if (is_prerender(scan_line())) {
-        prerender_scanline();
-    } else if (is_visible(scan_line())) {
-        visible_scanline();
-    } else if (is_postrender(scan_line())) {
-        postrender_scanline();
-    } else if (is_vblank(scan_line())) {
-        vertical_blank_line();
-    }
-
-    if (++scan_.cycle >= SCANLINE_DOTS) {
-        scan_.cycle = 0;
-
-        if (++scan_.line >= VISIBLE_SCANLINES + POST_RENDER_SCANLINES + VERTICAL_BLANK_SCANLINES) {
-            scan_.line = -1;
-            frame_is_odd_ = not frame_is_odd_;
-        }
-    }
+    scan_.advance();
 }
 
 inline auto ppu::display_pattern_table(auto i, auto palette) const -> std::array<uint32_t, 128 * 128> {
