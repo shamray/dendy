@@ -73,32 +73,32 @@ TEST_CASE("scanline cycles") {
 }
 
 TEST_CASE("palette address") {
-    auto ppu = nes::ppu{};
+    using pt = nes::palette_table;
 
     SECTION("zeroeth and first") {
-        CHECK(ppu.palette_address(0x00) == 0x00);
-        CHECK(ppu.palette_address(0x01) == 0x01);
+        CHECK(pt::palette_address(0x00) == 0x00);
+        CHECK(pt::palette_address(0x01) == 0x01);
     }
 
     SECTION("random colors in the middle") {
-        CHECK(ppu.palette_address(0x07) == 0x07);
-        CHECK(ppu.palette_address(0x1D) == 0x1D);
-        CHECK(ppu.palette_address(0x13) == 0x13);
+        CHECK(pt::palette_address(0x07) == 0x07);
+        CHECK(pt::palette_address(0x1D) == 0x1D);
+        CHECK(pt::palette_address(0x13) == 0x13);
     }
 
     SECTION("out of range") {
-        CHECK(ppu.palette_address(0x20) == 0x00);
-        CHECK(ppu.palette_address(0x21) == 0x01);
+        CHECK(pt::palette_address(0x20) == 0x00);
+        CHECK(pt::palette_address(0x21) == 0x01);
     }
 
     SECTION("mapping background color") {
-        CHECK(ppu.palette_address(0x10) == 0x00);
-        CHECK(ppu.palette_address(0x04) == 0x00);
-        CHECK(ppu.palette_address(0x08) == 0x00);
-        CHECK(ppu.palette_address(0x0C) == 0x00);
-        CHECK(ppu.palette_address(0x14) == 0x00);
-        CHECK(ppu.palette_address(0x18) == 0x00);
-        CHECK(ppu.palette_address(0x1C) == 0x00);
+        CHECK(pt::palette_address(0x10) == 0x00);
+        CHECK(pt::palette_address(0x04) == 0x00);
+        CHECK(pt::palette_address(0x08) == 0x00);
+        CHECK(pt::palette_address(0x0C) == 0x00);
+        CHECK(pt::palette_address(0x14) == 0x00);
+        CHECK(pt::palette_address(0x18) == 0x00);
+        CHECK(pt::palette_address(0x1C) == 0x00);
     }
 }
 

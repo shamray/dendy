@@ -96,6 +96,36 @@ private:
     std::array<bank, 2> vram_;
 };
 
+class palette_table
+{
+public:
+    [[nodiscard]] static constexpr auto palette_address(uint8_t address) noexcept {
+        address &= 0x1F;
+
+        if ((address & 0x03) == 0x00) {
+            address = 0;
+        }
+
+        return address;
+    }
+
+    [[nodiscard]] constexpr auto read(uint8_t address) const noexcept {
+        return palette_ram_[palette_address(address)];
+    }
+
+    constexpr void write(uint8_t address, uint8_t value) noexcept {
+        palette_ram_[palette_address(address)] = value;
+    }
+
+    [[nodiscard]] auto color(uint8_t pixel, uint8_t palette) const noexcept -> uint32_t {
+        auto rpc = read((palette << 2) + pixel);
+        return COLORS[rpc & 0x3F];
+    }
+
+private:
+    std::array<uint8_t, 32> palette_ram_;
+};
+
 class crt_scan
 {
 public:
@@ -155,7 +185,8 @@ const auto VERTICAL_BLANK_SCANLINES = 20;
 const auto POST_RENDER_SCANLINES = 1;
 const auto SCANLINE_DOTS = 341;
 
-class ppu {
+class ppu
+{
 public:
     ppu() = default;
     ppu(const pattern_table::memory_bank& chr)
@@ -182,35 +213,9 @@ public:
 
     void tick();
 
-    [[nodiscard]] constexpr auto scan_line() const noexcept { return scan_.line(); }
-    [[nodiscard]] constexpr auto scan_cycle() const noexcept { return scan_.cycle(); }
-    [[nodiscard]] constexpr auto is_odd_frame() const noexcept { return scan_.is_odd_frame(); }
     [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return scan_.is_frame_finished(); }
 
     std::array<uint32_t, 256 * 240> frame_buffer;
-
-    [[nodiscard]] static constexpr auto palette_address(uint8_t address) noexcept {
-        address &= 0x1F;
-
-        if ((address & 0x03) == 0x00) {
-            address = 0;
-        }
-
-        return address;
-    }
-
-    [[nodiscard]] constexpr auto read_palette_color(uint8_t address) const noexcept {
-        return palette_[palette_address(address)];
-    }
-
-    constexpr void write_palette_color(uint8_t address, uint8_t value) noexcept {
-        palette_[palette_address(address)] = value;
-    }
-
-    auto get_palette_color(uint8_t pixel, uint8_t palette) {
-        auto rpc = read_palette_color((palette << 2) + pixel);
-        return COLORS[rpc & 0x3F];
-    }
 
     [[nodiscard]] auto read(uint16_t addr) -> std::optional<uint8_t> const {
         switch (addr) {
@@ -227,7 +232,7 @@ public:
                 } else if (addr >= 0x3000 and addr <= 0x3EFF) {
                     throw std::range_error("not implemented");
                 } else if (addr >= 0x3F00 and addr <= 0x3FFF) {
-                    return read_palette_color(addr & 0x001F);
+                    return palette_table_.read(addr & 0x001F);
                 } else {
                     return chr_.read(addr);
                 }
@@ -258,7 +263,7 @@ public:
                 if (address >= 0x2000 and address <= 0x3000) {
                     vram_.write(address & 0xFFF, value);
                 } else if (address >= 0x3F00 and address <= 0x3FFF) {
-                    write_palette_color(address & 0x001F, value);
+                    palette_table_.write(address & 0x001F, value);
                 } else {
                     // ppu chr write
                 }
@@ -320,7 +325,7 @@ private:
                 return attr_byte & 0x03;
             }(attr_byte);
 
-            frame_buffer[y * 256 + x] = get_palette_color(pixel, palette);
+            frame_buffer[y * 256 + x] = palette_table_.color(pixel, palette);
         }
     }
 
@@ -336,7 +341,7 @@ private:
 
     pattern_table chr_;
     name_table vram_;
-    std::array<uint8_t, 32> palette_;
+    palette_table palette_table_;
 };
 
 inline void ppu::tick() {

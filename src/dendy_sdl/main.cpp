@@ -277,10 +277,6 @@ int main(int argc, char *argv[]) {
     auto bus = dummy_bus{load_rom("rom/pm.nes"), ppu};
     auto cpu = nes::cpu{bus};
 
-    for (auto i = 0; i < 0x20; ++i) {
-        ppu.write_palette_color(i, 0);
-    }
-
     const auto FPS   = 60;
     const auto DELAY = static_cast<int>(1000.0f / FPS);
     uint32_t frameStart, frameTime;
