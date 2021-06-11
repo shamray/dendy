@@ -41,20 +41,9 @@ enum class name_table_mirroring { horizontal, vertical };
 
 class name_table
 {
-    [[nodiscard]] constexpr auto bank_index(uint16_t addr) const {
-        using enum name_table_mirroring;
-        switch(mirroring) {
-            case horizontal:    return (addr >> 11) & 0x01;
-            case vertical:      return (addr >> 10) & 0x01;
-        }
-        throw std::logic_error("Unhandled mirroring scenario");
-    }
-
-    [[nodiscard]] constexpr static auto bank_offset(uint16_t addr) noexcept {
-        return addr & 0x3FF;
-    }
-
 public:
+    name_table_mirroring mirroring{name_table_mirroring::vertical};
+
     constexpr void write(uint16_t addr, uint8_t value) {
         auto i = bank_index(addr);
         auto j = bank_offset(addr);
@@ -71,7 +60,19 @@ public:
         return vram_[bank & 1];
     }
 
-    name_table_mirroring mirroring{name_table_mirroring::vertical};
+private:
+    [[nodiscard]] constexpr auto bank_index(uint16_t addr) const -> int {
+        using enum name_table_mirroring;
+        switch(mirroring) {
+            case horizontal:    return (addr >> 11) & 0x01;
+            case vertical:      return (addr >> 10) & 0x01;
+        }
+        throw std::logic_error("Unhandled mirroring scenario");
+    }
+
+    [[nodiscard]] constexpr static auto bank_offset(uint16_t addr) noexcept -> uint16_t  {
+        return addr & 0x3FF;
+    }
 
 private:
     using bank = std::array<uint8_t, 2_Kb>;
@@ -182,11 +183,11 @@ public:
     {}
 
     ppu(const pattern_table::memory_bank& chr, const auto& system_color_palette)
-        : chr_{&chr}
+        : pattern_table_{&chr}
         , palette_table_{system_color_palette}
     {}
 
-    constexpr void connect_pattern_table(auto new_bank) noexcept { chr_.connect(new_bank); }
+    constexpr void connect_pattern_table(auto new_bank) noexcept { pattern_table_.connect(new_bank); }
 
     uint8_t control;
     uint8_t status;
@@ -210,66 +211,26 @@ public:
 
     std::array<color, 256 * 240> frame_buffer;
 
-    [[nodiscard]] auto read(uint16_t addr) -> std::optional<uint8_t> const {
+    [[nodiscard]] constexpr auto read(uint16_t addr) -> std::optional<uint8_t> {
         switch (addr) {
-            case 0x2002: {
-                auto d = status & 0xE0;
-                status &= 0x60;
-                address_latch = 0;
-                return d;
-            }
-            case 0x2007: {
-                auto addr = address++;
-                if (addr >= 0x2000 and addr <= 0x2FFF) {
-                    return vram_.read(addr & 0xFFF);
-                } else if (addr >= 0x3000 and addr <= 0x3EFF) {
-                    throw std::range_error("not implemented");
-                } else if (addr >= 0x3F00 and addr <= 0x3FFF) {
-                    return palette_table_.read(addr & 0x001F);
-                } else {
-                    return chr_.read(addr);
-                }
-            }
+            case 0x2002: return read_stat();
+            case 0x2007: return read_data();
+
             default: return std::nullopt;
         }
     }
 
-    auto write(uint16_t addr, uint8_t value) -> bool {
+    constexpr auto write(uint16_t addr, uint8_t value) {
         switch (addr) {
-            case 0x2000: {
-                control = value;
-                return true;
-            }
-            case 0x2006: {
-                if (address_latch == 0) {
-                    address = (address & 0x00FF) | (value << 8);
-                    address_latch = 1;
-                } else {
-                    address = (address & 0xFF00) | (value << 0);
-                    address_latch = 0;
+            case 0x2000: { write_ctrl(value); return true; }
+            case 0x2006: { write_addr(value); return true; }
+            case 0x2007: { write_data(value); return true; }
 
-                    address &= 0x3FFF;
-                }
-                return true;
-            }
-            case 0x2007: {
-                if (address >= 0x2000 and address <= 0x3000) {
-                    vram_.write(address & 0xFFF, value);
-                } else if (address >= 0x3F00 and address <= 0x3FFF) {
-                    palette_table_.write(address & 0x001F, value);
-                } else {
-                    // ppu chr write
-                }
-                auto inc = (control & 0x04) ? 32 : 1;
-                address += inc;
-
-                return true;
-            }
             default: return false;
         }
     }
 
-    auto display_pattern_table(auto i, auto palette) const -> std::array<uint32_t, 128 * 128>;
+    auto display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128>;
 
     void render_noise(auto get_noise) {
         // The sky above the port was the color of television, tuned to a dead channel
@@ -280,42 +241,105 @@ public:
     }
 
 private:
+    [[nodiscard]] constexpr auto read_stat() -> uint8_t {
+        auto d = status & 0xE0;
+        status &= 0x60;
+        address_latch = 0;
+        return d;
+    }
+
+    [[nodiscard]] constexpr auto read_data() -> uint8_t {
+        auto a = address++;
+
+        if (a >= 0x2000 and a <= 0x2FFF)        { return name_table_.read(a & 0xFFF); }
+        else if (a >= 0x3000 and a <= 0x3EFF)   { throw std::range_error("not implemented"); }
+        else if (a >= 0x3F00 and a <= 0x3FFF)   { return palette_table_.read(a & 0x001F); }
+        else                                    { return pattern_table_.read(a); }
+    }
+
+    constexpr void write_ctrl(uint8_t value) { control = value; }
+
+    constexpr void write_addr(uint8_t value) {
+        if (address_latch == 0) {
+            address = (address & 0x00FF) | (value << 8);
+            address_latch = 1;
+        } else {
+            address = (address & 0xFF00) | (value << 0);
+            address_latch = 0;
+
+            address &= 0x3FFF;
+        }
+    }
+
+    constexpr void write_data(uint8_t value) {
+        if (address >= 0x2000 and address <= 0x3000) { name_table_.write(address & 0xFFF, value); }
+        else if (address >= 0x3F00 and address <= 0x3FFF) { palette_table_.write(address & 0x001F, value); }
+        else {
+            // ppu chr write
+        }
+        auto inc = (control & 0x04) ? 32 : 1;
+        address += inc;
+    }
+
     constexpr void prerender_scanline() noexcept {}
+
+    [[nodiscard]] constexpr auto nametable_index() const { return ((control & 0x03) << 10); }
+
+    [[nodiscard]] constexpr auto pattern_table_index() const { return (control & 0x10) >> 4; }
+
+    [[nodiscard]] constexpr static auto nametable_tile_offset(auto tile_x, auto tile_y, int nametable_index) {
+        return static_cast<uint16_t>((tile_y * 32 + tile_x) | nametable_index);
+    }
+
+    [[nodiscard]] constexpr static auto nametable_attr_offset(auto tile_x, auto tile_y, int nametable_index) {
+        return static_cast<uint16_t>((0x3c0 + tile_y / 4 * 8 + tile_x / 4) | nametable_index);
+    }
+
+    [[nodiscard]] constexpr static auto read_tile_pixel(const auto& pattern_table, auto ix, auto tile, auto x, auto y) {
+        const auto tile_offset = ix * 0x1000 + tile * 0x10;
+        const auto tile_lsb = pattern_table.read(tile_offset + y + 0);
+        const auto tile_msb = pattern_table.read(tile_offset + y + 8);
+        const auto pixel_lo = (tile_lsb >> (7 - x)) & 0x01;
+        const auto pixel_hi = (tile_msb >> (7 - x)) & 0x01;
+        return static_cast<uint8_t>(pixel_lo | (pixel_hi << 1));
+    }
+
+    [[nodiscard]] constexpr static auto read_tile_index(const auto& name_table, auto tile_x, auto tile_y, auto nametable_index) {
+        auto offset = nametable_tile_offset(tile_x, tile_y, nametable_index);
+        return name_table.read(offset);
+    }
+
+    auto tile_palette(auto tile_x, auto tile_y, auto attr_byte) {
+        if ((tile_x % 4) >> 1) {
+            attr_byte = attr_byte >> 2;
+        }
+        if ((tile_y % 4) >> 1) {
+            attr_byte = attr_byte >> 4;
+        }
+        return attr_byte & 0x03;
+    }
+
+    auto read_tile_palette(const auto& name_table, auto tile_x, auto tile_y, auto nametable_index) {
+        auto attr_byte_index = nametable_attr_offset(tile_x, tile_y, nametable_index);
+        auto attr_byte = name_table.read(attr_byte_index);
+
+        return tile_palette(tile_x, tile_y, attr_byte);
+    }
 
     constexpr void visible_scanline() {
         auto y = scan_.line();
         auto x = scan_.cycle() - 2;
 
-        if (y < 240 and x >= 0 and x < 256) {
+        if (x >= 0 and x < 256) {
             auto tile_x = x / 8;
             auto tile_y = y / 8;
 
-            auto row = y % 8;
-            auto col = x % 8;
+            auto tile_row = y % 8;
+            auto tile_col = x % 8;
 
-            auto offset = static_cast<uint16_t>((tile_y * 32 + tile_x) | ((control & 0x03) << 10));
-            auto ch = vram_.read(offset);
-
-            auto ix = (control & 0x10) >> 4;
-
-            auto tile_lsb = chr_.read(ix * 0x1000 + ch * 0x10+ row + 0);
-            auto tile_msb = chr_.read(ix * 0x1000 + ch * 0x10 + row + 8);
-            tile_lsb >>= (7 - col); tile_msb >>= (7 - col);
-
-            auto pixel = static_cast<uint8_t>((tile_lsb & 0x01) | ((tile_msb & 0x01) <<1));
-
-            auto attr_byte_index = (0x3c0 + tile_y / 4 * 8 + tile_x / 4) | ((control & 0x03) << 10);
-            auto attr_byte = vram_.read(attr_byte_index);
-
-            auto palette = [tile_x, tile_y](auto attr_byte) {
-                if ((tile_x % 4) >> 1) {
-                    attr_byte = attr_byte >> 2;
-                }
-                if ((tile_y % 4) >> 1) {
-                    attr_byte = attr_byte >> 4;
-                }
-                return attr_byte & 0x03;
-            }(attr_byte);
+            auto tile_index = read_tile_index(name_table_, tile_x, tile_y, nametable_index());
+            auto pixel = read_tile_pixel(pattern_table_, pattern_table_index(), tile_index, tile_col, tile_row);
+            auto palette = read_tile_palette(name_table_, tile_x, tile_y, nametable_index());
 
             frame_buffer[y * 256 + x] = palette_table_.color_of(pixel, palette);
         }
@@ -331,9 +355,9 @@ private:
 private:
     crt_scan scan_{SCANLINE_DOTS, VISIBLE_SCANLINES, POST_RENDER_SCANLINES, VERTICAL_BLANK_SCANLINES};
 
-    pattern_table chr_;
-    name_table vram_;
-    palette_table palette_table_;
+    pattern_table   pattern_table_;
+    name_table      name_table_;
+    palette_table   palette_table_;
 };
 
 inline void ppu::tick() {
@@ -345,28 +369,20 @@ inline void ppu::tick() {
     scan_.advance();
 }
 
-inline auto ppu::display_pattern_table(auto i, auto palette) const -> std::array<uint32_t, 128 * 128> {
-    auto result = std::array<uint32_t, 128 * 128>{};
+inline auto ppu::display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128> {
+    auto result = std::array<color, 128 * 128>{};
 
     for (uint16_t tile_y = 0; tile_y < 16; ++tile_y) {
         for (uint16_t tile_x = 0; tile_x < 16; ++tile_x) {
-
-            auto offset = static_cast<uint16_t>(tile_y * 256 + tile_x * 16);
-
+            auto offset = static_cast<uint16_t>(tile_y * 16 + tile_x);
             for (uint16_t row = 0; row < 8; ++row) {
-
-                auto tile_lsb = chr_.read(i * 0x1000 + offset + row + 0);
-                auto tile_msb = chr_.read(i * 0x1000 + offset + row + 8);
-
                 for (uint16_t col = 0; col < 8; col++) {
-                    auto pixel = static_cast<uint8_t>((tile_lsb & 0x01) | ((tile_msb & 0x01) <<1));
+                    auto pixel = read_tile_pixel(pattern_table_, i, offset, col, row);
 
                     auto result_offset = (tile_y * 8 + row) * 128 + tile_x * 8 + (7 - col);
-                    auto result_color = get_palette_color(pixel, palette);
+                    auto result_color = palette_table_.color_of(pixel, palette);
 
                     result[result_offset] = result_color;
-
-                    tile_lsb >>= 1; tile_msb >>= 1;
                 }
             }
         }
