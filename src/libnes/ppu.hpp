@@ -250,11 +250,15 @@ private:
 
     [[nodiscard]] constexpr auto read_data() -> uint8_t {
         auto a = address++;
+        auto r = data_read_buffer_;
+        auto& b = data_read_buffer_;
 
-        if (a >= 0x2000 and a <= 0x2FFF)        { return name_table_.read(a & 0xFFF); }
+        if (a >= 0x2000 and a <= 0x2FFF)        { b = name_table_.read(a & 0xFFF); }
         else if (a >= 0x3000 and a <= 0x3EFF)   { throw std::range_error("not implemented"); }
-        else if (a >= 0x3F00 and a <= 0x3FFF)   { return palette_table_.read(a & 0x001F); }
-        else                                    { return pattern_table_.read(a); }
+        else if (a >= 0x3F00 and a <= 0x3FFF)   { r = b = palette_table_.read(a & 0x001F); }
+        else                                    { b = pattern_table_.read(a); }
+
+        return r;
     }
 
     constexpr void write_ctrl(uint8_t value) { control = value; }
@@ -358,6 +362,8 @@ private:
     pattern_table   pattern_table_;
     name_table      name_table_;
     palette_table   palette_table_;
+
+    uint8_t data_read_buffer_;
 };
 
 inline void ppu::tick() {
