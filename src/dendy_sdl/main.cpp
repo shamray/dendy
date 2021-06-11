@@ -273,7 +273,7 @@ int main(int argc, char *argv[]) {
     auto frontend = sdl::frontend::create();
     auto window = sdl::main_window("Dendy");
 
-    auto ppu = nes::ppu{};
+    auto ppu = nes::ppu{nes::DEFAULT_COLORS};
     auto bus = dummy_bus{load_rom("rom/pm.nes"), ppu};
     auto cpu = nes::cpu{bus};
 

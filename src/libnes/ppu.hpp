@@ -1,39 +1,21 @@
 #pragma once
 
+#include <libnes/literals.hpp>
+#include <libnes/color.hpp>
+
 #include <array>
 #include <optional>
 #include <stdexcept>
 #include <cassert>
 
-#include <libnes/literals.hpp>
-
 namespace nes {
-
-constexpr auto COLORS = std::to_array<uint32_t>({
-    0xFF7C7C7C, 0xFF0000FC, 0xFF0000BC, 0xFF4428BC,
-    0xFF940084, 0xFFA80020, 0xFFA81000, 0xFF881400,
-    0xFF503000, 0xFF007800, 0xFF006800, 0xFF005800,
-    0xFF004058, 0xFF000000, 0xFF000000, 0xFF000000,
-    0xFFBCBCBC, 0xFF0078F8, 0xFF0058F8, 0xFF6844FC,
-    0xFFD800CC, 0xFFE40058, 0xFFF83800, 0xFFE45C10,
-    0xFFAC7C00, 0xFF00B800, 0xFF00A800, 0xFF00A844,
-    0xFF008888, 0xFF000000, 0xFF000000, 0xFF000000,
-    0xFFF8F8F8, 0xFF3CBCFC, 0xFF6888FC, 0xFF9878F8,
-    0xFFF878F8, 0xFFF85898, 0xFFF87858, 0xFFFCA044,
-    0xFFF8B800, 0xFFB8F818, 0xFF58D854, 0xFF58F898,
-    0xFF00E8D8, 0xFF787878, 0xFF000000, 0xFF000000,
-    0xFFFCFCFC, 0xFFA4E4FC, 0xFFB8B8F8, 0xFFD8B8F8,
-    0xFFF8B8F8, 0xFFF8A4C0, 0xFFF0D0B0, 0xFFFCE0A8,
-    0xFFF8D878, 0xFFD8F878, 0xFFB8F8B8, 0xFFB8F8D8,
-    0xFF00FCFC, 0xFFF8D8F8, 0xFF000000, 0xFF000000
-});
 
 class pattern_table {
 public:
     using memory_bank = std::array<uint8_t, 8_Kb>;
 
     pattern_table() = default;
-    pattern_table(const memory_bank* bank)
+    explicit pattern_table(const memory_bank* bank)
         : bank_{bank}
     {}
 
@@ -68,7 +50,7 @@ class name_table
         throw std::logic_error("Unhandled mirroring scenario");
     }
 
-    [[nodiscard]] constexpr auto bank_offset(uint16_t addr) const noexcept {
+    [[nodiscard]] constexpr static auto bank_offset(uint16_t addr) noexcept {
         return addr & 0x3FF;
     }
 
@@ -99,6 +81,12 @@ private:
 class palette_table
 {
 public:
+    explicit constexpr palette_table(const auto& system_color_palette)
+        : system_colors_{system_color_palette}
+    {
+        palette_ram_.fill(0);
+    }
+
     [[nodiscard]] static constexpr auto palette_address(uint8_t address) noexcept {
         address &= 0x1F;
 
@@ -117,13 +105,14 @@ public:
         palette_ram_[palette_address(address)] = value;
     }
 
-    [[nodiscard]] auto color(uint8_t pixel, uint8_t palette) const noexcept -> uint32_t {
+    [[nodiscard]] auto color_of(uint8_t pixel, uint8_t palette) const noexcept -> color {
         auto rpc = read((palette << 2) + pixel);
-        return COLORS[rpc & 0x3F];
+        return system_colors_[rpc & 0x3F];
     }
 
 private:
-    std::array<uint8_t, 32> palette_ram_;
+    std::array<uint8_t, 32> palette_ram_{};
+    const std::array<color, 64>& system_colors_;
 };
 
 class crt_scan
@@ -188,9 +177,13 @@ const auto SCANLINE_DOTS = 341;
 class ppu
 {
 public:
-    ppu() = default;
-    ppu(const pattern_table::memory_bank& chr)
+    ppu(const auto& system_color_palette)
+        :palette_table_{system_color_palette}
+    {}
+
+    ppu(const pattern_table::memory_bank& chr, const auto& system_color_palette)
         : chr_{&chr}
+        , palette_table_{system_color_palette}
     {}
 
     constexpr void connect_pattern_table(auto new_bank) noexcept { chr_.connect(new_bank); }
@@ -215,7 +208,7 @@ public:
 
     [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return scan_.is_frame_finished(); }
 
-    std::array<uint32_t, 256 * 240> frame_buffer;
+    std::array<color, 256 * 240> frame_buffer;
 
     [[nodiscard]] auto read(uint16_t addr) -> std::optional<uint8_t> const {
         switch (addr) {
@@ -278,7 +271,6 @@ public:
 
     auto display_pattern_table(auto i, auto palette) const -> std::array<uint32_t, 128 * 128>;
 
-
     void render_noise(auto get_noise) {
         // The sky above the port was the color of television, tuned to a dead channel
         for (auto &&pixel: frame_buffer) {
@@ -325,7 +317,7 @@ private:
                 return attr_byte & 0x03;
             }(attr_byte);
 
-            frame_buffer[y * 256 + x] = palette_table_.color(pixel, palette);
+            frame_buffer[y * 256 + x] = palette_table_.color_of(pixel, palette);
         }
     }
 
