@@ -209,6 +209,11 @@ struct dummy_bus
         if (ppu.write(addr, value))
             return;
 
+        if (addr == 0x4014) {
+            ppu.dma_write(&mem[value << 8]);
+            return;
+        }
+
         mem[addr] = value;
     }
 
@@ -276,7 +281,7 @@ int main(int argc, char *argv[]) {
     auto chr = std::array{sdl::chr_window("CHR 0"), sdl::chr_window("CHR 1")};
 
     auto ppu = nes::ppu{nes::DEFAULT_COLORS};
-    auto bus = dummy_bus{load_rom("rom/smb.nes"), ppu};
+    auto bus = dummy_bus{load_rom("rom/dk.nes"), ppu};
     auto cpu = nes::cpu{bus};
 
     const auto FPS   = 60;

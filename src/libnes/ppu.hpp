@@ -116,6 +116,25 @@ private:
     const std::array<color, 64>& system_colors_;
 };
 
+struct sprite
+{
+    uint8_t y   {0xFF};
+    uint8_t tile{0xFF};
+    uint8_t attr{0xFF};
+    uint8_t x   {0xFF};
+};
+static_assert(sizeof(sprite) == 4);
+
+class object_attribute_memory
+{
+public:
+    std::array<sprite, 64> sprites;
+
+    void dma_write(const uint8_t* from) {
+        std::memcpy(sprites.data(), from, sprites.size() * sizeof(sprite));
+    }
+};
+
 class crt_scan
 {
 public:
@@ -230,6 +249,10 @@ public:
         }
     }
 
+    constexpr void dma_write(auto from) {
+        oam_.dma_write(from);
+    }
+
     auto display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128>;
 
     void render_noise(auto get_noise) {
@@ -289,7 +312,8 @@ private:
 
     [[nodiscard]] constexpr auto nametable_index() const { return ((control & 0x03) << 10); }
 
-    [[nodiscard]] constexpr auto pattern_table_index() const { return (control & 0x10) >> 4; }
+    [[nodiscard]] constexpr auto pattern_table_bg_index() const { return (control & 0x10) >> 4; }
+    [[nodiscard]] constexpr auto pattern_table_fg_index() const { return (control & 0x08) >> 3; }
 
     [[nodiscard]] constexpr static auto nametable_tile_offset(auto tile_x, auto tile_y, int nametable_index) {
         return static_cast<uint16_t>((tile_y * 32 + tile_x) | nametable_index);
@@ -342,7 +366,7 @@ private:
             auto tile_col = x % 8;
 
             auto tile_index = read_tile_index(name_table_, tile_x, tile_y, nametable_index());
-            auto pixel = read_tile_pixel(pattern_table_, pattern_table_index(), tile_index, tile_col, tile_row);
+            auto pixel = read_tile_pixel(pattern_table_, pattern_table_bg_index(), tile_index, tile_col, tile_row);
             auto palette = read_tile_palette(name_table_, tile_x, tile_y, nametable_index());
 
             frame_buffer[y * 256 + x] = palette_table_.color_of(pixel, palette);
@@ -350,6 +374,21 @@ private:
     }
 
     constexpr void postrender_scanline() noexcept {
+        for (const auto& s: oam_.sprites) {
+            auto palette = (s.attr & 0x03) + 4;
+
+            for (auto i = 0; i < 8; ++i) {
+                for (auto j = 0; j < 8; ++j) {
+                    auto pixel = read_tile_pixel(pattern_table_, pattern_table_fg_index(), s.tile, j, i);
+                    auto dx = (s.attr & 0x40) ? 7 - j : j;
+                    auto dy = (s.attr & 0x80) ? 7 - i : i;
+                    if (auto offset = (s.y + dy) * 256 + (s.x + dx); offset < frame_buffer.size() && pixel) {
+                        frame_buffer[offset] = palette_table_.color_of(pixel, palette);
+                    }
+                }
+            }
+        }
+
         status |= 0x80;
         if (control & 0x80)
             nmi = true;
@@ -362,6 +401,7 @@ private:
     pattern_table   pattern_table_;
     name_table      name_table_;
     palette_table   palette_table_;
+    object_attribute_memory oam_;
 
     uint8_t data_read_buffer_;
 };
