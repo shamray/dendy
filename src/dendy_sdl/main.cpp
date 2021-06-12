@@ -296,7 +296,7 @@ int main(int argc, char *argv[]) {
     auto window = sdl::main_window("Dendy");
 
     auto ppu = nes::ppu{nes::DEFAULT_COLORS};
-    auto bus = dummy_bus{load_rom("rom/nestest.nes"), ppu};
+    auto bus = dummy_bus{load_rom("rom/pm.nes"), ppu};
     auto cpu = nes::cpu{bus};
 
     const auto FPS   = 60;
@@ -325,13 +325,15 @@ int main(int argc, char *argv[]) {
             if (kb_state[SDL_SCANCODE_RIGHT])   bus.j1.keys |= 0x01;
         }
 
-        do {
+        auto count = 0;
+        for (;;++count) {
             cpu.tick();
 
-            ppu.tick();
-            ppu.tick();
-            ppu.tick();
-        } while(!ppu.is_frame_ready());
+            ppu.tick(); if (ppu.is_frame_ready()) break;
+            ppu.tick(); if (ppu.is_frame_ready()) break;
+            ppu.tick(); if (ppu.is_frame_ready()) break;
+        }
+        assert(count == 29780 || count == 29781);
 
         window.render(ppu.frame_buffer);
 
@@ -340,8 +342,9 @@ int main(int argc, char *argv[]) {
         frameTime = SDL_GetTicks() - frameStart;
 
         window.display_fps(1.0 / frameTime * 1000);
-        if (frameTime < DELAY)
+        if (frameTime < DELAY) {
             SDL_Delay((int)(DELAY - frameTime));
+        }
     }
 
     return 0;
