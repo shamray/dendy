@@ -16,6 +16,7 @@
 #include <string>
 #include <deque>
 #include <numeric>
+#include "icon16.hpp"
 
 using namespace nes::literals;
 using namespace std::string_literals;
@@ -109,6 +110,30 @@ public:
             throw std::runtime_error("Cannot create renderer");
 
         screen_ = SDL_CreateTexture (renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 256, 240);
+
+        uint32_t rmask, gmask, bmask, amask;
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+        int shift = (my_icon.bytes_per_pixel == 3) ? 8 : 0;
+        rmask = 0xff000000 >> shift;
+        gmask = 0x00ff0000 >> shift;
+        bmask = 0x0000ff00 >> shift;
+        amask = 0x000000ff >> shift;
+#else // little endian, like x86
+        rmask = 0x000000ff;
+        gmask = 0x0000ff00;
+        bmask = 0x00ff0000;
+        amask = (icon16::gimp_image.bytes_per_pixel == 3) ? 0 : 0xff000000;
+#endif
+        SDL_Surface* icon = SDL_CreateRGBSurfaceFrom(
+            (void*)icon16::gimp_image.pixel_data,
+            icon16::gimp_image.width,
+            icon16::gimp_image.height,
+            icon16::gimp_image.bytes_per_pixel*8,
+            icon16::gimp_image.bytes_per_pixel*icon16::gimp_image.width,
+            rmask, gmask, bmask, amask);
+
+        SDL_SetWindowIcon(window_, icon);
+        SDL_FreeSurface(icon);
     }
 
     void display_fps(double fps) {
@@ -117,7 +142,7 @@ public:
             fps_.pop_front();
         }
         auto average_fps = std::accumulate(fps_.begin(), fps_.end(), 0.0) / fps_.size();
-        auto title = "Dendy | "s + std::to_string(average_fps) + " fps"s;
+        auto title = "NES Emulator | "s + std::to_string(average_fps) + " fps"s;
         SDL_SetWindowTitle(window_, title.c_str());
     }
 
@@ -191,7 +216,6 @@ struct dummy_bus
 {
     struct controller_hack
     {
-        bool strobe{false};
         uint8_t keys{0};
         uint8_t snapshot{0};
     } j1;
@@ -296,7 +320,7 @@ int main(int argc, char *argv[]) {
     auto window = sdl::main_window("Dendy");
 
     auto ppu = nes::ppu{nes::DEFAULT_COLORS};
-    auto bus = dummy_bus{load_rom("rom/pm.nes"), ppu};
+    auto bus = dummy_bus{load_rom("rom/nestest.nes"), ppu};
     auto cpu = nes::cpu{bus};
 
     const auto FPS   = 60;
