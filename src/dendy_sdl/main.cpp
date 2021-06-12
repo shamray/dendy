@@ -189,6 +189,13 @@ auto load_texture(const auto& frame_bufer) {
 
 struct dummy_bus
 {
+    struct controller_hack
+    {
+        bool strobe{false};
+        uint8_t keys{0};
+        uint8_t snapshot{0};
+    } j1;
+
     dummy_bus(std::tuple<std::array<uint8_t, 64_Kb>, std::array<uint8_t, 8_Kb>>&& rom, nes::ppu& ppu)
         : mem{std::move(std::get<0>(rom))}
         , chr{std::move(std::get<1>(rom))}
@@ -214,12 +221,22 @@ struct dummy_bus
             return;
         }
 
+        if (addr == 0x4016) {
+            j1.snapshot = j1.keys;
+        }
+
         mem[addr] = value;
     }
 
-    uint8_t read(uint16_t addr) const {
+    uint8_t read(uint16_t addr) {
         if (auto r = ppu.read(addr); r.has_value())
             return r.value();
+
+        if (addr == 0x4016) {
+            auto r = (j1.snapshot & 0x80) ? 1 : 0;
+            j1.snapshot <<= 1;
+            return r;
+        }
 
         return mem[addr];
     }
@@ -279,7 +296,7 @@ int main(int argc, char *argv[]) {
     auto window = sdl::main_window("Dendy");
 
     auto ppu = nes::ppu{nes::DEFAULT_COLORS};
-    auto bus = dummy_bus{load_rom("rom/dk.nes"), ppu};
+    auto bus = dummy_bus{load_rom("rom/pm.nes"), ppu};
     auto cpu = nes::cpu{bus};
 
     const auto FPS   = 60;
@@ -294,6 +311,19 @@ int main(int argc, char *argv[]) {
         auto stop = frontend.process_events();
         if (stop)
             break;
+
+        {
+            auto kb_state = SDL_GetKeyboardState(nullptr);
+            bus.j1.keys = 0;
+            if (kb_state[SDL_SCANCODE_SPACE])   bus.j1.keys |= 0x80;
+            if (kb_state[SDL_SCANCODE_LSHIFT])  bus.j1.keys |= 0x40;
+            if (kb_state[SDL_SCANCODE_C])       bus.j1.keys |= 0x20;
+            if (kb_state[SDL_SCANCODE_V])       bus.j1.keys |= 0x10;
+            if (kb_state[SDL_SCANCODE_UP])      bus.j1.keys |= 0x08;
+            if (kb_state[SDL_SCANCODE_DOWN])    bus.j1.keys |= 0x04;
+            if (kb_state[SDL_SCANCODE_LEFT])    bus.j1.keys |= 0x02;
+            if (kb_state[SDL_SCANCODE_RIGHT])   bus.j1.keys |= 0x01;
+        }
 
         do {
             cpu.tick();
