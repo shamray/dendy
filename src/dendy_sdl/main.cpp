@@ -278,8 +278,6 @@ int main(int argc, char *argv[]) {
     auto frontend = sdl::frontend::create();
     auto window = sdl::main_window("Dendy");
 
-    auto chr = std::array{sdl::chr_window("CHR 0"), sdl::chr_window("CHR 1")};
-
     auto ppu = nes::ppu{nes::DEFAULT_COLORS};
     auto bus = dummy_bus{load_rom("rom/dk.nes"), ppu};
     auto cpu = nes::cpu{bus};
@@ -289,8 +287,6 @@ int main(int argc, char *argv[]) {
     uint32_t frameStart, frameTime;
 
     frontend.add_window(&window);
-    frontend.add_window(&chr[0]);
-    frontend.add_window(&chr[1]);
 
     for (;;) {
         frameStart = SDL_GetTicks();
@@ -310,10 +306,6 @@ int main(int argc, char *argv[]) {
         window.render(ppu.frame_buffer);
 
         auto distrib = std::uniform_int_distribution<short>(0, 7);
-
-        for (auto i = 0; i < chr.size(); ++i) {
-            chr[i].render(ppu.display_pattern_table(i, distrib(gen)));
-        }
 
         frameTime = SDL_GetTicks() - frameStart;
 
