@@ -374,24 +374,26 @@ private:
     }
 
     constexpr void postrender_scanline() noexcept {
-        for (const auto& s: oam_.sprites) {
-            auto palette = (s.attr & 0x03) + 4;
+        if (scan_.cycle() == 0) {
+            for (const auto& s: oam_.sprites) {
+                auto palette = (s.attr & 0x03) + 4;
 
-            for (auto i = 0; i < 8; ++i) {
-                for (auto j = 0; j < 8; ++j) {
-                    auto pixel = read_tile_pixel(pattern_table_, pattern_table_fg_index(), s.tile, j, i);
-                    auto dx = (s.attr & 0x40) ? 7 - j : j;
-                    auto dy = (s.attr & 0x80) ? 7 - i : i;
-                    if (auto offset = (s.y + dy) * 256 + (s.x + dx); offset < frame_buffer.size() && pixel) {
-                        frame_buffer[offset] = palette_table_.color_of(pixel, palette);
+                for (auto i = 0; i < 8; ++i) {
+                    for (auto j = 0; j < 8; ++j) {
+                        auto pixel = read_tile_pixel(pattern_table_, pattern_table_fg_index(), s.tile, j, i);
+                        auto dx = (s.attr & 0x40) ? 7 - j : j;
+                        auto dy = (s.attr & 0x80) ? 7 - i : i;
+                        if (auto offset = (s.y + dy) * 256 + (s.x + dx); offset < frame_buffer.size() && pixel) {
+                            frame_buffer[offset] = palette_table_.color_of(pixel, palette);
+                        }
                     }
                 }
             }
-        }
 
-        status |= 0x80;
-        if (control & 0x80)
-            nmi = true;
+            status |= 0x80;
+            if (control & 0x80)
+                nmi = true;
+        }
     }
     constexpr void vertical_blank_line() noexcept {};
 
