@@ -16,11 +16,11 @@ add_library(libnes
 target_include_directories(libnes PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_features(libnes PUBLIC cxx_std_20)
 
-add_executable(dendy_sdl WIN32
-    dendy_sdl/main.cpp
+add_executable(nemo_sdl WIN32
+    nemo_sdl/main.cpp
 )
 
-target_link_libraries(dendy_sdl
+target_link_libraries(nemo_sdl
     libnes
     SDL2::SDL2
 )

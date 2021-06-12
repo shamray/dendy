@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.20)
 
-project ("dendy")
+project ("NEM0")
 
 if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
 	message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")

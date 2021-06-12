@@ -100,8 +100,10 @@ private:
 class main_window: public window
 {
 public:
-    main_window(const char* title) {
-        window_ = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 600, 480, 0);
+    main_window(std::string title, std::string filename)
+        : title_{std::move(title) + " | " + std::move(filename)}
+    {
+        window_ = SDL_CreateWindow(title_.c_str() , SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 600, 480, 0);
         if (window_ == nullptr)
             throw std::runtime_error("Cannot create window");
 
@@ -142,7 +144,7 @@ public:
             fps_.pop_front();
         }
         auto average_fps = std::accumulate(fps_.begin(), fps_.end(), 0.0) / fps_.size();
-        auto title = "NES Emulator | "s + std::to_string(average_fps) + " fps"s;
+        auto title = title_ + " | " + std::to_string(average_fps).substr(0,6) + " fps"s;
         SDL_SetWindowTitle(window_, title.c_str());
     }
 
@@ -167,6 +169,8 @@ private:
     SDL_Texture* screen_{nullptr};
 
     std::deque<float> fps_;
+
+    std::string title_;
 };
 
 class chr_window: public window
@@ -317,10 +321,12 @@ static std::mt19937 gen(rd());
 
 int main(int argc, char *argv[]) {
     auto frontend = sdl::frontend::create();
-    auto window = sdl::main_window("Dendy");
+
+    auto filename = "nestest.nes";
+    auto window = sdl::main_window("NES Emulator", filename);
 
     auto ppu = nes::ppu{nes::DEFAULT_COLORS};
-    auto bus = dummy_bus{load_rom("rom/nestest.nes"), ppu};
+    auto bus = dummy_bus{load_rom("rom/"s + filename), ppu};
     auto cpu = nes::cpu{bus};
 
     const auto FPS   = 60;
