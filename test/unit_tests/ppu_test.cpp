@@ -93,12 +93,6 @@ TEST_CASE("palette address") {
 
     SECTION("mapping background color") {
         CHECK(pt::palette_address(0x10) == 0x00);
-        CHECK(pt::palette_address(0x04) == 0x00);
-        CHECK(pt::palette_address(0x08) == 0x00);
-        CHECK(pt::palette_address(0x0C) == 0x00);
-        CHECK(pt::palette_address(0x14) == 0x00);
-        CHECK(pt::palette_address(0x18) == 0x00);
-        CHECK(pt::palette_address(0x1C) == 0x00);
     }
 }
 

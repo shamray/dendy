@@ -91,7 +91,7 @@ public:
     [[nodiscard]] static constexpr auto palette_address(uint8_t address) noexcept {
         address &= 0x1F;
 
-        if ((address & 0x03) == 0x00) {
+        if (address == 0x10) {
             address = 0;
         }
 
