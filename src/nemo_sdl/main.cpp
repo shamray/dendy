@@ -216,6 +216,18 @@ auto load_texture(const auto& frame_bufer) {
 
 }
 
+struct screen
+{
+    std::array<nes::color, 256 * 240> frame_buffer;
+
+    [[nodiscard]] constexpr static auto width() -> short { return 256; }
+    [[nodiscard]] constexpr static auto height() -> short { return 240; }
+
+    void draw_pixel(nes::point where, nes::color color) {
+        frame_buffer[where.y * 256 + where.x] = color;
+    }
+};
+
 struct dummy_bus
 {
     struct controller_hack
@@ -224,7 +236,7 @@ struct dummy_bus
         std::uint8_t snapshot{0};
     } j1;
 
-    dummy_bus(std::tuple<std::array<std::uint8_t, 64_Kb>, std::array<std::uint8_t, 8_Kb>>&& rom, nes::ppu& ppu)
+    dummy_bus(std::tuple<std::array<std::uint8_t, 64_Kb>, std::array<std::uint8_t, 8_Kb>>&& rom, nes::ppu<screen>& ppu)
         : mem{std::move(std::get<0>(rom))}
         , chr{std::move(std::get<1>(rom))}
         , ppu{ppu}
@@ -272,7 +284,7 @@ struct dummy_bus
     std::array<std::uint8_t, 64_Kb>  mem;
     std::array<std::uint8_t, 8_Kb>   chr;
 
-    nes::ppu& ppu;
+    nes::ppu<screen>& ppu;
 };
 
 auto load_rom(auto filename) {
@@ -325,7 +337,8 @@ int main(int argc, char *argv[]) {
     auto filename = "nestest.nes";
     auto window = sdl::main_window("NES Emulator", filename);
 
-    auto ppu = nes::ppu{nes::DEFAULT_COLORS};
+    auto scr = screen{};
+    auto ppu = nes::ppu{nes::DEFAULT_COLORS, scr};
     auto bus = dummy_bus{load_rom("rom/"s + filename), ppu};
     auto cpu = nes::cpu{bus};
 
@@ -365,7 +378,7 @@ int main(int argc, char *argv[]) {
         }
         assert(count == 29780 || count == 29781);
 
-        window.render(ppu.frame_buffer);
+        window.render(scr.frame_buffer);
 
         auto distrib = std::uniform_int_distribution<short>(0, 7);
 

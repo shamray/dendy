@@ -184,8 +184,8 @@ private:
     const int postrender_scanlines_;
     const int vblank_scanlines_;
 
-    int line_{-1};
-    int cycle_{0};
+    short line_{-1};
+    short cycle_{0};
     bool frame_is_odd_{false};
 };
 
@@ -194,11 +194,26 @@ const auto VERTICAL_BLANK_SCANLINES = 20;
 const auto POST_RENDER_SCANLINES = 1;
 const auto SCANLINE_DOTS = 341;
 
+struct point
+{
+    short x;
+    short y;
+};
+
+template <class S>
+concept screen = requires(S s, point p, color c) {
+    { s.draw_pixel(p, c) };
+    { s.width() } -> std::same_as<short>;
+    { s.height() } -> std::same_as<short>;
+};
+
+template <screen screen_t>
 class ppu
 {
 public:
-    ppu(const auto& system_color_palette)
-        :palette_table_{system_color_palette}
+    ppu(const auto& system_color_palette, screen_t& screen)
+        : palette_table_{system_color_palette}
+        , screen_{screen}
     {}
 
     ppu(const pattern_table::memory_bank& chr, const auto& system_color_palette)
@@ -224,11 +239,11 @@ public:
     std::uint16_t address;
     std::uint8_t data_buffer;
 
-    void tick();
+    constexpr void tick();
 
     [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return scan_.is_frame_finished(); }
 
-    std::array<color, 256 * 240> frame_buffer;
+//    std::array<color, 256 * 240> frame_buffer;
 
     [[nodiscard]] constexpr auto read(std::uint16_t addr) -> std::optional<std::uint8_t> {
         switch (addr) {
@@ -257,9 +272,12 @@ public:
 
     void render_noise(auto get_noise) {
         // The sky above the port was the color of television, tuned to a dead channel
-        for (auto &&pixel: frame_buffer) {
-            auto r = get_noise();
-            pixel = (0xFF << 24) | (r << 16) | (r << 8) | (r);
+        for (auto x = 0; x < screen_.width(); ++x) {
+            for (auto y = 0; y < screen_.height(); ++y) {
+                auto r = get_noise();
+                auto pixel = color{r << 16, r << 8, r};
+                screen_.draw_pixel({x, y}, pixel);
+            }
         }
     }
 
@@ -356,7 +374,7 @@ private:
 
     constexpr void visible_scanline() {
         auto y = scan_.line();
-        auto x = scan_.cycle() - 2;
+        auto x = static_cast<short>(scan_.cycle() - 2);
 
         if (x >= 0 and x < 256) {
             auto tile_x = x / 8;
@@ -369,7 +387,7 @@ private:
             auto pixel = read_tile_pixel(pattern_table_, pattern_table_bg_index(), tile_index, tile_col, tile_row);
             auto palette = read_tile_palette(name_table_, tile_x, tile_y, nametable_index());
 
-            frame_buffer[y * 256 + x] = palette_table_.color_of(pixel, palette);
+            screen_.draw_pixel({x, y}, palette_table_.color_of(pixel, palette));
         }
     }
 
@@ -383,8 +401,11 @@ private:
                         auto pixel = read_tile_pixel(pattern_table_, pattern_table_fg_index(), s.tile, j, i);
                         auto dx = (s.attr & 0x40) ? 7 - j : j;
                         auto dy = (s.attr & 0x80) ? 7 - i : i;
-                        if (auto offset = (s.y + dy) * 256 + (s.x + dx); offset < frame_buffer.size() && pixel) {
-                            frame_buffer[offset] = palette_table_.color_of(pixel, palette);
+                        if (pixel) {
+                            screen_.draw_pixel(
+                                {static_cast<short>(s.x + dx), static_cast<short>(s.y + dy)},
+                                palette_table_.color_of(pixel, palette)
+                                );
                         }
                     }
                 }
@@ -406,9 +427,12 @@ private:
     object_attribute_memory oam_;
 
     std::uint8_t data_read_buffer_;
+
+    screen_t& screen_;
 };
 
-inline void ppu::tick() {
+template <screen screen_t>
+constexpr void ppu<screen_t>::tick() {
     if      (scan_.is_prerender())  { prerender_scanline(); }
     else if (scan_.is_visible())    { visible_scanline(); }
     else if (scan_.is_postrender()) { postrender_scanline(); }
@@ -417,7 +441,8 @@ inline void ppu::tick() {
     scan_.advance();
 }
 
-inline auto ppu::display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128> {
+template <screen screen_t>
+inline auto ppu<screen_t>::display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128> {
     auto result = std::array<color, 128 * 128>{};
 
     for (std::uint16_t tile_y = 0; tile_y < 16; ++tile_y) {
