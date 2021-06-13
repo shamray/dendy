@@ -16,9 +16,9 @@ namespace nes
 {
 
 template <class B>
-concept bus = requires(B b, uint16_t address, uint8_t value) {
+concept bus = requires(B b, std::uint16_t address, std::uint8_t value) {
     { b.write(address, value) };
-    { b.read(address) } -> std::same_as<uint8_t>;
+    { b.read(address) } -> std::same_as<std::uint8_t>;
     { b.nmi() } -> std::same_as<bool>;
 };
 
@@ -69,14 +69,14 @@ public:
     void tick();
     auto is_executing() { return !current_instruction.is_finished();}
 
-    void write(uint16_t addr, uint8_t value) const { bus_.write(addr, value); }
+    void write(std::uint16_t addr, std::uint8_t value) const { bus_.write(addr, value); }
 
-    [[nodiscard]] auto read(uint16_t addr) const { return bus_.read(addr); }
-    [[nodiscard]] auto read_signed(uint16_t addr) const { return static_cast<int8_t>(read(addr)); }
-    [[nodiscard]] auto read_word(uint16_t addr) const -> uint16_t;
-    [[nodiscard]] auto read_word_wrapped(uint16_t addr) const -> uint16_t;
+    [[nodiscard]] auto read(std::uint16_t addr) const { return bus_.read(addr); }
+    [[nodiscard]] auto read_signed(std::uint16_t addr) const { return static_cast<std::int8_t>(read(addr)); }
+    [[nodiscard]] auto read_word(std::uint16_t addr) const -> std::uint16_t;
+    [[nodiscard]] auto read_word_wrapped(std::uint16_t addr) const -> std::uint16_t;
 
-    auto decode(uint8_t opcode) -> instruction;
+    auto decode(std::uint8_t opcode) -> instruction;
 
     auto interrupt() -> int;
 
@@ -84,20 +84,20 @@ private:
     class hasher
     {
     public:
-        [[nodiscard]] constexpr auto operator()(uint8_t v) const noexcept {
+        [[nodiscard]] constexpr auto operator()(std::uint8_t v) const noexcept {
             return v;
         }
     };
     bus_t& bus_;
     instruction current_instruction;
-    static const std::unordered_map<uint8_t, cpu::instruction, hasher> instruction_set;
+    static const std::unordered_map<std::uint8_t, cpu::instruction, hasher> instruction_set;
 };
 
 
 class unsupported_opcode : public std::runtime_error
 {
 public:
-    explicit unsupported_opcode(uint8_t opcode);
+    explicit unsupported_opcode(std::uint8_t opcode);
 };
 
 
@@ -126,20 +126,20 @@ template <bus bus_t> void cpu<bus_t>::tick()
     current_instruction.execute(*this);
 }
 
-template <bus bus_t> auto cpu<bus_t>::read_word(uint16_t addr) const -> uint16_t {
+template <bus bus_t> auto cpu<bus_t>::read_word(std::uint16_t addr) const -> std::uint16_t {
     auto lo = read(addr);
     auto hi = read(addr + 1);
 
     return (hi << 8) | lo;
 }
 
-template <bus bus_t> auto cpu<bus_t>::read_word_wrapped(uint16_t addr) const -> uint16_t {
+template <bus bus_t> auto cpu<bus_t>::read_word_wrapped(std::uint16_t addr) const -> std::uint16_t {
     auto lo = read(addr);
     auto hi = read((addr / 0x100) * 0x100 + (addr + 1) % 0x100);
     return (hi << 8) | lo;
 }
 
-template <bus bus_t> auto cpu<bus_t>::decode(uint8_t opcode) -> instruction {
+template <bus bus_t> auto cpu<bus_t>::decode(std::uint8_t opcode) -> instruction {
     auto found = instruction_set.find(opcode);
     if (found == std::end(instruction_set))
         return instruction{
@@ -163,7 +163,7 @@ auto cpu<bus_t>::interrupt() -> int {
 }
 
 template <bus bus_t>
-const std::unordered_map<uint8_t, typename cpu<bus_t>::instruction, typename cpu<bus_t>::hasher> cpu<bus_t>::instruction_set{
+const std::unordered_map<std::uint8_t, typename cpu<bus_t>::instruction, typename cpu<bus_t>::hasher> cpu<bus_t>::instruction_set{
     {0xEA, { nop, imp, 2 }},
 
     {0x1A, { nop, imp, 2 }},

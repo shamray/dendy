@@ -12,7 +12,7 @@ namespace nes {
 
 class pattern_table {
 public:
-    using memory_bank = std::array<uint8_t, 8_Kb>;
+    using memory_bank = std::array<std::uint8_t, 8_Kb>;
 
     pattern_table() = default;
     explicit pattern_table(const memory_bank* bank)
@@ -25,13 +25,13 @@ public:
 
     [[nodiscard]] constexpr auto is_connected() const { return bank_ != nullptr; }
 
-    [[nodiscard]] constexpr auto read(uint16_t addr) const {
+    [[nodiscard]] constexpr auto read(std::uint16_t addr) const {
         if (bank_ == nullptr)
             throw std::range_error("No CHR bank connected");
 
         return bank_->at(addr);
     }
-    constexpr void write(uint16_t, uint8_t )    {}
+    constexpr void write(std::uint16_t, std::uint8_t )    {}
 
 private:
     const memory_bank* bank_{nullptr};
@@ -44,13 +44,13 @@ class name_table
 public:
     name_table_mirroring mirroring{name_table_mirroring::vertical};
 
-    constexpr void write(uint16_t addr, uint8_t value) {
+    constexpr void write(std::uint16_t addr, std::uint8_t value) {
         auto i = bank_index(addr);
         auto j = bank_offset(addr);
 
         vram_[i][j] = value;
     }
-    [[nodiscard]] constexpr auto read(uint16_t addr) const {
+    [[nodiscard]] constexpr auto read(std::uint16_t addr) const {
         auto i = bank_index(addr);
         auto j = bank_offset(addr);
         return vram_[i][j];
@@ -61,7 +61,7 @@ public:
     }
 
 private:
-    [[nodiscard]] constexpr auto bank_index(uint16_t addr) const -> int {
+    [[nodiscard]] constexpr auto bank_index(std::uint16_t addr) const -> int {
         using enum name_table_mirroring;
         switch(mirroring) {
             case horizontal:    return (addr >> 11) & 0x01;
@@ -70,12 +70,12 @@ private:
         throw std::logic_error("Unhandled mirroring scenario");
     }
 
-    [[nodiscard]] constexpr static auto bank_offset(uint16_t addr) noexcept -> uint16_t  {
+    [[nodiscard]] constexpr static auto bank_offset(std::uint16_t addr) noexcept -> std::uint16_t  {
         return addr & 0x3FF;
     }
 
 private:
-    using bank = std::array<uint8_t, 2_Kb>;
+    using bank = std::array<std::uint8_t, 2_Kb>;
     std::array<bank, 2> vram_;
 };
 
@@ -88,7 +88,7 @@ public:
         palette_ram_.fill(0);
     }
 
-    [[nodiscard]] static constexpr auto palette_address(uint8_t address) noexcept {
+    [[nodiscard]] static constexpr auto palette_address(std::uint8_t address) noexcept {
         address &= 0x1F;
 
         if (address == 0x10) {
@@ -98,30 +98,30 @@ public:
         return address;
     }
 
-    [[nodiscard]] constexpr auto read(uint8_t address) const noexcept {
+    [[nodiscard]] constexpr auto read(std::uint8_t address) const noexcept {
         return palette_ram_[palette_address(address)];
     }
 
-    constexpr void write(uint8_t address, uint8_t value) noexcept {
+    constexpr void write(std::uint8_t address, std::uint8_t value) noexcept {
         palette_ram_[palette_address(address)] = value;
     }
 
-    [[nodiscard]] auto color_of(uint8_t pixel, uint8_t palette) const noexcept -> color {
+    [[nodiscard]] auto color_of(std::uint8_t pixel, std::uint8_t palette) const noexcept -> color {
         auto rpc = read((palette << 2) + pixel);
         return system_colors_[rpc & 0x3F];
     }
 
 private:
-    std::array<uint8_t, 32> palette_ram_{};
+    std::array<std::uint8_t, 32> palette_ram_{};
     const std::array<color, 64>& system_colors_;
 };
 
 struct sprite
 {
-    uint8_t y   {0xFF};
-    uint8_t tile{0xFF};
-    uint8_t attr{0xFF};
-    uint8_t x   {0xFF};
+    std::uint8_t y   {0xFF};
+    std::uint8_t tile{0xFF};
+    std::uint8_t attr{0xFF};
+    std::uint8_t x   {0xFF};
 };
 static_assert(sizeof(sprite) == 4);
 
@@ -130,7 +130,7 @@ class object_attribute_memory
 public:
     std::array<sprite, 64> sprites;
 
-    void dma_write(const uint8_t* from) {
+    void dma_write(const std::uint8_t* from) {
         std::memcpy(sprites.data(), from, sprites.size() * sizeof(sprite));
     }
 };
@@ -208,21 +208,21 @@ public:
 
     constexpr void connect_pattern_table(auto new_bank) noexcept { pattern_table_.connect(new_bank); }
 
-    uint8_t control;
-    uint8_t status;
-    uint8_t mask;
-    uint8_t oam_addr;
-    uint8_t oam_data;
-    uint8_t scroll;
-    uint8_t addr;
-    uint8_t data;
-    uint8_t oam_dma;
+    std::uint8_t control;
+    std::uint8_t status;
+    std::uint8_t mask;
+    std::uint8_t oam_addr;
+    std::uint8_t oam_data;
+    std::uint8_t scroll;
+    std::uint8_t addr;
+    std::uint8_t data;
+    std::uint8_t oam_dma;
 
     bool nmi{false};
 
     int address_latch{0};
-    uint16_t address;
-    uint8_t data_buffer;
+    std::uint16_t address;
+    std::uint8_t data_buffer;
 
     void tick();
 
@@ -230,7 +230,7 @@ public:
 
     std::array<color, 256 * 240> frame_buffer;
 
-    [[nodiscard]] constexpr auto read(uint16_t addr) -> std::optional<uint8_t> {
+    [[nodiscard]] constexpr auto read(std::uint16_t addr) -> std::optional<std::uint8_t> {
         switch (addr) {
             case 0x2002: return read_stat();
             case 0x2007: return read_data();
@@ -239,7 +239,7 @@ public:
         }
     }
 
-    constexpr auto write(uint16_t addr, uint8_t value) {
+    constexpr auto write(std::uint16_t addr, std::uint8_t value) {
         switch (addr) {
             case 0x2000: { write_ctrl(value); return true; }
             case 0x2006: { write_addr(value); return true; }
@@ -264,14 +264,14 @@ public:
     }
 
 private:
-    [[nodiscard]] constexpr auto read_stat() -> uint8_t {
+    [[nodiscard]] constexpr auto read_stat() -> std::uint8_t {
         auto d = status & 0xE0;
         status &= 0x60;
         address_latch = 0;
         return d;
     }
 
-    [[nodiscard]] constexpr auto read_data() -> uint8_t {
+    [[nodiscard]] constexpr auto read_data() -> std::uint8_t {
         auto a = address++;
         auto r = data_read_buffer_;
         auto& b = data_read_buffer_;
@@ -284,9 +284,9 @@ private:
         return r;
     }
 
-    constexpr void write_ctrl(uint8_t value) { control = value; }
+    constexpr void write_ctrl(std::uint8_t value) { control = value; }
 
-    constexpr void write_addr(uint8_t value) {
+    constexpr void write_addr(std::uint8_t value) {
         if (address_latch == 0) {
             address = (address & 0x00FF) | (value << 8);
             address_latch = 1;
@@ -298,7 +298,7 @@ private:
         }
     }
 
-    constexpr void write_data(uint8_t value) {
+    constexpr void write_data(std::uint8_t value) {
         if (address >= 0x2000 and address <= 0x3000) { name_table_.write(address & 0xFFF, value); }
         else if (address >= 0x3F00 and address <= 0x3FFF) { palette_table_.write(address & 0x001F, value); }
         else {
@@ -316,11 +316,11 @@ private:
     [[nodiscard]] constexpr auto pattern_table_fg_index() const { return (control & 0x08) >> 3; }
 
     [[nodiscard]] constexpr static auto nametable_tile_offset(auto tile_x, auto tile_y, int nametable_index) {
-        return static_cast<uint16_t>((tile_y * 32 + tile_x) | nametable_index);
+        return static_cast<std::uint16_t>((tile_y * 32 + tile_x) | nametable_index);
     }
 
     [[nodiscard]] constexpr static auto nametable_attr_offset(auto tile_x, auto tile_y, int nametable_index) {
-        return static_cast<uint16_t>((0x3c0 + tile_y / 4 * 8 + tile_x / 4) | nametable_index);
+        return static_cast<std::uint16_t>((0x3c0 + tile_y / 4 * 8 + tile_x / 4) | nametable_index);
     }
 
     [[nodiscard]] constexpr static auto read_tile_pixel(const auto& pattern_table, auto ix, auto tile, auto x, auto y) {
@@ -329,7 +329,7 @@ private:
         const auto tile_msb = pattern_table.read(tile_offset + y + 8);
         const auto pixel_lo = (tile_lsb >> (7 - x)) & 0x01;
         const auto pixel_hi = (tile_msb >> (7 - x)) & 0x01;
-        return static_cast<uint8_t>(pixel_lo | (pixel_hi << 1));
+        return static_cast<std::uint8_t>(pixel_lo | (pixel_hi << 1));
     }
 
     [[nodiscard]] constexpr static auto read_tile_index(const auto& name_table, auto tile_x, auto tile_y, auto nametable_index) {
@@ -405,7 +405,7 @@ private:
     palette_table   palette_table_;
     object_attribute_memory oam_;
 
-    uint8_t data_read_buffer_;
+    std::uint8_t data_read_buffer_;
 };
 
 inline void ppu::tick() {
@@ -420,11 +420,11 @@ inline void ppu::tick() {
 inline auto ppu::display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128> {
     auto result = std::array<color, 128 * 128>{};
 
-    for (uint16_t tile_y = 0; tile_y < 16; ++tile_y) {
-        for (uint16_t tile_x = 0; tile_x < 16; ++tile_x) {
-            auto offset = static_cast<uint16_t>(tile_y * 16 + tile_x);
-            for (uint16_t row = 0; row < 8; ++row) {
-                for (uint16_t col = 0; col < 8; col++) {
+    for (std::uint16_t tile_y = 0; tile_y < 16; ++tile_y) {
+        for (std::uint16_t tile_x = 0; tile_x < 16; ++tile_x) {
+            auto offset = static_cast<std::uint16_t>(tile_y * 16 + tile_x);
+            for (std::uint16_t row = 0; row < 8; ++row) {
+                for (std::uint16_t col = 0; col < 8; col++) {
                     auto pixel = read_tile_pixel(pattern_table_, i, offset, col, row);
 
                     auto result_offset = (tile_y * 8 + row) * 128 + tile_x * 8 + (7 - col);

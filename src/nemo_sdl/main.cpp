@@ -113,7 +113,7 @@ public:
 
         screen_ = SDL_CreateTexture (renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 256, 240);
 
-        uint32_t rmask, gmask, bmask, amask;
+        std::uint32_t rmask, gmask, bmask, amask;
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
         int shift = (my_icon.bytes_per_pixel == 3) ? 8 : 0;
         rmask = 0xff000000 >> shift;
@@ -150,7 +150,7 @@ public:
 
     void render(const auto& frame_buffer) {
         SDL_RenderClear(renderer_);
-        SDL_UpdateTexture(screen_, nullptr, frame_buffer.data(), 256 * sizeof(uint32_t));
+        SDL_UpdateTexture(screen_, nullptr, frame_buffer.data(), 256 * sizeof(std::uint32_t));
         SDL_RenderCopy(renderer_, screen_, nullptr, nullptr);
         SDL_RenderPresent(renderer_);
     }
@@ -190,7 +190,7 @@ public:
 
     void render(const auto& pattern_table) {
         SDL_RenderClear(renderer_);
-        SDL_UpdateTexture(chr_, nullptr, pattern_table.data(), 128 * sizeof(uint32_t));
+        SDL_UpdateTexture(chr_, nullptr, pattern_table.data(), 128 * sizeof(std::uint32_t));
         SDL_RenderCopy(renderer_, chr_, nullptr, nullptr);
         SDL_RenderPresent(renderer_);
     }
@@ -220,11 +220,11 @@ struct dummy_bus
 {
     struct controller_hack
     {
-        uint8_t keys{0};
-        uint8_t snapshot{0};
+        std::uint8_t keys{0};
+        std::uint8_t snapshot{0};
     } j1;
 
-    dummy_bus(std::tuple<std::array<uint8_t, 64_Kb>, std::array<uint8_t, 8_Kb>>&& rom, nes::ppu& ppu)
+    dummy_bus(std::tuple<std::array<std::uint8_t, 64_Kb>, std::array<std::uint8_t, 8_Kb>>&& rom, nes::ppu& ppu)
         : mem{std::move(std::get<0>(rom))}
         , chr{std::move(std::get<1>(rom))}
         , ppu{ppu}
@@ -240,7 +240,7 @@ struct dummy_bus
         return true;
     }
 
-    void write(uint16_t addr, uint8_t value) {
+    void write(std::uint16_t addr, std::uint8_t value) {
         if (ppu.write(addr, value))
             return;
 
@@ -256,7 +256,7 @@ struct dummy_bus
         mem[addr] = value;
     }
 
-    uint8_t read(uint16_t addr) {
+    std::uint8_t read(std::uint16_t addr) {
         if (auto r = ppu.read(addr); r.has_value())
             return r.value();
 
@@ -269,26 +269,26 @@ struct dummy_bus
         return mem[addr];
     }
 
-    std::array<uint8_t, 64_Kb>  mem;
-    std::array<uint8_t, 8_Kb>   chr;
+    std::array<std::uint8_t, 64_Kb>  mem;
+    std::array<std::uint8_t, 8_Kb>   chr;
 
     nes::ppu& ppu;
 };
 
 auto load_rom(auto filename) {
-    auto memory = std::array<uint8_t, 64_Kb>{};
+    auto memory = std::array<std::uint8_t, 64_Kb>{};
     auto romfile = std::ifstream{filename, std::ifstream::binary};
     assert(romfile.is_open());
 
     struct {
         char name[4];
-        uint8_t prg_rom_chunks;
-        uint8_t chr_rom_chunks;
-        uint8_t mapper1;
-        uint8_t mapper2;
-        uint8_t prg_ram_size;
-        uint8_t tv_system1;
-        uint8_t tv_system2;
+        std::uint8_t prg_rom_chunks;
+        std::uint8_t chr_rom_chunks;
+        std::uint8_t mapper1;
+        std::uint8_t mapper2;
+        std::uint8_t prg_ram_size;
+        std::uint8_t tv_system1;
+        std::uint8_t tv_system2;
         char unused[5];
     } header;
     static_assert(sizeof(header) == 16);
@@ -300,7 +300,7 @@ auto load_rom(auto filename) {
     if (header.chr_rom_chunks > 1)
         throw std::runtime_error("unsupported mapper, too many CHR sections");
 
-    auto prg = std::array<uint8_t, 16_Kb>{};
+    auto prg = std::array<std::uint8_t, 16_Kb>{};
     romfile.read(reinterpret_cast<char*>(prg.data()), prg.size());
 
     std::ranges::copy(prg, memory.begin() + 0x8000);
@@ -310,7 +310,7 @@ auto load_rom(auto filename) {
     }
     std::ranges::copy(prg, memory.begin() + 0xC000);
 
-    auto chr = std::array<uint8_t, 8_Kb>{};
+    auto chr = std::array<std::uint8_t, 8_Kb>{};
     romfile.read(reinterpret_cast<char*>(chr.data()), chr.size());
 
     return std::tuple{memory, chr};
@@ -331,7 +331,7 @@ int main(int argc, char *argv[]) {
 
     const auto FPS   = 60;
     const auto DELAY = static_cast<int>(1000.0f / FPS);
-    uint32_t frameStart, frameTime;
+    std::uint32_t frameStart, frameTime;
 
     frontend.add_window(&window);
 

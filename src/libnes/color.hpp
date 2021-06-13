@@ -10,15 +10,15 @@ class color
 {
 public:
     color() = default;
-    explicit constexpr color(uint32_t v) noexcept : value_{v} {}
-    constexpr color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0xFF)
-            : value_{static_cast<uint32_t>(a << 24) | (r << 16) | (g << 8) | (b)}
+    explicit constexpr color(std::uint32_t v) noexcept : value_{v} {}
+    constexpr color(std::uint8_t r, std::uint8_t g, std::uint8_t b, std::uint8_t a = 0xFF)
+            : value_{static_cast<std::uint32_t>(a << 24) | (r << 16) | (g << 8) | (b)}
     {}
 
     [[maybe_unused]] [[nodiscard]] constexpr auto value() const { return value_; }
 
 private:
-    uint32_t value_;
+    std::uint32_t value_;
 };
 
 constexpr auto DEFAULT_COLORS = std::to_array<color>({

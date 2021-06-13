@@ -7,7 +7,7 @@ namespace nes
 
 inline namespace literals
 {
-constexpr auto operator "" _i(unsigned long long x) { return static_cast<uint8_t>(x); }
+constexpr auto operator "" _i(unsigned long long x) { return static_cast<std::uint8_t>(x); }
 }
 
 inline namespace details
@@ -17,12 +17,12 @@ inline auto carry(const flags_register &f) {
     return f.test(cpu_flag::carry) ? 1_i : 0_i;
 }
 
-inline auto is_page_crossed(uint16_t base, uint16_t effective_address) {
+inline auto is_page_crossed(std::uint16_t base, std::uint16_t effective_address) {
     return (base & 0xFF00) != (effective_address & 0xFF00);
 }
 
-inline auto index(uint16_t base, int16_t offset) {
-    uint16_t address = int(base) + offset;
+inline auto index(std::uint16_t base, std::int16_t offset) {
+    std::uint16_t address = int(base) + offset;
     auto additional_cycles = is_page_crossed(base, address) ? 1 : 0;
 
     return std::tuple{address, additional_cycles};
@@ -35,7 +35,7 @@ inline auto arith_result(int x) {
     return std::tuple{r, c};
 }
 
-inline void adc_impl(auto &result, uint8_t accum, uint8_t operand, flags_register &flags) {
+inline void adc_impl(auto &result, std::uint8_t accum, std::uint8_t operand, flags_register &flags) {
     auto[r, c] = arith_result(
         accum + operand + carry(flags)
     );
@@ -47,7 +47,7 @@ inline void adc_impl(auto &result, uint8_t accum, uint8_t operand, flags_registe
     result = r;
 }
 
-inline void cmp_impl(uint8_t accum, uint8_t operand, flags_register &flags) {
+inline void cmp_impl(std::uint8_t accum, std::uint8_t operand, flags_register &flags) {
     auto alu_result = arith_register{flags};
     alu_result.assign(accum - operand);
     flags.set(cpu_flag::carry, accum >= operand);
@@ -153,7 +153,7 @@ const auto lsr = [](auto &cpu, auto address_mode) {
 const auto rol = [](auto &cpu, auto address_mode) {
     auto am = address_mode;
     auto[operand, _] = am.load_operand();
-    auto carry_bit = cpu.p.test(cpu_flag::carry) ? uint8_t{0x01} : uint8_t{};
+    auto carry_bit = cpu.p.test(cpu_flag::carry) ? std::uint8_t{0x01} : std::uint8_t{};
     am.store_operand((operand << 1) | carry_bit);
     cpu.p.set(cpu_flag::carry, (operand & 0x80) != 0);
     return 0;
@@ -162,7 +162,7 @@ const auto rol = [](auto &cpu, auto address_mode) {
 const auto ror = [](auto &cpu, auto address_mode) {
     auto am = address_mode;
     auto[operand, _] = am.load_operand();
-    auto carry_bit = cpu.p.test(cpu_flag::carry) ? uint8_t{0x80} : uint8_t{};
+    auto carry_bit = cpu.p.test(cpu_flag::carry) ? std::uint8_t{0x80} : std::uint8_t{};
     am.store_operand((operand >> 1) | carry_bit);
     cpu.p.set(cpu_flag::carry, (operand & 0x01) != 0);
     return 0;
@@ -394,7 +394,7 @@ const auto jmp = [](auto &cpu, auto address_mode) {
 
 const auto jsr = [](auto &cpu, auto address_mode) {
     auto[address, _] = address_mode.fetch_address();
-    auto prev_pc = nes::program_counter{static_cast<uint16_t >(cpu.pc.value() - 1)};
+    auto prev_pc = nes::program_counter{static_cast<std::uint16_t >(cpu.pc.value() - 1)};
     cpu.write(cpu.s.push(), prev_pc.hi());
     cpu.write(cpu.s.push(), prev_pc.lo());
     cpu.pc.assign(address);
@@ -515,7 +515,7 @@ const auto sre = [](auto &cpu, auto address_mode) {
 const auto rla = [](auto &cpu, auto address_mode) {
     auto am = address_mode;
     auto[operand, _] = am.load_operand();
-    auto carry_bit = cpu.p.test(cpu_flag::carry) ? uint8_t{0x01} : uint8_t{};
+    auto carry_bit = cpu.p.test(cpu_flag::carry) ? std::uint8_t{0x01} : std::uint8_t{};
     auto set_carry = (operand & 0x80) != 0;
 
     operand = (operand << 1) | carry_bit;
@@ -530,7 +530,7 @@ const auto rla = [](auto &cpu, auto address_mode) {
 const auto rra = [](auto &cpu, auto address_mode) {
     auto am = address_mode;
     auto[operand, _] = am.load_operand();
-    auto carry_bit = cpu.p.test(cpu_flag::carry) ? uint8_t{0x80} : uint8_t{};
+    auto carry_bit = cpu.p.test(cpu_flag::carry) ? std::uint8_t{0x80} : std::uint8_t{};
     auto set_carry = (operand & 0x01) != 0;
 
     operand = (operand >> 1) | carry_bit;

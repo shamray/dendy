@@ -9,7 +9,7 @@ using namespace nes::literals;
 
 auto create_memory()
 {
-    auto mem = std::vector<uint8_t>(64_Kb, 0);
+    auto mem = std::vector<std::uint8_t>(64_Kb, 0);
     std::ranges::copy(std::array{0x00, 0x80}, mem.begin() + 0xfffc);
     return mem;
 }
@@ -19,12 +19,12 @@ class cpu_test
 public:
     struct test_bus
     {
-        void write(uint16_t addr, uint8_t value) { mem[addr] = value; }
-        uint8_t read(uint16_t addr) const { return mem[addr]; }
+        void write(std::uint16_t addr, std::uint8_t value) { mem[addr] = value; }
+        std::uint8_t read(std::uint16_t addr) const { return mem[addr]; }
 
         bool nmi() const { return nmi_on; }
 
-        std::vector<uint8_t>& mem;
+        std::vector<std::uint8_t>& mem;
         bool nmi_on{false};
     };
 
@@ -34,7 +34,7 @@ public:
     {
     }
 
-    void load(uint16_t addr, auto program)
+    void load(std::uint16_t addr, auto program)
     {
         std::ranges::copy(program, mem.begin() + addr);
     }
@@ -51,10 +51,10 @@ public:
         b.nmi_on = true;
     }
 
-    std::vector<uint8_t> mem;
+    std::vector<std::uint8_t> mem;
     test_bus b{mem};
     nes::cpu<test_bus> cpu;
-    uint16_t prgadr{0x8000};
+    std::uint16_t prgadr{0x8000};
 
 };
 

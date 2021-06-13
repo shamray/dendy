@@ -12,11 +12,11 @@ using namespace nes::literals;
 
 struct test_bus
 {
-    void write(uint16_t addr, uint8_t value) { mem[addr] = value; }
-    uint8_t read(uint16_t addr) const { return mem[addr]; }
+    void write(std::uint16_t addr, std::uint8_t value) { mem[addr] = value; }
+    std::uint8_t read(std::uint16_t addr) const { return mem[addr]; }
     bool nmi() const { return false; }
 
-    std::vector<uint8_t>& mem;
+    std::vector<std::uint8_t>& mem;
 };
 
 class test_cpu: public nes::cpu<test_bus>
@@ -50,12 +50,12 @@ public:
 
 auto load_nestest()
 {
-    auto memory = std::vector<uint8_t>(64_Kb, 0);
+    auto memory = std::vector<std::uint8_t>(64_Kb, 0);
     auto romfile = std::ifstream{"rom/nestest.nes", std::ifstream::binary};
 
     romfile.seekg(16); // header
 
-    auto prg = std::vector<uint8_t>(16_Kb, 0);
+    auto prg = std::vector<std::uint8_t>(16_Kb, 0);
     romfile.read(reinterpret_cast<char*>(prg.data()), prg.size());
 
     std::ranges::copy(prg, memory.begin() + 0x8000);

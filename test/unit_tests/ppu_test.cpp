@@ -104,7 +104,7 @@ TEST_CASE("pattern_table") {
         CHECK_THROWS(chr.read(0x1234));
     }
 
-    auto bank = std::array<uint8_t, 8_Kb>{};
+    auto bank = std::array<std::uint8_t, 8_Kb>{};
     bank[0x1234] = 0x42;
 
     SECTION("created connected") {

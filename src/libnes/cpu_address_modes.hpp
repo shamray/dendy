@@ -25,7 +25,7 @@ public:
         return std::tuple{cpu_.a.value(), 0};
     }
 
-    auto store_operand(uint8_t operand)
+    auto store_operand(std::uint8_t operand)
     {
         cpu_.a.assign(operand);
         return 0;
@@ -53,7 +53,7 @@ struct memory_based_address_mode
         return std::tuple{cpu_.read(address), additional_cycles};
     }
 
-    auto store_operand(uint8_t operand)
+    auto store_operand(std::uint8_t operand)
     {
         fetch_address();
         auto [address, additional_cycles] = result_.value();
@@ -70,7 +70,7 @@ struct memory_based_address_mode
 
 private:
     cpu_t& cpu_;
-    std::optional<std::tuple<uint16_t, int>> result_;
+    std::optional<std::tuple<std::uint16_t, int>> result_;
     fettch_addr_t fetch_addr_;
 };
 
