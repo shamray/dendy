@@ -166,3 +166,73 @@ TEST_CASE("nametable") {
         CHECK((int)nt.read(0xC07) == 0x11);
     }
 }
+
+namespace nes
+{
+auto operator== (nes::color a, nes::color b) {
+    return a.value() == b.value();
+}
+
+auto operator== (nes::point a, nes::point b) {
+    return a.x == b.x and a.y == b.y;
+}
+
+std::ostream& operator<< (std::ostream& s, nes::color c) {
+    return s << ( c.value() >> 16 & 0xFF) << "," << ( c.value() >> 8 & 0xFF) << "," << ( c.value() & 0xFF);
+}
+}
+
+struct test_screen
+{
+    class hasher
+    {
+    public:
+        [[nodiscard]] constexpr auto operator()(nes::point p) const noexcept {
+            return p.x << 8 | p.y;
+        }
+    };
+
+    std::unordered_map<nes::point, nes::color, hasher> pixels;
+
+    [[nodiscard]] constexpr static auto width() -> short { return 256; }
+    [[nodiscard]] constexpr static auto height() -> short { return 240; }
+
+    void draw_pixel(nes::point where, nes::color color) {
+        pixels[where] = color;
+    }
+};
+
+TEST_CASE("PPU - displaying pixels") {
+    auto screen = test_screen{};
+    auto ppu = nes::ppu{nes::DEFAULT_COLORS, screen};
+
+    // ADDR = 0x3F00
+    ppu.write(0x2006, 0x3F);
+    ppu.write(0x2006, 0x00);
+
+    // Palette
+    ppu.write(0x2007, 63);
+    ppu.write(0x2007, 5);
+    ppu.write(0x2007, 8);
+    ppu.write(0x2007, 21);
+
+    // Pattern table
+    auto chr = std::array<std::uint8_t, 8_Kb>{
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    ppu.connect_pattern_table(&chr);
+
+    // ADDR = 0x2000
+    ppu.write(0x2006, 0x20);
+    ppu.write(0x2006, 0x00);
+
+    // Nametable
+    ppu.write(0x2007, 0x01);
+
+    for (auto i = 0; i < 240 * 341; ++i) ppu.tick();
+
+    CHECK(screen.pixels.at(nes::point{0, 0}) == nes::DEFAULT_COLORS[21]);
+}
