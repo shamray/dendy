@@ -7,6 +7,8 @@
 #include <optional>
 #include <stdexcept>
 #include <cassert>
+#include <ranges>
+#include <algorithm>
 
 namespace nes {
 
@@ -58,6 +60,10 @@ public:
 
     [[nodiscard]] constexpr auto table(int bank) const -> auto& {
         return vram_[bank & 1];
+    }
+
+    name_table() {
+        std::ranges::for_each(vram_, [](auto& x){ std::ranges::fill(x, 0); });
     }
 
 private:
