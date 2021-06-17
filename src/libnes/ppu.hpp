@@ -229,9 +229,9 @@ public:
 
     constexpr void connect_pattern_table(auto new_bank) noexcept { pattern_table_.connect(new_bank); }
 
-    std::uint8_t control;
+    std::uint8_t control{0};
     std::uint8_t status;
-    std::uint8_t mask;
+    std::uint8_t mask{0};
     std::uint8_t oam_addr;
     std::uint8_t oam_data;
     std::uint8_t scroll;
@@ -248,8 +248,6 @@ public:
     constexpr void tick();
 
     [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return scan_.is_frame_finished(); }
-
-//    std::array<color, 256 * 240> frame_buffer;
 
     [[nodiscard]] constexpr auto read(std::uint16_t addr) -> std::optional<std::uint8_t> {
         switch (addr) {
@@ -273,6 +271,8 @@ public:
     constexpr void dma_write(auto from) {
         oam_.dma_write(from);
     }
+
+    [[nodiscard]] constexpr auto palette_table() const -> const auto& { return palette_table_; }
 
     auto display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128>;
 
@@ -427,10 +427,10 @@ private:
 private:
     crt_scan scan_{SCANLINE_DOTS, VISIBLE_SCANLINES, POST_RENDER_SCANLINES, VERTICAL_BLANK_SCANLINES};
 
-    pattern_table   pattern_table_;
-    name_table      name_table_;
-    palette_table   palette_table_;
-    object_attribute_memory oam_;
+    nes::pattern_table  pattern_table_;
+    nes::name_table     name_table_;
+    nes::palette_table  palette_table_;
+    nes::object_attribute_memory oam_;
 
     std::uint8_t data_read_buffer_;
 

@@ -1,12 +1,19 @@
 #include <libnes/ppu.hpp>
 #include <libnes/literals.hpp>
 #include <catch2/catch.hpp>
+#include <ranges>
 
 using namespace nes::literals;
 
+void tick(nes::crt_scan& scan, int times = 1) {
+    for (auto i = 0; i < times; ++i) {
+        scan.advance();
+    }
+}
+
 void tick(auto& ppu, int times = 1) {
     for (auto i = 0; i < times; ++i) {
-        ppu.advance();
+        ppu.tick();
     }
 }
 
@@ -202,37 +209,130 @@ struct test_screen
     }
 };
 
-TEST_CASE("PPU - displaying pixels") {
+template <class ppu_t, class... args_t>
+void write(std::uint16_t addr, ppu_t& ppu, std::uint8_t byte, args_t... args) {
+    ppu.write(addr, byte);
+    write(addr, ppu, args...);
+}
+
+template <class ppu_t>
+void write(std::uint16_t addr, ppu_t& ppu, std::uint8_t byte) {
+    ppu.write(addr, byte);
+}
+
+auto empty_pattern_table() {
+    return std::array<std::uint8_t, 8_Kb>{0x00};
+}
+
+template <class input_type>
+auto pattern_table(std::uint8_t index, input_type&& tile) {
+    assert(tile.size() == 16);
+    auto chr = empty_pattern_table();
+    std::ranges::copy(tile, std::next(std::begin(chr), index * tile.size()));
+    return chr;
+}
+
+template <class input_type, class... args_t>
+auto pattern_table(std::uint8_t index, input_type&& tile, args_t... args) {
+    assert(tile.size() == 16);
+    auto chr = pattern_table(args...);
+    std::ranges::copy(tile, std::next(std::begin(chr), index * tile.size()));
+    return chr;
+}
+
+TEST_CASE("PPU") {
     auto screen = test_screen{};
     auto ppu = nes::ppu{nes::DEFAULT_COLORS, screen};
 
-    // ADDR = 0x3F00
-    ppu.write(0x2006, 0x3F);
-    ppu.write(0x2006, 0x00);
+    constexpr auto BLACK = nes::DEFAULT_COLORS[63];
+    constexpr auto VIOLET = nes::DEFAULT_COLORS[3];
+    constexpr auto OLIVE = nes::DEFAULT_COLORS[8];
+    constexpr auto RASPBERRY = nes::DEFAULT_COLORS[21];
 
-    // Palette
-    ppu.write(0x2007, 63);
-    ppu.write(0x2007, 5);
-    ppu.write(0x2007, 8);
-    ppu.write(0x2007, 21);
+    SECTION("power up state") {
+        CHECK(ppu.control == 0x00);
+        CHECK(ppu.mask == 0x00);
+    }
 
-    // Pattern table
-    auto chr = std::array<std::uint8_t, 8_Kb>{
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    };
-    ppu.connect_pattern_table(&chr);
+    SECTION("write to palette ram") {
+        write(0x2000, ppu, 0x00);
+        write(0x2006, ppu, 0x3F, 0x00);
+        write(0x2007, ppu,
+            63,
+            3 , 8 , 21
+        );
 
-    // ADDR = 0x2000
-    ppu.write(0x2006, 0x20);
-    ppu.write(0x2006, 0x00);
+        CHECK(ppu.palette_table().read(0) == 63);
+        CHECK(ppu.palette_table().read(1) == 3);
+        CHECK(ppu.palette_table().read(2) == 8);
+        CHECK(ppu.palette_table().read(3) == 21);
+    }
 
-    // Nametable
-    ppu.write(0x2007, 0x01);
+    SECTION("rendering background") {
+        // Palette
+        write(0x2006, ppu, 0x3F, 0x00);
+        write(0x2007, ppu,
+              63,
+              3 , 8 , 21
+        );
 
-    for (auto i = 0; i < 240 * 341; ++i) ppu.tick();
+        // Pattern table
+        auto chr = pattern_table(
+                1 , std::array{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // single point in top left corner
+                               0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 
-    CHECK(screen.pixels.at(nes::point{0, 0}) == nes::DEFAULT_COLORS[21]);
+                42, std::array{0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // single point in the second row
+                               0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+
+                99, std::array{0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // points in top row; colors: 3, 2, 1, 0
+                               0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+        );
+        ppu.connect_pattern_table(&chr);
+
+        SECTION("point at (0,0)") {
+            write(0x2006, ppu, 0x20, 0x00); // Nametable
+            write(0x2007, ppu, 1);
+
+            tick(ppu, 240 * 341);           // Wait one frame
+
+            CHECK(screen.pixels.at(nes::point{0, 0}) == RASPBERRY);
+            CHECK(screen.pixels.at(nes::point{0, 0}) != BLACK);
+
+            for (auto y = 1; y < 240; ++y) {
+                for (auto x = 1; x < 256; ++x) {
+                    CHECK(screen.pixels.at(nes::point{1, 1}) == BLACK);
+                }
+            }
+        }
+
+        SECTION("point at (7,1)") {
+            write(0x2006, ppu, 0x20, 0x00); // Nametable
+            write(0x2007, ppu, 42);
+
+            tick(ppu, 240 * 341);           // Wait one frame
+
+            CHECK(screen.pixels.at(nes::point{7, 1}) == RASPBERRY);
+        }
+
+        SECTION("point at (15,1)") {
+            write(0x2006, ppu, 0x20, 0x00); // Nametable
+            write(0x2007, ppu, 0, 42);
+
+            tick(ppu, 240 * 341);           // Wait one frame
+
+            CHECK(screen.pixels.at(nes::point{15, 1}) == RASPBERRY);
+        }
+
+        SECTION("4 palette colors") {
+            write(0x2006, ppu, 0x20, 0x00); // Nametable
+            write(0x2007, ppu, 99);
+
+            tick(ppu, 240 * 341);           // Wait one frame
+
+            CHECK(screen.pixels.at(nes::point{0, 0}) == RASPBERRY);
+            CHECK(screen.pixels.at(nes::point{1, 0}) == OLIVE);
+            CHECK(screen.pixels.at(nes::point{2, 0}) == VIOLET);
+            CHECK(screen.pixels.at(nes::point{3, 0}) == BLACK);
+        }
+    }
 }
