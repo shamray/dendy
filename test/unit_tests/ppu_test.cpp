@@ -185,7 +185,7 @@ auto operator== (nes::point a, nes::point b) {
 }
 
 std::ostream& operator<< (std::ostream& s, nes::color c) {
-    return s << ( c.value() >> 16 & 0xFF) << "," << ( c.value() >> 8 & 0xFF) << "," << ( c.value() & 0xFF);
+    return s << std::hex << ( c.value() >> 16 & 0xFF) << "," << ( c.value() >> 8 & 0xFF) << "," << ( c.value() & 0xFF);
 }
 }
 
@@ -248,6 +248,10 @@ TEST_CASE("PPU") {
     constexpr auto VIOLET = nes::DEFAULT_COLORS[3];
     constexpr auto OLIVE = nes::DEFAULT_COLORS[8];
     constexpr auto RASPBERRY = nes::DEFAULT_COLORS[21];
+    constexpr auto ORANGE = nes::DEFAULT_COLORS[22];
+    constexpr auto BLUE = nes::DEFAULT_COLORS[33];
+    constexpr auto CYAN = nes::DEFAULT_COLORS[44];
+    constexpr auto WHITE = nes::DEFAULT_COLORS[48];
 
     SECTION("power up state") {
         CHECK(ppu.control == 0x00);
@@ -268,12 +272,19 @@ TEST_CASE("PPU") {
         CHECK(ppu.palette_table().read(3) == 21);
     }
 
-    SECTION("rendering background") {
+    SECTION ("rendering frame") {
         // Palette
         write(0x2006, ppu, 0x3F, 0x00);
         write(0x2007, ppu,
               63,
-              3 , 8 , 21
+              3 , 8 , 21, 63,
+              48, 33, 22, 63,
+              0 , 0 , 0 , 63,
+              0 , 0 , 0 , 63,
+              33, 22, 44, 63,
+              8 , 21, 48, 63,
+              0 , 0 , 0 , 63,
+              0 , 0 , 0 , 63
         );
 
         // Pattern table
@@ -289,50 +300,68 @@ TEST_CASE("PPU") {
         );
         ppu.connect_pattern_table(&chr);
 
-        SECTION("point at (0,0)") {
-            write(0x2006, ppu, 0x20, 0x00); // Nametable
-            write(0x2007, ppu, 1);
+        SECTION("rendering background") {
+            SECTION("point at (0,0)") {
+                write(0x2006, ppu, 0x20, 0x00); // Nametable
+                write(0x2007, ppu, 1);
 
-            tick(ppu, 240 * 341);           // Wait one frame
+                tick(ppu, 242 * 341);           // Wait one frame
 
-            CHECK(screen.pixels.at(nes::point{0, 0}) == RASPBERRY);
-            CHECK(screen.pixels.at(nes::point{0, 0}) != BLACK);
+                CHECK(screen.pixels.at(nes::point{0, 0}) == RASPBERRY);
+                CHECK(screen.pixels.at(nes::point{0, 0}) != BLACK);
 
-            for (auto y = 1; y < 240; ++y) {
-                for (auto x = 1; x < 256; ++x) {
-                    CHECK(screen.pixels.at(nes::point{1, 1}) == BLACK);
+                for (auto y = 1; y < 240; ++y) {
+                    for (auto x = 1; x < 256; ++x) {
+                        CHECK(screen.pixels.at(nes::point{1, 1}) == BLACK);
+                    }
                 }
+            }
+
+            SECTION("point at (7,1)") {
+                write(0x2006, ppu, 0x20, 0x00); // Nametable
+                write(0x2007, ppu, 42);
+
+                tick(ppu, 242 * 341);           // Wait one frame
+
+                CHECK(screen.pixels.at(nes::point{7, 1}) == RASPBERRY);
+            }
+
+            SECTION("point at (15,1)") {
+                write(0x2006, ppu, 0x20, 0x00); // Nametable
+                write(0x2007, ppu, 0, 42);
+
+                tick(ppu, 242 * 341);           // Wait one frame
+
+                CHECK(screen.pixels.at(nes::point{15, 1}) == RASPBERRY);
+            }
+
+            SECTION("4 palette colors") {
+                write(0x2006, ppu, 0x20, 0x00); // Nametable
+                write(0x2007, ppu, 99);
+
+                tick(ppu, 242 * 341);           // Wait one frame
+
+                CHECK(screen.pixels.at(nes::point{0, 0}) == RASPBERRY);
+                CHECK(screen.pixels.at(nes::point{1, 0}) == OLIVE);
+                CHECK(screen.pixels.at(nes::point{2, 0}) == VIOLET);
+                CHECK(screen.pixels.at(nes::point{3, 0}) == BLACK);
             }
         }
 
-        SECTION("point at (7,1)") {
-            write(0x2006, ppu, 0x20, 0x00); // Nametable
-            write(0x2007, ppu, 42);
+        SECTION("rendering sprites") {
 
-            tick(ppu, 240 * 341);           // Wait one frame
+            SECTION("DMA") {
+                auto sprites = std::array<nes::sprite, 64>{};
+                auto mempage = reinterpret_cast<std::uint8_t*>(sprites.data());
 
-            CHECK(screen.pixels.at(nes::point{7, 1}) == RASPBERRY);
-        }
+                sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x00, .x = 0};
 
-        SECTION("point at (15,1)") {
-            write(0x2006, ppu, 0x20, 0x00); // Nametable
-            write(0x2007, ppu, 0, 42);
+                ppu.dma_write(mempage);
 
-            tick(ppu, 240 * 341);           // Wait one frame
+                tick(ppu, 242 * 341);           // Wait one frame
 
-            CHECK(screen.pixels.at(nes::point{15, 1}) == RASPBERRY);
-        }
-
-        SECTION("4 palette colors") {
-            write(0x2006, ppu, 0x20, 0x00); // Nametable
-            write(0x2007, ppu, 99);
-
-            tick(ppu, 240 * 341);           // Wait one frame
-
-            CHECK(screen.pixels.at(nes::point{0, 0}) == RASPBERRY);
-            CHECK(screen.pixels.at(nes::point{1, 0}) == OLIVE);
-            CHECK(screen.pixels.at(nes::point{2, 0}) == VIOLET);
-            CHECK(screen.pixels.at(nes::point{3, 0}) == BLACK);
+                CHECK(screen.pixels.at(nes::point{0, 0}) == CYAN);
+            }
         }
     }
 }
