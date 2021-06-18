@@ -272,6 +272,31 @@ TEST_CASE("PPU") {
         CHECK(ppu.palette_table().read(3) == 21);
     }
 
+    SECTION("loading sprites") {
+        SECTION("OAMADDR/OAMDATA") {
+            write(0x2003, ppu, 1 * sizeof(nes::sprite));
+
+            auto sprite = nes::sprite{.y = 0, .tile = 1, .attr = 0x00, .x = 0};
+            write(0x2004, ppu, sprite.y);
+            write(0x2004, ppu, sprite.tile);
+            write(0x2004, ppu, sprite.attr);
+            write(0x2004, ppu, sprite.x);
+
+            CHECK(ppu.oam().sprites[1] == sprite);
+        }
+
+        SECTION("DMA") {
+            auto sprites = std::array<nes::sprite, 64>{};
+            auto mempage = reinterpret_cast<std::uint8_t*>(sprites.data());
+
+            sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x00, .x = 0};
+
+            ppu.dma_write(mempage);
+
+            CHECK(ppu.oam().sprites == sprites);
+        }
+    }
+
     SECTION ("rendering frame") {
         // Palette
         write(0x2006, ppu, 0x3F, 0x00);
@@ -350,7 +375,7 @@ TEST_CASE("PPU") {
 
         SECTION("rendering sprites") {
 
-            SECTION("DMA") {
+            SECTION("point at (0, 0)") {
                 auto sprites = std::array<nes::sprite, 64>{};
                 auto mempage = reinterpret_cast<std::uint8_t*>(sprites.data());
 

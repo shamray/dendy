@@ -131,6 +131,10 @@ struct sprite
 };
 static_assert(sizeof(sprite) == 4);
 
+inline auto operator==(const sprite& a, const sprite& b) {
+    return a.y == b.y and a.tile == b.tile and a.attr == b.attr and a.x == b.x;
+}
+
 class object_attribute_memory
 {
 public:
@@ -139,6 +143,13 @@ public:
     void dma_write(const std::uint8_t* from) {
         std::memcpy(sprites.data(), from, sprites.size() * sizeof(sprite));
     }
+
+    void write(std::uint8_t data) {
+        auto ram = reinterpret_cast<std::uint8_t*>(sprites.data());
+        ram[address++] = data;
+    }
+
+    std::uint8_t address{0};
 };
 
 class crt_scan
@@ -230,14 +241,9 @@ public:
     constexpr void connect_pattern_table(auto new_bank) noexcept { pattern_table_.connect(new_bank); }
 
     std::uint8_t control{0};
-    std::uint8_t status;
+    std::uint8_t status{0};
     std::uint8_t mask{0};
-    std::uint8_t oam_addr;
-    std::uint8_t oam_data;
     std::uint8_t scroll;
-    std::uint8_t addr;
-    std::uint8_t data;
-    std::uint8_t oam_dma;
 
     bool nmi{false};
 
@@ -261,6 +267,8 @@ public:
     constexpr auto write(std::uint16_t addr, std::uint8_t value) {
         switch (addr) {
             case 0x2000: { write_ctrl(value); return true; }
+            case 0x2003: { write_oama(value); return true; }
+            case 0x2004: { write_oamd(value); return true; }
             case 0x2006: { write_addr(value); return true; }
             case 0x2007: { write_data(value); return true; }
 
@@ -273,6 +281,7 @@ public:
     }
 
     [[nodiscard]] constexpr auto palette_table() const -> const auto& { return palette_table_; }
+    [[nodiscard]] constexpr auto oam() const -> const auto& { return oam_; }
 
     auto display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128>;
 
@@ -309,6 +318,9 @@ private:
     }
 
     constexpr void write_ctrl(std::uint8_t value) { control = value; }
+
+    constexpr void write_oama(std::uint8_t value) { oam_.address = value; }
+    constexpr void write_oamd(std::uint8_t value) { oam_.write(value); }
 
     constexpr void write_addr(std::uint8_t value) {
         if (address_latch == 0) {
