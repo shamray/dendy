@@ -374,18 +374,48 @@ TEST_CASE("PPU") {
         }
 
         SECTION("rendering sprites") {
+            auto sprites = std::array<nes::sprite, 64>{};
+            auto mempage = reinterpret_cast<std::uint8_t*>(sprites.data());
 
-            SECTION("point at (0, 0)") {
-                auto sprites = std::array<nes::sprite, 64>{};
-                auto mempage = reinterpret_cast<std::uint8_t*>(sprites.data());
-
+            SECTION("single point, sprite at (0, 0)") {
                 sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x00, .x = 0};
-
                 ppu.dma_write(mempage);
 
-                tick(ppu, 242 * 341);           // Wait one frame
+                tick(ppu, 242 * 341); // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{0, 0}) == CYAN);
+            }
+            SECTION("single point, sprite at (3, 2)") {
+                sprites[1] = nes::sprite{.y = 2, .tile = 1, .attr = 0x00, .x = 3};
+                ppu.dma_write(mempage);
+
+                tick(ppu, 242 * 341); // Wait one frame
+
+                CHECK(screen.pixels.at(nes::point{3, 2}) == CYAN);
+            }
+            SECTION("single point, sprite palette #1") {
+                sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x01, .x = 0};
+                ppu.dma_write(mempage);
+
+                tick(ppu, 242 * 341); // Wait one frame
+
+                CHECK(screen.pixels.at(nes::point{0, 0}) == WHITE);
+            }
+            SECTION("single point, flip vertically") {
+                sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x80, .x = 0};
+                ppu.dma_write(mempage);
+
+                tick(ppu, 242 * 341); // Wait one frame
+
+                CHECK(screen.pixels.at(nes::point{0, 7}) == CYAN);
+            }
+            SECTION("single point, flip horizontally") {
+                sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x40, .x = 0};
+                ppu.dma_write(mempage);
+
+                tick(ppu, 242 * 341); // Wait one frame
+
+                CHECK(screen.pixels.at(nes::point{7, 0}) == CYAN);
             }
         }
     }
