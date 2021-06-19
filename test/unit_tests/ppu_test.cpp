@@ -185,7 +185,14 @@ auto operator== (nes::point a, nes::point b) {
 }
 
 std::ostream& operator<< (std::ostream& s, nes::color c) {
-    return s << std::hex << ( c.value() >> 16 & 0xFF) << "," << ( c.value() >> 8 & 0xFF) << "," << ( c.value() & 0xFF);
+    auto f = s.flags();
+    s << std::hex;
+    s << "(";
+    s << ( c.value() >> 16 & 0xFF) << "," << ( c.value() >> 8 & 0xFF) << "," << ( c.value() & 0xFF);
+    s << ")";
+    s.flags(f);
+
+    return s;
 }
 }
 
@@ -256,6 +263,13 @@ TEST_CASE("PPU") {
     SECTION("power up state") {
         CHECK(ppu.control == 0x00);
         CHECK(ppu.mask == 0x00);
+    }
+
+    SECTION("start of the frame") {
+        ppu.status |= 0x40;
+        ppu.tick();
+
+        CHECK((ppu.status & 0x40) == 0);
     }
 
     SECTION("write to palette ram") {
@@ -416,6 +430,20 @@ TEST_CASE("PPU") {
                 tick(ppu, 242 * 341); // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{7, 0}) == CYAN);
+            }
+
+            SECTION("sprite 0 hit") {
+                sprites[0] = nes::sprite{.y = 0, .tile = 1, .attr = 0x00, .x = 128};
+                ppu.dma_write(mempage);
+
+                write(0x2006, ppu, 0x20, 0x10); // Nametable
+                write(0x2007, ppu, 1);
+
+                REQUIRE((ppu.status & 0x40) == 0);
+                tick(ppu, 1 * 341);             // Wait prerender scanline
+                tick(ppu, 2 + 129);             // Wait for first pixel to hit sprite 0
+
+                CHECK((ppu.status & 0x40) != 0);
             }
         }
     }

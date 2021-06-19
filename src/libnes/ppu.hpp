@@ -344,7 +344,9 @@ private:
         address += inc;
     }
 
-    constexpr void prerender_scanline() noexcept {}
+    constexpr void prerender_scanline() noexcept {
+        status = 0x00;
+    }
 
     [[nodiscard]] constexpr auto nametable_index() const { return ((control & 0x03) << 10); }
 
@@ -406,6 +408,18 @@ private:
             auto palette = read_tile_palette(name_table_, tile_x, tile_y, nametable_index());
 
             screen_.draw_pixel({x, y}, palette_table_.color_of(pixel, palette));
+
+            auto s = oam_.sprites[0];
+            if (x >= s.x and x < s.x + 8 and y >= s.y and y < s.y + 8 and pixel != 0) {
+                auto dx = x - s.x;
+                auto dy = y - s.y;
+                auto j = (s.attr & 0x40) ? 7 - dx : dx;
+                auto i = (s.attr & 0x80) ? 7 - dy : dy;
+                auto sprite_pixel = read_tile_pixel(pattern_table_, pattern_table_fg_index(), s.tile, j, i);
+                if (sprite_pixel != 0) {
+                    status |= 0x40;
+                }
+            }
         }
     }
 

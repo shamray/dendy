@@ -224,6 +224,8 @@ struct screen
     [[nodiscard]] constexpr static auto height() -> short { return 240; }
 
     void draw_pixel(nes::point where, nes::color color) {
+        if (where.x >= width() or where.y >= height())
+            return;
         frame_buffer[where.y * 256 + where.x] = color;
     }
 };
@@ -334,7 +336,7 @@ static std::mt19937 gen(rd());
 int main(int argc, char *argv[]) {
     auto frontend = sdl::frontend::create();
 
-    auto filename = "nestest.nes";
+    auto filename = "smb.nes";
     auto window = sdl::main_window("NES Emulator", filename);
 
     auto scr = screen{};
