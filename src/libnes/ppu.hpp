@@ -247,7 +247,10 @@ public:
     std::uint8_t control{0};
     std::uint8_t status{0};
     std::uint8_t mask{0};
-    std::uint8_t scroll;
+
+    int scroll_latch{0};
+    std::uint8_t scroll_x{0};
+    std::uint8_t scroll_y{0};
 
     bool nmi{false};
 
@@ -273,6 +276,7 @@ public:
             case 0x2000: { write_ctrl(value); return true; }
             case 0x2003: { write_oama(value); return true; }
             case 0x2004: { write_oamd(value); return true; }
+            case 0x2005: { write_scrl(value); return true; }
             case 0x2006: { write_addr(value); return true; }
             case 0x2007: { write_data(value); return true; }
 
@@ -325,6 +329,16 @@ private:
 
     constexpr void write_oama(std::uint8_t value) { oam_.address = value; }
     constexpr void write_oamd(std::uint8_t value) { oam_.write(value); }
+
+    constexpr void write_scrl(std::uint8_t value) {
+        if (scroll_latch == 0) {
+            scroll_x = value;
+            scroll_latch = 1;
+        } else {
+            scroll_y = value;
+            scroll_latch = 0;
+        }
+    }
 
     constexpr void write_addr(std::uint8_t value) {
         if (address_latch == 0) {
@@ -401,11 +415,11 @@ private:
         auto x = static_cast<short>(scan_.cycle() - 2);
 
         if (x >= 0 and x < 256) {
-            auto tile_x = x / 8;
-            auto tile_y = y / 8;
+            auto tile_x = (x + scroll_x) / 8;
+            auto tile_y = (y + scroll_y) / 8;
 
-            auto tile_row = y % 8;
-            auto tile_col = x % 8;
+            auto tile_row = (y + scroll_y) % 8;
+            auto tile_col = (x + scroll_x) % 8;
 
             auto tile_index = read_tile_index(name_table_, tile_x, tile_y, nametable_index());
             auto pixel = read_tile_pixel(pattern_table_, pattern_table_bg_index(), tile_index, tile_col, tile_row);
