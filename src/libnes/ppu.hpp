@@ -97,8 +97,8 @@ public:
     [[nodiscard]] static constexpr auto palette_address(std::uint8_t address) noexcept {
         address &= 0x1F;
 
-        if (address == 0x10) {
-            address = 0;
+        if ((address & 0x13) == 0x10) {
+            address &= ~0x10;
         }
 
         return address;
@@ -113,7 +113,7 @@ public:
     }
 
     [[nodiscard]] auto color_of(std::uint8_t pixel, std::uint8_t palette) const noexcept -> color {
-        auto rpc = read((palette << 2) + pixel);
+        auto rpc = pixel ? read((palette << 2) + pixel) : read(0x00);
         return system_colors_[rpc & 0x3F];
     }
 
@@ -216,6 +216,10 @@ struct point
     short x;
     short y;
 };
+
+auto operator== (nes::point a, nes::point b) {
+    return a.x == b.x and a.y == b.y;
+}
 
 template <class S>
 concept screen = requires(S s, point p, color c) {

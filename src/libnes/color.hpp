@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <array>
+#include <ostream>
 
 namespace nes
 {
@@ -20,6 +21,22 @@ public:
 private:
     std::uint32_t value_;
 };
+
+constexpr auto operator== (nes::color a, nes::color b) {
+    return a.value() == b.value();
+}
+
+inline std::ostream& operator<< (std::ostream& s, nes::color c) {
+    auto f = s.flags();
+    s << std::hex;
+    s << "(";
+    s << ( c.value() >> 16 & 0xFF) << "," << ( c.value() >> 8 & 0xFF) << "," << ( c.value() & 0xFF);
+    s << ")";
+    s.flags(f);
+
+    return s;
+}
+
 
 constexpr auto DEFAULT_COLORS = std::to_array<color>({
     {0x7C, 0x7C, 0x7C}, {0x00, 0x00, 0xFC}, {0x00, 0x00, 0xBC}, {0x44, 0x28, 0xBC},
