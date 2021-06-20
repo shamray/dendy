@@ -244,6 +244,8 @@ public:
 
     constexpr void connect_pattern_table(auto new_bank) noexcept { pattern_table_.connect(new_bank); }
 
+    constexpr void nametable_mirroring(auto mirroring) noexcept { name_table_.mirroring = mirroring; }
+
     std::uint8_t control{0};
     std::uint8_t status{0};
     std::uint8_t mask{0};
@@ -368,6 +370,9 @@ private:
         if (scan_.cycle() == 0) {
             status = 0x00;
             control &= 0xFC;
+
+            scroll_x = scroll_x_buffer;
+            scroll_y = scroll_y_buffer;
         }
     }
 
@@ -423,9 +428,9 @@ private:
 
         if (x >= 0 and x < 256) {
             auto tile_x = (x + scroll_x) / 8;
-            auto tile_y = y / 8;
+            auto tile_y = (y + scroll_y) / 8;
 
-            auto tile_row = y % 8;
+            auto tile_row = (y + scroll_y) % 8;
             auto tile_col = (x + scroll_x) % 8;
 
             auto nametable_ix = nametable_index_;
@@ -433,6 +438,15 @@ private:
             if (tile_x >= 32) {
                 tile_x %= 32;
                 nametable_ix ^= 0x0400;
+            }
+
+            if (tile_y >= 30) {
+                tile_y -= 29;
+                nametable_ix ^= 0x0800;
+            }
+
+            if (x == 15) {
+                x = 15;
             }
 
             auto tile_index = read_tile_index(name_table_, tile_x, tile_y, nametable_ix);

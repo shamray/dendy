@@ -373,6 +373,49 @@ TEST_CASE("PPU") {
                 CHECK(screen.pixels.at(nes::point{2, 0}) == VIOLET);
                 CHECK(screen.pixels.at(nes::point{3, 0}) == BLACK);
             }
+
+            SECTION("scroll X") {
+                write(0x2006, ppu, 0x20, 0x00); // Nametable
+                write(0x2007, ppu, 0, 42);
+                write(0x2006, ppu, 0x24, 0x00); // Nametable
+                write(0x2007, ppu, 42);
+
+                SECTION("1 pixel") {
+                    write(0x2005, ppu, 1, 0);
+                    tick(ppu, 242 * 341);       // Wait one frame
+
+                    CHECK(screen.pixels.at(nes::point{14, 1}) == RASPBERRY);
+                }
+                SECTION("8 pixels") {
+                    write(0x2005, ppu, 8, 0);
+                    tick(ppu, 242 * 341);       // Wait one frame
+
+                    CHECK(screen.pixels.at(nes::point{7, 1}) == RASPBERRY);
+                    CHECK(screen.pixels.at(nes::point{255, 1}) == RASPBERRY);
+                }
+                SECTION("201 pixels") {
+                    write(0x2005, ppu, 201, 0);
+                    tick(ppu, 242 * 341);       // Wait one frame
+
+                    CHECK(screen.pixels.at(nes::point{62, 1}) == RASPBERRY);
+                }
+            }
+
+            SECTION("scroll Y") {
+                ppu.nametable_mirroring(nes::name_table_mirroring::horizontal);
+
+                write(0x2006, ppu, 0x20, 0x00); // Nametable
+                write(0x2007, ppu, 0, 42);
+                write(0x2006, ppu, 0x24, 0x00); // Nametable
+                write(0x2007, ppu, 42);
+
+                SECTION("1 pixel") {
+                    write(0x2005, ppu, 0, 1);
+                    tick(ppu, 242 * 341);       // Wait one frame
+
+                    CHECK(screen.pixels.at(nes::point{15, 0}) == RASPBERRY);
+                }
+            }
         }
 
         SECTION("rendering sprites") {

@@ -238,12 +238,14 @@ struct dummy_bus
         std::uint8_t snapshot{0};
     } j1;
 
-    dummy_bus(std::tuple<std::array<std::uint8_t, 64_Kb>, std::array<std::uint8_t, 8_Kb>>&& rom, nes::ppu<screen>& ppu)
+    dummy_bus(std::tuple<std::array<std::uint8_t, 64_Kb>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom, nes::ppu<screen>& ppu)
         : mem{std::move(std::get<0>(rom))}
         , chr{std::move(std::get<1>(rom))}
+        , mirroring{std::get<2>(rom)}
         , ppu{ppu}
     {
         ppu.connect_pattern_table(&chr);
+        ppu.nametable_mirroring(mirroring);
     }
 
     auto nmi() {
@@ -286,6 +288,8 @@ struct dummy_bus
     std::array<std::uint8_t, 64_Kb>  mem;
     std::array<std::uint8_t, 8_Kb>   chr;
 
+    nes::name_table_mirroring mirroring;
+
     nes::ppu<screen>& ppu;
 };
 
@@ -327,7 +331,11 @@ auto load_rom(auto filename) {
     auto chr = std::array<std::uint8_t, 8_Kb>{};
     romfile.read(reinterpret_cast<char*>(chr.data()), chr.size());
 
-    return std::tuple{memory, chr};
+    auto mirroring = (header.mapper1 & 0x01)
+        ? nes::name_table_mirroring::vertical
+        : nes::name_table_mirroring::horizontal;
+
+    return std::tuple{memory, chr, mirroring};
 }
 
 static std::random_device rd;
