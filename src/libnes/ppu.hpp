@@ -251,6 +251,8 @@ public:
     int scroll_latch{0};
     std::uint8_t scroll_x{0};
     std::uint8_t scroll_y{0};
+    std::uint8_t scroll_x_buffer{0};
+    std::uint8_t scroll_y_buffer{0};
 
     bool nmi{false};
 
@@ -332,10 +334,10 @@ private:
 
     constexpr void write_scrl(std::uint8_t value) {
         if (scroll_latch == 0) {
-            scroll_x = value;
+            scroll_x_buffer = value;
             scroll_latch = 1;
         } else {
-            scroll_y = value;
+            scroll_y_buffer = value;
             scroll_latch = 0;
         }
     }
@@ -363,8 +365,13 @@ private:
     }
 
     constexpr void prerender_scanline() noexcept {
-        status = 0x00;
+        if (scan_.cycle() == 0) {
+            status = 0x00;
+            control &= 0xFC;
+        }
     }
+
+    std::uint16_t nametable_index_{0};
 
     [[nodiscard]] constexpr auto nametable_index() const { return ((control & 0x03) << 10); }
 
@@ -416,14 +423,21 @@ private:
 
         if (x >= 0 and x < 256) {
             auto tile_x = (x + scroll_x) / 8;
-            auto tile_y = (y + scroll_y) / 8;
+            auto tile_y = y / 8;
 
-            auto tile_row = (y + scroll_y) % 8;
+            auto tile_row = y % 8;
             auto tile_col = (x + scroll_x) % 8;
 
-            auto tile_index = read_tile_index(name_table_, tile_x, tile_y, nametable_index());
+            auto nametable_ix = nametable_index_;
+
+            if (tile_x >= 32) {
+                tile_x %= 32;
+                nametable_ix ^= 0x0400;
+            }
+
+            auto tile_index = read_tile_index(name_table_, tile_x, tile_y, nametable_ix);
             auto pixel = read_tile_pixel(pattern_table_, pattern_table_bg_index(), tile_index, tile_col, tile_row);
-            auto palette = read_tile_palette(name_table_, tile_x, tile_y, nametable_index());
+            auto palette = read_tile_palette(name_table_, tile_x, tile_y, nametable_ix);
 
             screen_.draw_pixel({x, y}, palette_table_.color_of(pixel, palette));
 
@@ -438,6 +452,12 @@ private:
                     status |= 0x40;
                 }
             }
+        }
+
+        if (scan_.cycle() == 340) {
+            scroll_x = scroll_x_buffer;
+            scroll_y = scroll_y_buffer;
+            nametable_index_ = nametable_index();
         }
     }
 
