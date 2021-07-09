@@ -344,7 +344,7 @@ static std::mt19937 gen(rd());
 int main(int argc, char *argv[]) {
     auto frontend = sdl::frontend::create();
 
-    auto filename = "smb.nes";
+    auto filename = "ic.nes";
     auto window = sdl::main_window("NES Emulator", filename);
 
     auto scr = screen{};

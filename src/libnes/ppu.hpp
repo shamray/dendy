@@ -9,6 +9,7 @@
 #include <cassert>
 #include <ranges>
 #include <algorithm>
+#include <unordered_map>
 
 namespace nes {
 
@@ -263,6 +264,41 @@ public:
     std::uint16_t address;
     std::uint8_t data_buffer;
 
+    struct debug_info_item{
+        int scanline;
+        int scancycle;
+
+        int x;
+        int y;
+        int x_buffered;
+        int y_buffered;
+        int nametable_x;
+        int nametable_y;
+        int nametable_x_buffered;
+        int nametable_y_buffered;
+
+        auto is_equal(const debug_info_item& dii) {
+            return x == dii.x
+                and y == dii.y
+                and x_buffered == dii.x_buffered
+                and y_buffered == dii.y_buffered
+                and nametable_x == dii.nametable_x
+                and nametable_y == dii.nametable_y
+                and nametable_x_buffered == dii.nametable_x_buffered
+                and nametable_y_buffered == dii.nametable_y_buffered;
+        }
+    };
+
+    struct {
+        std::vector<debug_info_item> log;
+        void update(debug_info_item&& dii) {
+            if (log.empty() or not dii.is_equal(log.back())) {
+                log.push_back(std::move(dii));
+            }
+        }
+        void clear() { log.clear(); }
+    } debug_info;
+
     constexpr void tick();
 
     [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return scan_.is_frame_finished(); }
@@ -330,7 +366,14 @@ private:
         return r;
     }
 
-    constexpr void write_ctrl(std::uint8_t value) { control = value; }
+    constexpr void write_ctrl(std::uint8_t value) {
+        control = value;
+        if (scan_.is_vblank()) {
+            status |= 0x80;
+            if (control & 0x80)
+                nmi = true;
+        }
+    }
 
     constexpr void write_oama(std::uint8_t value) { oam_.address = value; }
     constexpr void write_oamd(std::uint8_t value) { oam_.write(value); }
@@ -370,16 +413,21 @@ private:
     constexpr void prerender_scanline() noexcept {
         if (scan_.cycle() == 0) {
             status = 0x00;
-            control &= 0xFC;
-
-            scroll_x = scroll_x_buffer;
+            control &= 0xFE;
+        }
+        if (scan_.cycle() >= 280) {
             scroll_y = scroll_y_buffer;
+            nametable_index_y_ = nametable_index_y();
         }
     }
 
-    std::uint16_t nametable_index_{0};
+    std::uint8_t nametable_index_x_{0};
+    std::uint8_t nametable_index_y_{0};
 
-    [[nodiscard]] constexpr auto nametable_index() const { return ((control & 0x03) << 10); }
+    [[nodiscard]] constexpr auto nametable_index_x() const { return (control >> 0) & 0x01; }
+    [[nodiscard]] constexpr auto nametable_index_y() const { return (control >> 1) & 0x01; }
+
+    [[nodiscard]] constexpr static auto nametable_addr(int ix) { return (ix << 10); }
 
     [[nodiscard]] constexpr auto pattern_table_bg_index() const { return (control & 0x10) >> 4; }
     [[nodiscard]] constexpr auto pattern_table_fg_index() const { return (control & 0x08) >> 3; }
@@ -434,7 +482,12 @@ private:
             auto tile_row = (y + scroll_y) % 8;
             auto tile_col = (x + scroll_x) % 8;
 
-            auto nametable_ix = nametable_index_;
+            auto nametable_ix = nametable_addr((nametable_index_y_ << 1) & nametable_index_x_);
+
+            if (x == 100 and y == 80) {
+                x = 100;
+                y = 80;
+            }
 
             if (tile_x >= 32) {
                 tile_x %= 32;
@@ -442,7 +495,7 @@ private:
             }
 
             if (tile_y >= 30) {
-                tile_y -= 29;
+                tile_y -= 30;
                 nametable_ix ^= 0x0800;
             }
 
@@ -469,10 +522,9 @@ private:
             }
         }
 
-        if (scan_.cycle() == 340) {
+        if (scan_.cycle() == 257) {
             scroll_x = scroll_x_buffer;
-            scroll_y = scroll_y_buffer;
-            nametable_index_ = nametable_index();
+            nametable_index_x_ = nametable_index_x();
         }
     }
 
@@ -496,12 +548,15 @@ private:
                 }
             }
 
+        }
+    }
+    constexpr void vertical_blank_line() noexcept {
+        if (scan_.cycle() == 0) {
             status |= 0x80;
             if (control & 0x80)
                 nmi = true;
         }
-    }
-    constexpr void vertical_blank_line() noexcept {};
+    };
 
 private:
     crt_scan scan_{SCANLINE_DOTS, VISIBLE_SCANLINES, POST_RENDER_SCANLINES, VERTICAL_BLANK_SCANLINES};
@@ -523,7 +578,25 @@ constexpr void ppu<screen_t>::tick() {
     else if (scan_.is_postrender()) { postrender_scanline(); }
     else if (scan_.is_vblank())     { vertical_blank_line(); }
 
+    debug_info_item item{
+        scan_.line(),
+        scan_.cycle(),
+        scroll_x,
+        scroll_y,
+        scroll_x_buffer,
+        scroll_y_buffer,
+        nametable_index_x_,
+        nametable_index_y_,
+        nametable_index_x(),
+        nametable_index_y()
+        };
+    debug_info.update(std::move(item));
+
     scan_.advance();
+
+    if (scan_.line() == -1 and scan_.cycle() == 0) {
+        debug_info.clear();
+    }
 }
 
 template <screen screen_t>
