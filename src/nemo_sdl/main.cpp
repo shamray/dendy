@@ -5,6 +5,8 @@
 
 #include <SDL2/SDL.h>
 
+//#include <imgui/imgui_impl_sdl.h>
+
 #include <stdexcept>
 #include <array>
 #include <random>
@@ -54,7 +56,7 @@ protected:
 
 class frontend
 {
-    frontend()  { SDL_Init(SDL_INIT_VIDEO); }
+    frontend()  { SDL_Init(SDL_INIT_EVERYTHING); }
 
 public:
     ~frontend() { SDL_Quit(); }
@@ -103,9 +105,21 @@ public:
     main_window(std::string title, std::string filename)
         : title_{std::move(title) + " | " + std::move(filename)}
     {
-        window_ = SDL_CreateWindow(title_.c_str() , SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 600, 480, 0);
+        window_ = SDL_CreateWindow(title_.c_str() , SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 600, 480, SDL_WINDOW_OPENGL);
         if (window_ == nullptr)
             throw std::runtime_error("Cannot create window");
+
+        glcontext_ = SDL_GL_CreateContext(window_);
+
+//        // Setup Dear ImGui context
+//        IMGUI_CHECKVERSION();
+//        ImGui::CreateContext();
+//        ImGuiIO &io = ImGui::GetIO();
+//        // Setup Platform/Renderer bindings
+//        ImGui_ImplGlfw_InitForOpenGL(window, true);
+//        ImGui_ImplOpenGL3_Init(glsl_version);
+//        // Setup Dear ImGui style
+//        ImGui::StyleColorsDark();
 
         renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_ACCELERATED);
         if (renderer_ == nullptr)
@@ -167,6 +181,8 @@ public:
 private:
     SDL_Renderer* renderer_{nullptr};
     SDL_Texture* screen_{nullptr};
+
+    SDL_GLContext glcontext_;
 
     std::deque<float> fps_;
 
