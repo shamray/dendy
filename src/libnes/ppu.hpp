@@ -232,7 +232,8 @@ template <screen screen_t>
 class ppu
 {
 public:
-    ppu(const auto& system_color_palette, screen_t& screen)
+    template <class container_t>
+    ppu(const container_t& system_color_palette, screen_t& screen)
         : palette_table_{system_color_palette}
         , screen_{screen}
     {}

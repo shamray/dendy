@@ -80,7 +80,7 @@ const auto imm = [](auto& cpu) {
     }};
 };
 
-auto zp =  [](auto& cpu)
+const auto zp =  [](auto& cpu)
 {
     return memory_based_address_mode{cpu, [](auto& cpu ) {
         return std::tuple{cpu.read(cpu.pc.advance()), 0};

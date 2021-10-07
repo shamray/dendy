@@ -442,7 +442,7 @@ const auto brk = [](auto &cpu, auto _) {
     return 0;
 };
 
-auto i_n = [](auto &, auto address_mode) {
+const auto i_n = [](auto &, auto address_mode) {
     auto[_, additional_cycles] = address_mode.fetch_address();
     return additional_cycles;
 };
@@ -542,6 +542,6 @@ const auto rra = [](auto &cpu, auto address_mode) {
     return 0;
 };
 
-auto nop = [](auto &, auto) { return 0; };
+const auto nop = [](auto &, auto) { return 0; };
 
 }
