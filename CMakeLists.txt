@@ -12,7 +12,7 @@ include("${CMAKE_BINARY_DIR}/conan.cmake")
 conan_cmake_configure(
 	REQUIRES
 		catch2/[>=2.13]
-		sdl2/[>=2.0.14]@bincrafters/stable
+		sdl/[>=2.0.14]
 		imgui/[>=1.83]
 		opengl/system
 	GENERATORS
