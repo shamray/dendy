@@ -381,32 +381,35 @@ int main(int argc, char *argv[]) {
         if (stop)
             break;
 
-        {
-            auto kb_state = SDL_GetKeyboardState(nullptr);
-            bus.j1.keys = 0;
-            if (kb_state[SDL_SCANCODE_SPACE])   bus.j1.keys |= 0x80;
-            if (kb_state[SDL_SCANCODE_LSHIFT])  bus.j1.keys |= 0x40;
-            if (kb_state[SDL_SCANCODE_C])       bus.j1.keys |= 0x20;
-            if (kb_state[SDL_SCANCODE_V])       bus.j1.keys |= 0x10;
-            if (kb_state[SDL_SCANCODE_UP])      bus.j1.keys |= 0x08;
-            if (kb_state[SDL_SCANCODE_DOWN])    bus.j1.keys |= 0x04;
-            if (kb_state[SDL_SCANCODE_LEFT])    bus.j1.keys |= 0x02;
-            if (kb_state[SDL_SCANCODE_RIGHT])   bus.j1.keys |= 0x01;
-        }
+        auto time_machine = (SDL_GetModState() & KMOD_CAPS) != 0;
 
-        auto count = 0;
-        for (;;++count) {
-            cpu.tick();
+        if (not time_machine) {
+            {
+                auto kb_state = SDL_GetKeyboardState(nullptr);
 
-            ppu.tick(); if (ppu.is_frame_ready()) break;
-            ppu.tick(); if (ppu.is_frame_ready()) break;
-            ppu.tick(); if (ppu.is_frame_ready()) break;
+                bus.j1.keys = 0;
+                if (kb_state[SDL_SCANCODE_SPACE])   bus.j1.keys |= 0x80;
+                if (kb_state[SDL_SCANCODE_LSHIFT])  bus.j1.keys |= 0x40;
+                if (kb_state[SDL_SCANCODE_C])       bus.j1.keys |= 0x20;
+                if (kb_state[SDL_SCANCODE_V])       bus.j1.keys |= 0x10;
+                if (kb_state[SDL_SCANCODE_UP])      bus.j1.keys |= 0x08;
+                if (kb_state[SDL_SCANCODE_DOWN])    bus.j1.keys |= 0x04;
+                if (kb_state[SDL_SCANCODE_LEFT])    bus.j1.keys |= 0x02;
+                if (kb_state[SDL_SCANCODE_RIGHT])   bus.j1.keys |= 0x01;
+            }
+
+            auto count = 0;
+            for (;;++count) {
+                cpu.tick();
+
+                ppu.tick(); if (ppu.is_frame_ready()) break;
+                ppu.tick(); if (ppu.is_frame_ready()) break;
+                ppu.tick(); if (ppu.is_frame_ready()) break;
+            }
+            assert(count == 29780 || count == 29781);
         }
-        assert(count == 29780 || count == 29781);
 
         window.render(scr.frame_buffer);
-
-        auto distrib = std::uniform_int_distribution<short>(0, 7);
 
         frameTime = SDL_GetTicks() - frameStart;
 
