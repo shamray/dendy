@@ -384,6 +384,7 @@ int main(int argc, char *argv[]) {
         auto time_machine = (SDL_GetModState() & KMOD_CAPS) != 0;
 
         if (not time_machine) {
+
             {
                 auto kb_state = SDL_GetKeyboardState(nullptr);
 
@@ -397,7 +398,16 @@ int main(int argc, char *argv[]) {
                 if (kb_state[SDL_SCANCODE_LEFT])    bus.j1.keys |= 0x02;
                 if (kb_state[SDL_SCANCODE_RIGHT])   bus.j1.keys |= 0x01;
             }
+        }
 
+        auto [forward, backward] = []() {
+            auto kb_state = SDL_GetKeyboardState(nullptr);
+            auto forward = kb_state[SDL_SCANCODE_RIGHT] != 0;
+            auto backward = kb_state[SDL_SCANCODE_LEFT] != 0;
+            return std::tuple{forward, backward};
+        }();
+
+        if (time_machine and forward or not time_machine) {
             auto count = 0;
             for (;;++count) {
                 cpu.tick();
