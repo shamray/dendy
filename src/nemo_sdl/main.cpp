@@ -384,27 +384,25 @@ int main(int argc, char *argv[]) {
         auto time_machine = (SDL_GetModState() & KMOD_CAPS) != 0;
 
         if (not time_machine) {
+            auto kb_state = SDL_GetKeyboardState(nullptr);
 
-            {
-                auto kb_state = SDL_GetKeyboardState(nullptr);
-
-                bus.j1.keys = 0;
-                if (kb_state[SDL_SCANCODE_SPACE])   bus.j1.keys |= 0x80;
-                if (kb_state[SDL_SCANCODE_LSHIFT])  bus.j1.keys |= 0x40;
-                if (kb_state[SDL_SCANCODE_C])       bus.j1.keys |= 0x20;
-                if (kb_state[SDL_SCANCODE_V])       bus.j1.keys |= 0x10;
-                if (kb_state[SDL_SCANCODE_UP])      bus.j1.keys |= 0x08;
-                if (kb_state[SDL_SCANCODE_DOWN])    bus.j1.keys |= 0x04;
-                if (kb_state[SDL_SCANCODE_LEFT])    bus.j1.keys |= 0x02;
-                if (kb_state[SDL_SCANCODE_RIGHT])   bus.j1.keys |= 0x01;
-            }
+            bus.j1.keys = 0;
+            if (kb_state[SDL_SCANCODE_SPACE])   bus.j1.keys |= 0x80;
+            if (kb_state[SDL_SCANCODE_LSHIFT])  bus.j1.keys |= 0x40;
+            if (kb_state[SDL_SCANCODE_C])       bus.j1.keys |= 0x20;
+            if (kb_state[SDL_SCANCODE_V])       bus.j1.keys |= 0x10;
+            if (kb_state[SDL_SCANCODE_UP])      bus.j1.keys |= 0x08;
+            if (kb_state[SDL_SCANCODE_DOWN])    bus.j1.keys |= 0x04;
+            if (kb_state[SDL_SCANCODE_LEFT])    bus.j1.keys |= 0x02;
+            if (kb_state[SDL_SCANCODE_RIGHT])   bus.j1.keys |= 0x01;
         }
 
         auto [forward, backward] = []() {
             auto kb_state = SDL_GetKeyboardState(nullptr);
-            auto forward = kb_state[SDL_SCANCODE_RIGHT] != 0;
-            auto backward = kb_state[SDL_SCANCODE_LEFT] != 0;
-            return std::tuple{forward, backward};
+            return std::tuple{
+                kb_state[SDL_SCANCODE_RIGHT] != 0,
+                kb_state[SDL_SCANCODE_LEFT] != 0
+            };
         }();
 
         if (time_machine and forward or not time_machine) {
