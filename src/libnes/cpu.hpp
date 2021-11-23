@@ -22,6 +22,18 @@ concept bus = requires(B b, std::uint16_t address, std::uint8_t value) {
     { b.nmi() } -> std::same_as<bool>;
 };
 
+struct cpu_state
+{
+    program_counter pc;
+
+    stack_register s{0x0100, 0xFD};
+    flags_register p;
+
+    arith_register a{p};
+    arith_register x{p};
+    arith_register y{p};
+};
+
 template <bus bus_t>
 class cpu
 {
