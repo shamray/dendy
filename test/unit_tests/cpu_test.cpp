@@ -1606,3 +1606,21 @@ TEST_CASE_METHOD(cpu_test, "NMI")
     CHECK(cpu.pc.value() == 0xb000);
 }
 
+TEST_CASE_METHOD(cpu_test, "Save state")
+{
+    SECTION("Registers")
+    {
+        cpu.a.assign(0x0A);
+        cpu.x.assign(0x05);
+        cpu.y.assign(0x06);
+
+        cpu.pc.assign(0x8004);
+
+        cpu.p.assign(0x55);
+        cpu.s.assign(0x11);
+
+        auto state = cpu.save_state();
+    }
+    SECTION("Command in progress")
+    {}
+}
