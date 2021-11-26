@@ -1620,6 +1620,15 @@ TEST_CASE_METHOD(cpu_test, "Save state")
         cpu.s.assign(0x11);
 
         auto state = cpu.save_state();
+
+        CHECK(state.a.value() == 0x0A);
+        CHECK(state.x.value() == 0x05);
+        CHECK(state.y.value() == 0x06);
+
+        CHECK(state.pc.value() == 0x8004);
+        
+        CHECK(state.p.value() == 0x55);
+        CHECK(state.s.value() == 0x11);
     }
     SECTION("Command in progress")
     {}

@@ -92,6 +92,14 @@ public:
 
     auto interrupt() -> int;
 
+    [[nodiscard]] auto save_state() const
+    {
+        auto state = cpu_state{};
+        return state;
+    }
+
+    void load_state(cpu_state state);
+
 private:
     class hasher
     {
