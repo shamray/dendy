@@ -24,14 +24,14 @@ concept bus = requires(B b, std::uint16_t address, std::uint8_t value) {
 
 struct cpu_state
 {
-    program_counter pc;
+    std::uint16_t pc;
 
-    stack_register s{0x0100, 0xFD};
-    flags_register p;
+    std::uint8_t s;
+    std::uint8_t p;
 
-    arith_register a{p};
-    arith_register x{p};
-    arith_register y{p};
+    std::uint8_t a;
+    std::uint8_t x;
+    std::uint8_t y;
 };
 
 template <bus bus_t>
@@ -94,7 +94,14 @@ public:
 
     [[nodiscard]] auto save_state() const
     {
-        auto state = cpu_state{};
+        auto state = cpu_state{
+            pc.value(),
+            s.value(),
+            p.value(),
+            a.value(),
+            x.value(),
+            y.value()
+        };
         return state;
     }
 

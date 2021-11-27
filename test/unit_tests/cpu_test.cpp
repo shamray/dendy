@@ -1616,19 +1616,19 @@ TEST_CASE_METHOD(cpu_test, "Save state")
 
         cpu.pc.assign(0x8004);
 
-        cpu.p.assign(0x55);
         cpu.s.assign(0x11);
+        cpu.p.assign(0x75);
 
         auto state = cpu.save_state();
 
-        CHECK(state.a.value() == 0x0A);
-        CHECK(state.x.value() == 0x05);
-        CHECK(state.y.value() == 0x06);
+        CHECK(int(state.a) == 0x0A);
+        CHECK(int(state.x) == 0x05);
+        CHECK(int(state.y) == 0x06);
 
-        CHECK(state.pc.value() == 0x8004);
-        
-        CHECK(state.p.value() == 0x55);
-        CHECK(state.s.value() == 0x11);
+        CHECK(int(state.pc) == 0x8004);
+
+        CHECK(int(state.p) == 0x75);
+        CHECK(int(state.s) == 0x11);
     }
     SECTION("Command in progress")
     {}
