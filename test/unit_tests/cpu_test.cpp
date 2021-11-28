@@ -1608,7 +1608,7 @@ TEST_CASE_METHOD(cpu_test, "NMI")
 
 TEST_CASE_METHOD(cpu_test, "Save state")
 {
-    SECTION("Registers")
+    SECTION("Save registers")
     {
         cpu.a.assign(0x0A);
         cpu.x.assign(0x05);
@@ -1630,6 +1630,35 @@ TEST_CASE_METHOD(cpu_test, "Save state")
         CHECK(int(state.p) == 0x75);
         CHECK(int(state.s) == 0x11);
     }
-    SECTION("Command in progress")
-    {}
+    SECTION("Reset last command")
+    {
+        cpu.a.assign(0x01);
+
+        auto state = cpu.save_state();
+
+        load(prgadr, std::array{0xa9, 0x55}); // LDA #$55
+        tick(2);
+
+        REQUIRE(cpu.a.value() == 0x55);
+        REQUIRE(cpu.pc.value() == prgadr + 2);
+
+        cpu.load_state(state);
+
+        CHECK(cpu.a.value() == 0x01);
+        CHECK(cpu.pc.value() == prgadr);
+    }
+    SECTION("Reset command in progress")
+    {
+        auto state = cpu.save_state();
+
+        load(prgadr, std::array{0xa9, 0x55}); // LDA #$55
+        tick(1);
+
+        cpu.load_state(state);
+
+        tick(2);
+
+        CHECK(cpu.a.value() == 0x55);
+        CHECK(cpu.pc.value() == prgadr + 2);
+    }
 }
