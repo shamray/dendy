@@ -1652,9 +1652,11 @@ TEST_CASE_METHOD(cpu_test, "Save state")
         auto state = cpu.save_state();
 
         load(prgadr, std::array{0xa9, 0x55}); // LDA #$55
-        tick(1);
+        tick(1, false);
 
         cpu.load_state(state);
+
+        CHECK(cpu.pc.value() == prgadr);
 
         tick(2);
 

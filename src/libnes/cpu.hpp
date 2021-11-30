@@ -105,7 +105,15 @@ public:
         return state;
     }
 
-    void load_state(cpu_state state);
+    void load_state(cpu_state state)
+    {
+        pc.assign(state.pc);
+        s.assign(state.s);
+        p.assign(state.p);
+        a.assign(state.a);
+        x.assign(state.x);
+        y.assign(state.y);
+    }
 
 private:
     class hasher
