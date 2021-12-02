@@ -22,18 +22,6 @@ concept bus = requires(B b, std::uint16_t address, std::uint8_t value) {
     { b.nmi() } -> std::same_as<bool>;
 };
 
-struct cpu_state
-{
-    std::uint16_t pc;
-
-    std::uint8_t s;
-    std::uint8_t p;
-
-    std::uint8_t a;
-    std::uint8_t x;
-    std::uint8_t y;
-};
-
 template <bus bus_t>
 class cpu
 {
@@ -72,11 +60,30 @@ public:
 
         [[nodiscard]] bool is_finished() const noexcept { return c_ == 0 && ac_ == 0; }
 
+//        [[nodiscard]] auto save_state() const { return std::tuple{command_, c_, ac_}; }
+
+//        void load_state(std::function<int(cpu&)> command, int c, int ac) { command_ = command; c_ = c; ac_ = ac; }
+
     private:
         std::function<int(cpu&)> command_;
         int c_{0};
         int ac_{0};
     };
+
+    struct cpu_state
+    {
+        std::uint16_t pc;
+
+        std::uint8_t s;
+        std::uint8_t p;
+
+        std::uint8_t a;
+        std::uint8_t x;
+        std::uint8_t y;
+
+        instruction cix;
+    };
+
 
     void tick();
     auto is_executing() { return !current_instruction.is_finished();}
@@ -100,7 +107,8 @@ public:
             p.value(),
             a.value(),
             x.value(),
-            y.value()
+            y.value(),
+            current_instruction
         };
         return state;
     }
@@ -113,6 +121,7 @@ public:
         a.assign(state.a);
         x.assign(state.x);
         y.assign(state.y);
+        current_instruction = state.cix;
     }
 
 private:
