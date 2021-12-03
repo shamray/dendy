@@ -70,7 +70,7 @@ public:
         int ac_{0};
     };
 
-    struct cpu_state
+    struct state
     {
         std::uint16_t pc;
 
@@ -101,7 +101,7 @@ public:
 
     [[nodiscard]] auto save_state() const
     {
-        auto state = cpu_state{
+        return state{
             pc.value(),
             s.value(),
             p.value(),
@@ -110,10 +110,9 @@ public:
             y.value(),
             current_instruction
         };
-        return state;
     }
 
-    void load_state(cpu_state state)
+    void load_state(state state)
     {
         pc.assign(state.pc);
         s.assign(state.s);
