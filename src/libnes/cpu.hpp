@@ -99,29 +99,9 @@ public:
 
     auto interrupt() -> int;
 
-    [[nodiscard]] auto save_state() const
-    {
-        return state{
-            pc.value(),
-            s.value(),
-            p.value(),
-            a.value(),
-            x.value(),
-            y.value(),
-            current_instruction
-        };
-    }
+    [[nodiscard]] auto save_state() const -> state;
+    void load_state(state state);
 
-    void load_state(state state)
-    {
-        pc.assign(state.pc);
-        s.assign(state.s);
-        p.assign(state.p);
-        a.assign(state.a);
-        x.assign(state.x);
-        y.assign(state.y);
-        current_instruction = state.cix;
-    }
 
 private:
     class hasher
@@ -203,6 +183,32 @@ auto cpu<bus_t>::interrupt() -> int {
     p.set(cpu_flag::int_disable);
 
     return 7;
+}
+
+template <bus bus_t>
+auto cpu<bus_t>::save_state() const -> state
+{
+    return state{
+        pc.value(),
+        s.value(),
+        p.value(),
+        a.value(),
+        x.value(),
+        y.value(),
+        current_instruction
+    };
+}
+
+template <bus bus_t>
+void  cpu<bus_t>::load_state(state state)
+{
+    pc.assign(state.pc);
+    s.assign(state.s);
+    p.assign(state.p);
+    a.assign(state.a);
+    x.assign(state.x);
+    y.assign(state.y);
+    current_instruction = state.cix;
 }
 
 template <bus bus_t>
