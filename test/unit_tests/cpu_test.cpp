@@ -1647,7 +1647,7 @@ TEST_CASE_METHOD(cpu_test, "Save state")
         CHECK(cpu.a.value() == 0x01);
         CHECK(cpu.pc.value() == prgadr);
     }
-    SECTION("Reset command in progress")
+    SECTION("Reset command in progress 1")
     {
         auto state = cpu.save_state();
 
@@ -1659,6 +1659,28 @@ TEST_CASE_METHOD(cpu_test, "Save state")
         CHECK(cpu.pc.value() == prgadr);
 
         tick(2);
+
+        CHECK(cpu.a.value() == 0x55);
+        CHECK(cpu.pc.value() == prgadr + 2);
+    }
+    SECTION("Reset command in progress 2")
+    {
+
+        load(prgadr, std::array{0xa9, 0x55}); // LDA #$55
+        tick(1, false);
+
+        auto state = cpu.save_state();
+
+        tick(1);
+
+        REQUIRE(cpu.a.value() == 0x55);
+        REQUIRE(cpu.pc.value() == prgadr + 2);
+
+        cpu.a.assign(0x02);
+
+        cpu.load_state(state);
+
+        tick(1);
 
         CHECK(cpu.a.value() == 0x55);
         CHECK(cpu.pc.value() == prgadr + 2);
