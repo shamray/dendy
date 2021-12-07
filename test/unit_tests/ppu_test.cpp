@@ -478,4 +478,38 @@ TEST_CASE("PPU") {
             }
         }
     }
+/*
+    std::uint8_t control{0};
+    std::uint8_t status{0};
+    std::uint8_t mask{0};
+
+    int scroll_latch{0};
+    std::uint8_t scroll_x{0};
+    std::uint8_t scroll_y{0};
+    std::uint8_t scroll_x_buffer{0};
+    std::uint8_t scroll_y_buffer{0};
+
+    bool nmi{false};
+
+    int address_latch{0};
+    std::uint16_t address;
+    std::uint8_t data_buffer;
+ */
+    SECTION("save state")
+    {
+        ppu.control = 0x01;
+        ppu.status = 0x02;
+        ppu.mask = 0x03;
+        ppu.scroll_latch = 0;
+        ppu.scroll_x = 42;
+        ppu.scroll_y = 3;
+        ppu.scroll_x_buffer = 41;
+        ppu.scroll_y_buffer = 3;
+        ppu.nmi = false;
+        ppu.address_latch = 0;
+        ppu.address = 0x1004;
+        ppu.data_buffer = 0x01;
+
+        auto state = ppu.save_state();
+    }
 }
