@@ -229,6 +229,25 @@ concept screen = requires(S s, point p, color c) {
     { s.height() } -> std::same_as<short>;
 };
 
+struct ppu_state
+{
+    std::uint8_t control{0};
+    std::uint8_t status{0};
+    std::uint8_t mask{0};
+
+    int scroll_latch{0};
+    std::uint8_t scroll_x{0};
+    std::uint8_t scroll_y{0};
+    std::uint8_t scroll_x_buffer{0};
+    std::uint8_t scroll_y_buffer{0};
+
+    bool nmi{false};
+
+    int address_latch{0};
+    std::uint16_t address;
+    std::uint8_t data_buffer;
+};
+
 template <screen screen_t>
 class ppu
 {
@@ -343,6 +362,24 @@ public:
                 screen_.draw_pixel({x, y}, pixel);
             }
         }
+    }
+
+    constexpr auto save_state() const noexcept
+    {
+        return ppu_state{
+                control,
+                status,
+                mask,
+                scroll_latch,
+                scroll_x,
+                scroll_y,
+                scroll_x_buffer,
+                scroll_y_buffer,
+                nmi,
+                address_latch,
+                address,
+                data_buffer
+        };
     }
 
 private:
