@@ -464,7 +464,11 @@ private:
     [[nodiscard]] constexpr auto nametable_index_x() const { return (control >> 0) & 0x01; }
     [[nodiscard]] constexpr auto nametable_index_y() const { return (control >> 1) & 0x01; }
 
-    [[nodiscard]] constexpr static auto nametable_addr(int ix) { return (ix << 10); }
+    [[nodiscard]] constexpr static auto nametable_addr(int index_x, int index_y)
+    {
+        auto index = (index_y << 1) | index_x;
+        return index << 10;
+    }
 
     [[nodiscard]] constexpr auto pattern_table_bg_index() const { return (control & 0x10) >> 4; }
     [[nodiscard]] constexpr auto pattern_table_fg_index() const { return (control & 0x08) >> 3; }
@@ -519,7 +523,7 @@ private:
             auto tile_row = (y + scroll_y) % 8;
             auto tile_col = (x + scroll_x) % 8;
 
-            auto nametable_ix = nametable_addr((nametable_index_y_ << 1) & nametable_index_x_);
+            auto nametable_ix = nametable_addr(nametable_index_x_, nametable_index_y_);
 
             if (x == 100 and y == 80) {
                 x = 100;

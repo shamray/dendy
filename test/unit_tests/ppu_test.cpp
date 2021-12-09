@@ -399,6 +399,14 @@ TEST_CASE("PPU") {
 
                     CHECK(screen.pixels.at(nes::point{62, 1}) == RASPBERRY);
                 }
+                SECTION("Flip nametables") {
+                    tick(ppu, 1 * 341);         // Wait prerender scanline
+
+                    write(0x2000, ppu, 0x01);   // Make nametable #1 base nametable
+                    tick(ppu, 241 * 341);       // Wait one frame
+
+                    CHECK(screen.pixels.at(nes::point{7, 1}) == RASPBERRY);
+                }
             }
 
             SECTION("scroll Y") {
