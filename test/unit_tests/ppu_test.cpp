@@ -274,6 +274,13 @@ TEST_CASE("PPU") {
         CHECK(ppu.palette_table().read(3) == 21);
     }
 
+    SECTION("computing nametable addresses") {
+        CHECK(ppu.nametable_addr(0, 0) == 0x0000);
+        CHECK(ppu.nametable_addr(1, 0) == 0x0400);
+        CHECK(ppu.nametable_addr(0, 1) == 0x0800);
+        CHECK(ppu.nametable_addr(1, 1) == 0x0C00);
+    }
+
     SECTION("loading sprites") {
         SECTION("OAMADDR/OAMDATA") {
             write(0x2003, ppu, 1 * sizeof(nes::sprite));
@@ -486,6 +493,7 @@ TEST_CASE("PPU") {
             }
         }
     }
+
 /*
     std::uint8_t control{0};
     std::uint8_t status{0};

@@ -351,6 +351,12 @@ public:
     [[nodiscard]] constexpr auto palette_table() const -> const auto& { return palette_table_; }
     [[nodiscard]] constexpr auto oam() const -> const auto& { return oam_; }
 
+    [[nodiscard]] constexpr static auto nametable_addr(int index_x, int index_y)
+    {
+        auto index = (index_y << 1) | index_x;
+        return index << 10;
+    }
+
     auto display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128>;
 
     void render_noise(auto get_noise) {
@@ -463,12 +469,6 @@ private:
 
     [[nodiscard]] constexpr auto nametable_index_x() const { return (control >> 0) & 0x01; }
     [[nodiscard]] constexpr auto nametable_index_y() const { return (control >> 1) & 0x01; }
-
-    [[nodiscard]] constexpr static auto nametable_addr(int index_x, int index_y)
-    {
-        auto index = (index_y << 1) | index_x;
-        return index << 10;
-    }
 
     [[nodiscard]] constexpr auto pattern_table_bg_index() const { return (control & 0x10) >> 4; }
     [[nodiscard]] constexpr auto pattern_table_fg_index() const { return (control & 0x08) >> 3; }

@@ -406,7 +406,6 @@ int main(int argc, char *argv[]) {
         }();
 
         if (time_machine and forward or not time_machine) {
-            history.push_back(state);
             auto count = 0;
             for (;;++count) {
                 cpu.tick();
