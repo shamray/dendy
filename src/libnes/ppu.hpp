@@ -351,9 +351,9 @@ public:
     [[nodiscard]] constexpr auto palette_table() const -> const auto& { return palette_table_; }
     [[nodiscard]] constexpr auto oam() const -> const auto& { return oam_; }
 
-    [[nodiscard]] constexpr static auto nametable_addr(int index_x, int index_y)
+    [[nodiscard]] constexpr auto nametable_addr() const
     {
-        auto index = (index_y << 1) | index_x;
+        auto index = (nametable_index_y_ << 1) | nametable_index_x_;
         return index << 10;
     }
 
@@ -523,7 +523,7 @@ private:
             auto tile_row = (y + scroll_y) % 8;
             auto tile_col = (x + scroll_x) % 8;
 
-            auto nametable_ix = nametable_addr(nametable_index_x_, nametable_index_y_);
+            auto nametable_ix = nametable_addr();
 
             if (x == 100 and y == 80) {
                 x = 100;

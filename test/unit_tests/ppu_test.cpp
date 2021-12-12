@@ -274,13 +274,6 @@ TEST_CASE("PPU") {
         CHECK(ppu.palette_table().read(3) == 21);
     }
 
-    SECTION("computing nametable addresses") {
-        CHECK(ppu.nametable_addr(0, 0) == 0x0000);
-        CHECK(ppu.nametable_addr(1, 0) == 0x0400);
-        CHECK(ppu.nametable_addr(0, 1) == 0x0800);
-        CHECK(ppu.nametable_addr(1, 1) == 0x0C00);
-    }
-
     SECTION("loading sprites") {
         SECTION("OAMADDR/OAMDATA") {
             write(0x2003, ppu, 1 * sizeof(nes::sprite));
@@ -333,6 +326,46 @@ TEST_CASE("PPU") {
                                0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
         );
         ppu.connect_pattern_table(&chr);
+
+        SECTION("computing nametable addresses") {
+
+            SECTION("nametable 0") {
+                tick(ppu, 1);               // Wait first cycle
+                write(0x2000, ppu, 0x00);
+
+                tick(ppu, 1 * 340);         // Wait prerender scanline
+                tick(ppu, 1 * 341);         // Wait first visible scanline
+
+                CHECK(ppu.nametable_addr() == 0x0000);
+            }
+            SECTION("nametable 1") {
+                tick(ppu, 1);               // Wait first cycle
+                write(0x2000, ppu, 0x01);
+
+                tick(ppu, 1 * 340);         // Wait prerender scanline
+                tick(ppu, 1 * 341);         // Wait first visible scanline
+
+                CHECK(ppu.nametable_addr() == 0x0400);
+            }
+            SECTION("nametable 2") {
+                tick(ppu, 1);               // Wait first cycle
+                write(0x2000, ppu, 0x02);
+
+                tick(ppu, 1 * 340);         // Wait prerender scanline
+                tick(ppu, 1 * 341);         // Wait first visible scanline
+
+                CHECK(ppu.nametable_addr() == 0x0800);
+            }
+            SECTION("nametable 3") {
+                tick(ppu, 1);               // Wait first cycle
+                write(0x2000, ppu, 0x03);
+
+                tick(ppu, 1 * 340);         // Wait prerender scanline
+                tick(ppu, 1 * 341);         // Wait first visible scanline
+
+                CHECK(ppu.nametable_addr() == 0x0C00);
+            }
+        }
 
         SECTION("rendering background") {
             SECTION("point at (0,0)") {
