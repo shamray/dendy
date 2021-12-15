@@ -488,11 +488,6 @@ private:
 
             auto nametable_ix = nametable_addr();
 
-            if (x == 100 and y == 80) {
-                x = 100;
-                y = 80;
-            }
-
             if (tile_x >= 32) {
                 tile_x %= 32;
                 nametable_ix ^= 0x0400;
@@ -501,10 +496,6 @@ private:
             if (tile_y >= 30) {
                 tile_y -= 30;
                 nametable_ix ^= 0x0800;
-            }
-
-            if (x == 15) {
-                x = 15;
             }
 
             auto tile_index = read_tile_index(name_table_, tile_x, tile_y, nametable_ix);
