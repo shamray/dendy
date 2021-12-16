@@ -264,41 +264,6 @@ public:
     std::uint16_t address;
     std::uint8_t data_buffer;
 
-    struct debug_info_item{
-        int scanline;
-        int scancycle;
-
-        int x;
-        int y;
-        int x_buffered;
-        int y_buffered;
-        int nametable_x;
-        int nametable_y;
-        int nametable_x_buffered;
-        int nametable_y_buffered;
-
-        auto is_equal(const debug_info_item& dii) {
-            return x == dii.x
-                and y == dii.y
-                and x_buffered == dii.x_buffered
-                and y_buffered == dii.y_buffered
-                and nametable_x == dii.nametable_x
-                and nametable_y == dii.nametable_y
-                and nametable_x_buffered == dii.nametable_x_buffered
-                and nametable_y_buffered == dii.nametable_y_buffered;
-        }
-    };
-
-    struct {
-        std::vector<debug_info_item> log;
-        void update(debug_info_item&& dii) {
-            if (log.empty() or not dii.is_equal(log.back())) {
-                log.push_back(std::move(dii));
-            }
-        }
-        void clear() { log.clear(); }
-    } debug_info;
-
     constexpr void tick();
 
     [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return scan_.is_frame_finished(); }
@@ -573,25 +538,7 @@ constexpr void ppu<screen_t>::tick() {
     else if (scan_.is_postrender()) { postrender_scanline(); }
     else if (scan_.is_vblank())     { vertical_blank_line(); }
 
-    debug_info_item item{
-        scan_.line(),
-        scan_.cycle(),
-        scroll_x,
-        scroll_y,
-        scroll_x_buffer,
-        scroll_y_buffer,
-        nametable_index_x_,
-        nametable_index_y_,
-        nametable_index_x(),
-        nametable_index_y()
-        };
-    debug_info.update(std::move(item));
-
     scan_.advance();
-
-    if (scan_.line() == -1 and scan_.cycle() == 0) {
-        debug_info.clear();
-    }
 }
 
 template <screen screen_t>
