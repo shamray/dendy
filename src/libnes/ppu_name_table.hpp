@@ -4,6 +4,7 @@
 #include <ranges>
 #include <algorithm>
 #include <stdexcept>
+#include <array>
 
 #include <libnes/literals.hpp>
 
