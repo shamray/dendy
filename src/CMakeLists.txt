@@ -13,6 +13,7 @@ add_library(libnes
     libnes/ppu.cpp
     libnes/ppu_name_table.hpp
     libnes/ppu_palette_table.hpp
+    libnes/ppu_pattern_table.hpp
 )
 
 target_include_directories(libnes PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
