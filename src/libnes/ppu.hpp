@@ -8,9 +8,6 @@
 
 #include <array>
 #include <optional>
-#include <cassert>
-#include <algorithm>
-#include <unordered_map>
 
 namespace nes {
 
