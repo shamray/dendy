@@ -1,81 +1,18 @@
 #include <libnes/ppu.hpp>
 #include <libnes/literals.hpp>
+
 #include <catch2/catch.hpp>
+
 #include <ranges>
+#include <unordered_map>
 
 using namespace nes::literals;
 
-void tick(nes::crt_scan& scan, int times = 1) {
-    for (auto i = 0; i < times; ++i) {
-        scan.advance();
-    }
-}
+namespace {
 
 void tick(auto& ppu, int times = 1) {
     for (auto i = 0; i < times; ++i) {
         ppu.tick();
-    }
-}
-
-TEST_CASE("scanline cycles") {
-    auto scan = nes::crt_scan{341, 240, 1, 20};
-
-    SECTION("at power up") {
-        CHECK(scan.line() == -1);
-        CHECK(scan.cycle() == 0);
-        CHECK_FALSE(scan.is_odd_frame());
-    }
-
-    SECTION("one dot") {
-        tick(scan);
-        CHECK(scan.line() == -1);
-        CHECK(scan.cycle() == 1);
-    }
-
-    SECTION("full line") {
-        tick(scan, 340);
-        CHECK(scan.line() == -1);
-        CHECK(scan.cycle() == 340);
-    }
-
-    SECTION("next line") {
-        tick(scan, 341);
-        CHECK(scan.line() == 0);
-        CHECK(scan.cycle() == 0);
-    }
-
-    SECTION("last line") {
-        tick(scan, 341 * 261);
-        CHECK(scan.line() == 260);
-        CHECK(scan.cycle() == 0);
-    }
-
-    SECTION("next frame") {
-        tick(scan, 341 * 262);
-        CHECK(scan.line() == -1);
-        CHECK(scan.cycle() == 0);
-        CHECK(scan.is_frame_finished());
-    }
-
-    SECTION("frame ready") {
-        tick(scan, 1);
-        CHECK_FALSE(scan.is_frame_finished());
-
-        tick(scan, 341 * 262 - 1);
-        CHECK(scan.is_frame_finished());
-
-        tick(scan, 341 * 262);
-        CHECK(scan.is_frame_finished());
-    }
-
-    SECTION("even/odd frames") {
-        CHECK_FALSE(scan.is_odd_frame());
-
-        tick(scan, 341 * 262);
-        CHECK(scan.is_odd_frame());
-
-        tick(scan, 341 * 262);
-        CHECK_FALSE(scan.is_odd_frame());
     }
 }
 
@@ -128,6 +65,8 @@ auto pattern_table(std::uint8_t index, input_type&& tile, args_t... args) {
     auto chr = pattern_table(args...);
     std::ranges::copy(tile, std::next(std::begin(chr), index * tile.size()));
     return chr;
+}
+
 }
 
 TEST_CASE("PPU") {
