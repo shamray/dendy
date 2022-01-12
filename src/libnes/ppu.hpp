@@ -125,7 +125,7 @@ public:
 private:
     [[nodiscard]] constexpr auto read_stat() -> std::uint8_t {
         auto d = status & 0xE0;
-        status &= 0x60;
+        status &= 0x60;     // reset vblank
         address_latch = 0;
         return d;
     }
@@ -229,7 +229,7 @@ private:
         return name_table.read(offset);
     }
 
-    auto tile_palette(auto tile_x, auto tile_y, auto attr_byte) {
+    [[nodiscard]] constexpr static auto tile_palette(auto tile_x, auto tile_y, auto attr_byte) {
         if ((tile_x % 4) >> 1) {
             attr_byte = attr_byte >> 2;
         }
@@ -239,7 +239,7 @@ private:
         return attr_byte & 0x03;
     }
 
-    auto read_tile_palette(const auto& name_table, auto tile_x, auto tile_y, auto nametable_index) {
+    [[nodiscard]] constexpr static auto read_tile_palette(const auto& name_table, auto tile_x, auto tile_y, auto nametable_index) {
         auto attr_byte_index = nametable_attr_offset(tile_x, tile_y, nametable_index);
         auto attr_byte = name_table.read(attr_byte_index);
 
@@ -259,12 +259,12 @@ private:
 
             auto nametable_ix = nametable_addr();
 
-            if (tile_x >= 32) {
+            if (tile_x >= 32) { // wrap nametable while scrolling horizontally
                 tile_x %= 32;
                 nametable_ix ^= 0x0400;
             }
 
-            if (tile_y >= 30) {
+            if (tile_y >= 30) { // wrap nametable while scrolling vertically
                 tile_y -= 30;
                 nametable_ix ^= 0x0800;
             }
