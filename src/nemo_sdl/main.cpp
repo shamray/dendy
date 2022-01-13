@@ -357,15 +357,29 @@ auto load_rom(auto filename) {
 static std::random_device rd;
 static std::mt19937 gen(rd());
 
+struct config
+{
+    std::string filename;
+};
+
+auto parse(int argc, char *argv[]) {
+    if (argc < 2)
+        throw std::runtime_error("No ROM file specified");
+
+    auto filename = std::string{argv[1]};
+
+    return config { filename };
+}
+
 int main(int argc, char *argv[]) {
+    auto config = parse(argc, argv);
     auto frontend = sdl::frontend::create();
 
-    auto filename = "firedemo.nes";
-    auto window = sdl::main_window("NES Emulator", filename);
+    auto window = sdl::main_window("NES Emulator", config.filename);
 
     auto scr = screen{};
     auto ppu = nes::ppu{nes::DEFAULT_COLORS, scr};
-    auto bus = dummy_bus{load_rom("rom/"s + filename), ppu};
+    auto bus = dummy_bus{load_rom("rom/"s + config.filename), ppu};
     auto cpu = nes::cpu{bus};
 
     const auto FPS   = 60;
