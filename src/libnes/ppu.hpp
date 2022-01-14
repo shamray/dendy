@@ -10,6 +10,7 @@
 
 #include <array>
 #include <optional>
+#include <cassert>
 
 namespace nes {
 
@@ -103,10 +104,35 @@ public:
     [[nodiscard]] constexpr auto palette_table() const -> const auto& { return palette_table_; }
     [[nodiscard]] constexpr auto oam() const -> const auto& { return oam_; }
 
-    [[nodiscard]] constexpr auto nametable_addr() const
-    {
-        auto index = (nametable_index_y_ << 1) | nametable_index_x_;
+    [[nodiscard]] constexpr static auto nametable_address(int nametable_index_x, int nametable_index_y) {
+        auto index = (nametable_index_y << 1) | nametable_index_x;
         return index << 10;
+    }
+
+    [[nodiscard]] constexpr auto tile_x_scrolled(int x) {
+        assert(nametable_index_x_ == 0 or nametable_index_x_ == 1);
+
+        auto tile_x = (x + scroll_x) / 8;
+        auto nametable_index_x = nametable_index_x_;
+
+        if (tile_x >= 32) { // wrap nametable while scrolling horizontally
+            tile_x %= 32;
+            nametable_index_x ^= 1;
+        }
+        return std::tuple{nametable_index_x, tile_x};
+    }
+
+    [[nodiscard]] constexpr auto tile_y_scrolled(int y) {
+        assert(nametable_index_y_ == 0 or nametable_index_y_ == 1);
+
+        auto tile_y = (y + scroll_y) / 8;
+        auto nametable_index_y = nametable_index_y_;
+
+        if (tile_y >= 30) { // wrap nametable while scrolling vertically
+            tile_y -= 30;
+            nametable_index_y ^= 1;
+        }
+        return std::tuple{nametable_index_y, tile_y};
     }
 
     auto display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128>;
@@ -251,30 +277,21 @@ private:
         auto x = static_cast<short>(scan_.cycle() - 2);
 
         if (x >= 0 and x < 256) {
-            auto tile_x = (x + scroll_x) / 8;
-            auto tile_y = (y + scroll_y) / 8;
+            auto [nametable_index_x, tile_x] = tile_x_scrolled(x);
+            auto [nametable_index_y, tile_y] = tile_y_scrolled(y);
 
             auto tile_row = (y + scroll_y) % 8;
             auto tile_col = (x + scroll_x) % 8;
 
-            auto nametable_ix = nametable_addr();
+            auto nametable_addr = nametable_address(nametable_index_x, nametable_index_y);
 
-            if (tile_x >= 32) { // wrap nametable while scrolling horizontally
-                tile_x %= 32;
-                nametable_ix ^= 0x0400;
-            }
-
-            if (tile_y >= 30) { // wrap nametable while scrolling vertically
-                tile_y -= 30;
-                nametable_ix ^= 0x0800;
-            }
-
-            auto tile_index = read_tile_index(name_table_, tile_x, tile_y, nametable_ix);
+            auto tile_index = read_tile_index(name_table_, tile_x, tile_y, nametable_addr);
             auto pixel = read_tile_pixel(pattern_table_, pattern_table_bg_index(), tile_index, tile_col, tile_row);
-            auto palette = read_tile_palette(name_table_, tile_x, tile_y, nametable_ix);
+            auto palette = read_tile_palette(name_table_, tile_x, tile_y, nametable_addr);
 
             screen_.draw_pixel({x, y}, palette_table_.color_of(pixel, palette));
 
+            // Sprite 0 hit
             auto s = oam_.sprites[0];
             if (x >= s.x and x < s.x + 8 and y >= s.y and y < s.y + 8 and pixel != 0) {
                 auto dx = x - s.x;

@@ -164,40 +164,16 @@ TEST_CASE("PPU") {
         SECTION("computing nametable addresses") {
 
             SECTION("nametable 0") {
-                tick(ppu, 1);               // Wait first cycle
-                write(0x2000, ppu, 0x00);
-
-                tick(ppu, 1 * 340);         // Wait prerender scanline
-                tick(ppu, 1 * 341);         // Wait first visible scanline
-
-                CHECK(ppu.nametable_addr() == 0x0000);
+                CHECK(ppu.nametable_address(0, 0) == 0x0000);
             }
             SECTION("nametable 1") {
-                tick(ppu, 1);               // Wait first cycle
-                write(0x2000, ppu, 0x01);
-
-                tick(ppu, 1 * 340);         // Wait prerender scanline
-                tick(ppu, 1 * 341);         // Wait first visible scanline
-
-                CHECK(ppu.nametable_addr() == 0x0400);
+                CHECK(ppu.nametable_address(1, 0) == 0x0400);
             }
             SECTION("nametable 2") {
-                tick(ppu, 1);               // Wait first cycle
-                write(0x2000, ppu, 0x02);
-
-                tick(ppu, 1 * 340);         // Wait prerender scanline
-                tick(ppu, 1 * 341);         // Wait first visible scanline
-
-                CHECK(ppu.nametable_addr() == 0x0800);
+                CHECK(ppu.nametable_address(0, 1) == 0x0800);
             }
             SECTION("nametable 3") {
-                tick(ppu, 1);               // Wait first cycle
-                write(0x2000, ppu, 0x03);
-
-                tick(ppu, 1 * 340);         // Wait prerender scanline
-                tick(ppu, 1 * 341);         // Wait first visible scanline
-
-                CHECK(ppu.nametable_addr() == 0x0C00);
+                CHECK(ppu.nametable_address(1, 1) == 0x0C00);
             }
         }
 
