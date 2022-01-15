@@ -109,7 +109,7 @@ public:
         return index << 10;
     }
 
-    [[nodiscard]] constexpr auto tile_x_scrolled(int x) {
+    [[nodiscard]] constexpr auto tile_x_scrolled(short x) {
         assert(nametable_index_x_ == 0 or nametable_index_x_ == 1);
 
         auto tile_x = (x + scroll_x) / 8;
@@ -122,7 +122,7 @@ public:
         return std::tuple{nametable_index_x, tile_x};
     }
 
-    [[nodiscard]] constexpr auto tile_y_scrolled(int y) {
+    [[nodiscard]] constexpr auto tile_y_scrolled(short y) {
         assert(nametable_index_y_ == 0 or nametable_index_y_ == 1);
 
         auto tile_y = (y + scroll_y) / 8;
