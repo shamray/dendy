@@ -16,7 +16,7 @@ add_library(libnes
     libnes/ppu_object_attribute_memory.hpp
     libnes/ppu_palette_table.hpp
     libnes/ppu_pattern_table.hpp
-)
+    libnes/console.hpp libnes/screen.hpp)
 
 target_include_directories(libnes PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_features(libnes PUBLIC cxx_std_20)

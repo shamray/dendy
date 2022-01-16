@@ -6,6 +6,7 @@
 #include <libnes/ppu_palette_table.hpp>
 #include <libnes/ppu_pattern_table.hpp>
 
+#include <libnes/screen.hpp>
 #include <libnes/color.hpp>
 
 #include <array>
@@ -13,23 +14,6 @@
 #include <cassert>
 
 namespace nes {
-
-struct point
-{
-    short x;
-    short y;
-};
-
-auto operator== (nes::point a, nes::point b) {
-    return a.x == b.x and a.y == b.y;
-}
-
-template <class S>
-concept screen = requires(S s, point p, color c) {
-    { s.draw_pixel(p, c) };
-    { s.width() } -> std::same_as<short>;
-    { s.height() } -> std::same_as<short>;
-};
 
 constexpr auto VISIBLE_SCANLINES = 240;
 constexpr auto VERTICAL_BLANK_SCANLINES = 20;
