@@ -2,6 +2,7 @@
 #include <libnes/cpu.hpp>
 #include <libnes/clock.hpp>
 #include <libnes/literals.hpp>
+#include <libnes/console.hpp>
 
 #include <SDL2/SDL.h>
 
@@ -246,69 +247,6 @@ struct screen
     }
 };
 
-struct dummy_bus
-{
-    struct controller_hack
-    {
-        std::uint8_t keys{0};
-        std::uint8_t snapshot{0};
-    } j1;
-
-    dummy_bus(std::tuple<std::array<std::uint8_t, 64_Kb>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom, nes::ppu<screen>& ppu)
-        : mem{std::move(std::get<0>(rom))}
-        , chr{std::move(std::get<1>(rom))}
-        , mirroring{std::get<2>(rom)}
-        , ppu{ppu}
-    {
-        ppu.connect_pattern_table(&chr);
-        ppu.nametable_mirroring(mirroring);
-    }
-
-    auto nmi() {
-        if (not ppu.nmi)
-            return false;
-
-        ppu.nmi = false;
-        return true;
-    }
-
-    void write(std::uint16_t addr, std::uint8_t value) {
-        if (ppu.write(addr, value))
-            return;
-
-        if (addr == 0x4014) {
-            ppu.dma_write(&mem[value << 8]);
-            return;
-        }
-
-        if (addr == 0x4016) {
-            j1.snapshot = j1.keys;
-        }
-
-        mem[addr] = value;
-    }
-
-    std::uint8_t read(std::uint16_t addr) {
-        if (auto r = ppu.read(addr); r.has_value())
-            return r.value();
-
-        if (addr == 0x4016) {
-            auto r = (j1.snapshot & 0x80) ? 1 : 0;
-            j1.snapshot <<= 1;
-            return r;
-        }
-
-        return mem[addr];
-    }
-
-    std::array<std::uint8_t, 64_Kb>  mem;
-    std::array<std::uint8_t, 8_Kb>   chr;
-
-    nes::name_table_mirroring mirroring;
-
-    nes::ppu<screen>& ppu;
-};
-
 auto load_rom(auto filename) {
     auto memory = std::array<std::uint8_t, 64_Kb>{};
     auto romfile = std::ifstream{filename, std::ifstream::binary};
@@ -379,7 +317,7 @@ int main(int argc, char *argv[]) {
 
     auto scr = screen{};
     auto ppu = nes::ppu{nes::DEFAULT_COLORS, scr};
-    auto bus = dummy_bus{load_rom("rom/"s + config.filename), ppu};
+    auto bus = nes::console{load_rom("rom/"s + config.filename), ppu};
     auto cpu = nes::cpu{bus};
 
     const auto FPS   = 60;
