@@ -20,14 +20,12 @@ constexpr auto VERTICAL_BLANK_SCANLINES = 20;
 constexpr auto POST_RENDER_SCANLINES = 1;
 constexpr auto SCANLINE_DOTS = 341;
 
-template <screen screen_t>
 class ppu
 {
 public:
     template <class container_t>
-    ppu(const container_t& system_color_palette, screen_t& screen)
+    ppu(const container_t& system_color_palette)
         : palette_table_{system_color_palette}
-        , screen_{screen}
     {}
 
     ppu(const pattern_table::memory_bank& chr, const auto& system_color_palette)
@@ -55,7 +53,8 @@ public:
     std::uint16_t address;
     std::uint8_t data_buffer;
 
-    constexpr void tick();
+    template <screen screen_t>
+    constexpr void tick(screen_t& screen);
 
     [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return scan_.is_frame_finished(); }
 
@@ -121,13 +120,14 @@ public:
 
     auto display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128>;
 
-    void render_noise(auto get_noise) {
+    template <screen screen_t>
+    void render_noise(auto get_noise, screen_t& screen) {
         // The sky above the port was the color of television, tuned to a dead channel
-        for (auto x = 0; x < screen_.width(); ++x) {
-            for (auto y = 0; y < screen_.height(); ++y) {
+        for (auto x = 0; x < screen.width(); ++x) {
+            for (auto y = 0; y < screen.height(); ++y) {
                 auto r = get_noise();
                 auto pixel = color{r << 16, r << 8, r};
-                screen_.draw_pixel({x, y}, pixel);
+                screen.draw_pixel({x, y}, pixel);
             }
         }
     }
@@ -162,8 +162,8 @@ private:
         }
     }
 
-    constexpr void write_oama(std::uint8_t value) { oam_.address = value; }
-    constexpr void write_oamd(std::uint8_t value) { oam_.write(value); }
+    void write_oama(std::uint8_t value) { oam_.address = value; }
+    void write_oamd(std::uint8_t value) { oam_.write(value); }
 
     constexpr void write_scrl(std::uint8_t value) {
         if (scroll_latch == 0) {
@@ -197,16 +197,7 @@ private:
         address += inc;
     }
 
-    constexpr void prerender_scanline() noexcept {
-        if (scan_.cycle() == 0) {
-            status = 0x00;
-            control &= 0xFE;
-        }
-        if (scan_.cycle() >= 280) {
-            scroll_y = scroll_y_buffer;
-            nametable_index_y_ = nametable_index_y();
-        }
-    }
+    constexpr void prerender_scanline() noexcept;
 
     std::uint8_t nametable_index_x_{0};
     std::uint8_t nametable_index_y_{0};
@@ -256,7 +247,8 @@ private:
         return tile_palette(tile_x, tile_y, attr_byte);
     }
 
-    constexpr void visible_scanline() {
+    template <screen screen_t>
+    constexpr void visible_scanline(screen_t& screen) {
         auto y = scan_.line();
         auto x = static_cast<short>(scan_.cycle() - 2);
 
@@ -273,7 +265,7 @@ private:
             auto pixel = read_tile_pixel(pattern_table_, pattern_table_bg_index(), tile_index, tile_col, tile_row);
             auto palette = read_tile_palette(name_table_, tile_x, tile_y, nametable_addr);
 
-            screen_.draw_pixel({x, y}, palette_table_.color_of(pixel, palette));
+            screen.draw_pixel({x, y}, palette_table_.color_of(pixel, palette));
 
             // Sprite 0 hit
             auto s = oam_.sprites[0];
@@ -295,7 +287,8 @@ private:
         }
     }
 
-    constexpr void postrender_scanline() noexcept {
+    template <screen screen_t>
+    constexpr void postrender_scanline(screen_t& screen) noexcept {
         if (scan_.cycle() == 0) {
             for (const auto& s: oam_.sprites) {
                 auto palette = (s.attr & 0x03) + 4;
@@ -306,7 +299,7 @@ private:
                         auto dx = (s.attr & 0x40) ? 7 - j : j;
                         auto dy = (s.attr & 0x80) ? 7 - i : i;
                         if (pixel) {
-                            screen_.draw_pixel(
+                            screen.draw_pixel(
                                 {static_cast<short>(s.x + dx), static_cast<short>(s.y + dy)},
                                 palette_table_.color_of(pixel, palette)
                                 );
@@ -334,22 +327,19 @@ private:
     nes::object_attribute_memory oam_;
 
     std::uint8_t data_read_buffer_;
-
-    screen_t& screen_;
 };
 
 template <screen screen_t>
-constexpr void ppu<screen_t>::tick() {
+constexpr void ppu::tick(screen_t& screen) {
     if      (scan_.is_prerender())  { prerender_scanline(); }
-    else if (scan_.is_visible())    { visible_scanline(); }
-    else if (scan_.is_postrender()) { postrender_scanline(); }
+    else if (scan_.is_visible())    { visible_scanline(screen); }
+    else if (scan_.is_postrender()) { postrender_scanline(screen); }
     else if (scan_.is_vblank())     { vertical_blank_line(); }
 
     scan_.advance();
 }
 
-template <screen screen_t>
-inline auto ppu<screen_t>::display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128> {
+inline auto ppu::display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128> {
     auto result = std::array<color, 128 * 128>{};
 
     for (std::uint16_t tile_y = 0; tile_y < 16; ++tile_y) {
@@ -368,5 +358,16 @@ inline auto ppu<screen_t>::display_pattern_table(auto i, auto palette) const -> 
         }
     }
     return result;
+}
+
+constexpr void ppu::prerender_scanline() noexcept {
+    if (scan_.cycle() == 0) {
+        status = 0x00;
+        control &= 0xFE;
+    }
+    if (scan_.cycle() >= 280) {
+        scroll_y = scroll_y_buffer;
+        nametable_index_y_ = nametable_index_y();
+    }
 }
 }

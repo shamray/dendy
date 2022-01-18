@@ -316,7 +316,7 @@ int main(int argc, char *argv[]) {
     auto window = sdl::main_window("NES Emulator", config.filename);
 
     auto scr = screen{};
-    auto ppu = nes::ppu{nes::DEFAULT_COLORS, scr};
+    auto ppu = nes::ppu{nes::DEFAULT_COLORS};
     auto bus = nes::console{load_rom("rom/"s + config.filename), ppu};
     auto cpu = nes::cpu{bus};
 
@@ -362,9 +362,9 @@ int main(int argc, char *argv[]) {
             for (;;++count) {
                 cpu.tick();
 
-                ppu.tick(); if (ppu.is_frame_ready()) break;
-                ppu.tick(); if (ppu.is_frame_ready()) break;
-                ppu.tick(); if (ppu.is_frame_ready()) break;
+                ppu.tick(scr); if (ppu.is_frame_ready()) break;
+                ppu.tick(scr); if (ppu.is_frame_ready()) break;
+                ppu.tick(scr); if (ppu.is_frame_ready()) break;
             }
             assert(count == 29780 || count == 29781);
         }

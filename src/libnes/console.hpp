@@ -4,7 +4,6 @@
 
 namespace nes {
 
-template <screen screen_t>
 struct console
 {
     struct controller_hack
@@ -13,7 +12,7 @@ struct console
         std::uint8_t snapshot{0};
     } j1;
 
-    console(std::tuple<std::array<std::uint8_t, 64_Kb>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom, nes::ppu<screen_t>& ppu)
+    console(std::tuple<std::array<std::uint8_t, 64_Kb>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom, nes::ppu& ppu)
         : mem{std::move(std::get<0>(rom))}
         , chr{std::move(std::get<1>(rom))}
         , mirroring{std::get<2>(rom)}
@@ -65,6 +64,6 @@ struct console
 
     nes::name_table_mirroring mirroring;
 
-    nes::ppu<screen_t>& ppu;
+    nes::ppu& ppu;
 };
 }
