@@ -1,10 +1,11 @@
 #pragma once
 
 #include <libnes/ppu.hpp>
+#include <libnes/cpu.hpp>
 
 namespace nes {
 
-struct console
+struct console_bus
 {
     struct controller_hack
     {
@@ -12,7 +13,7 @@ struct console
         std::uint8_t snapshot{0};
     } j1;
 
-    console(std::tuple<std::array<std::uint8_t, 64_Kb>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom, nes::ppu& ppu)
+    console_bus(std::tuple<std::array<std::uint8_t, 64_Kb>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom, nes::ppu& ppu)
         : mem{std::move(std::get<0>(rom))}
         , chr{std::move(std::get<1>(rom))}
         , mirroring{std::get<2>(rom)}
@@ -66,4 +67,36 @@ struct console
 
     nes::ppu& ppu;
 };
+
+class console
+{
+public:
+    console(std::tuple<std::array<std::uint8_t, 64_Kb>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom)
+        : bus_{std::move(rom), ppu_}
+    {
+    }
+
+    template <screen screen_t>
+    void render_frame(screen_t& screen) {
+        auto count = 0;
+        for (;;++count) {
+            cpu_.tick();
+
+            ppu_.tick(screen); if (ppu_.is_frame_ready()) break;
+            ppu_.tick(screen); if (ppu_.is_frame_ready()) break;
+            ppu_.tick(screen); if (ppu_.is_frame_ready()) break;
+        }
+        assert(count == 29780 || count == 29781);
+    }
+
+    void controller_input(std::uint8_t keys) {
+        bus_.j1.keys = keys;
+    }
+
+private:
+    ppu ppu_{nes::DEFAULT_COLORS};
+    console_bus bus_;
+    cpu<console_bus> cpu_{bus_};
+};
+
 }

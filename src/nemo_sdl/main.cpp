@@ -316,9 +316,7 @@ int main(int argc, char *argv[]) {
     auto window = sdl::main_window("NES Emulator", config.filename);
 
     auto scr = screen{};
-    auto ppu = nes::ppu{nes::DEFAULT_COLORS};
-    auto bus = nes::console{load_rom("rom/"s + config.filename), ppu};
-    auto cpu = nes::cpu{bus};
+    auto console = nes::console{load_rom("rom/"s + config.filename)};
 
     const auto FPS   = 60;
     const auto DELAY = static_cast<int>(1000.0f / FPS);
@@ -338,15 +336,17 @@ int main(int argc, char *argv[]) {
         if (not time_machine) {
             auto kb_state = SDL_GetKeyboardState(nullptr);
 
-            bus.j1.keys = 0;
-            if (kb_state[SDL_SCANCODE_SPACE])   bus.j1.keys |= 0x80;
-            if (kb_state[SDL_SCANCODE_LSHIFT])  bus.j1.keys |= 0x40;
-            if (kb_state[SDL_SCANCODE_C])       bus.j1.keys |= 0x20;
-            if (kb_state[SDL_SCANCODE_V])       bus.j1.keys |= 0x10;
-            if (kb_state[SDL_SCANCODE_UP])      bus.j1.keys |= 0x08;
-            if (kb_state[SDL_SCANCODE_DOWN])    bus.j1.keys |= 0x04;
-            if (kb_state[SDL_SCANCODE_LEFT])    bus.j1.keys |= 0x02;
-            if (kb_state[SDL_SCANCODE_RIGHT])   bus.j1.keys |= 0x01;
+            auto keys = std::uint8_t{0};
+            if (kb_state[SDL_SCANCODE_SPACE])   keys |= 0x80;
+            if (kb_state[SDL_SCANCODE_LSHIFT])  keys |= 0x40;
+            if (kb_state[SDL_SCANCODE_C])       keys |= 0x20;
+            if (kb_state[SDL_SCANCODE_V])       keys |= 0x10;
+            if (kb_state[SDL_SCANCODE_UP])      keys |= 0x08;
+            if (kb_state[SDL_SCANCODE_DOWN])    keys |= 0x04;
+            if (kb_state[SDL_SCANCODE_LEFT])    keys |= 0x02;
+            if (kb_state[SDL_SCANCODE_RIGHT])   keys |= 0x01;
+
+            console.controller_input(keys);
         }
 
         auto [forward, backward] = []() {
@@ -358,15 +358,7 @@ int main(int argc, char *argv[]) {
         }();
 
         if (time_machine and forward or not time_machine) {
-            auto count = 0;
-            for (;;++count) {
-                cpu.tick();
-
-                ppu.tick(scr); if (ppu.is_frame_ready()) break;
-                ppu.tick(scr); if (ppu.is_frame_ready()) break;
-                ppu.tick(scr); if (ppu.is_frame_ready()) break;
-            }
-            assert(count == 29780 || count == 29781);
+            console.render_frame(scr);
         }
 
         window.render(scr.frame_buffer);
