@@ -2,6 +2,7 @@
 
 #include <libnes/ppu.hpp>
 #include <libnes/cpu.hpp>
+#include <libnes/cartridge.hpp>
 
 namespace nes {
 
@@ -13,14 +14,12 @@ struct console_bus
         std::uint8_t snapshot{0};
     } j1;
 
-    console_bus(std::tuple<std::array<std::uint8_t, 64_Kb>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom, nes::ppu& ppu)
-        : mem{std::move(std::get<0>(rom))}
-        , chr{std::move(std::get<1>(rom))}
-        , mirroring{std::get<2>(rom)}
+    console_bus(std::tuple<std::array<std::uint8_t, 16_Kb>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom, nes::ppu& ppu)
+        : cartridge{std::make_unique<nes::cartridge>(std::get<0>(rom), std::get<1>(rom), std::get<2>(rom))}
         , ppu{ppu}
     {
-        ppu.connect_pattern_table(&chr);
-        ppu.nametable_mirroring(mirroring);
+        ppu.connect_pattern_table(&cartridge->chr());
+        ppu.nametable_mirroring(cartridge->mirroring());
     }
 
     auto nmi() {
@@ -44,10 +43,16 @@ struct console_bus
             j1.snapshot = j1.keys;
         }
 
-        mem[addr] = value;
+        if (addr < 0x800) {
+            mem[addr] = value;
+        }
     }
 
     std::uint8_t read(std::uint16_t addr) {
+        if (addr < 0x800) {
+            return mem[addr];
+        }
+
         if (auto r = ppu.read(addr); r.has_value())
             return r.value();
 
@@ -57,21 +62,26 @@ struct console_bus
             return r;
         }
 
-        return mem[addr];
+        if (addr == 0x4017) {
+            return 0;
+        }
+
+        if (auto r = cartridge->read(addr); r.has_value())
+            return r.value();
+
+        return 0;
+//        throw std::runtime_error("uknown address");
     }
 
-    std::array<std::uint8_t, 64_Kb>  mem;
-    std::array<std::uint8_t, 8_Kb>   chr;
-
-    nes::name_table_mirroring mirroring;
-
+    std::unique_ptr<cartridge> cartridge;
+    std::array<std::uint8_t, 2_Kb> mem;
     nes::ppu& ppu;
 };
 
 class console
 {
 public:
-    console(std::tuple<std::array<std::uint8_t, 64_Kb>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom)
+    console(std::tuple<std::array<std::uint8_t, 16_Kb>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom)
         : bus_{std::move(rom), ppu_}
     {
     }

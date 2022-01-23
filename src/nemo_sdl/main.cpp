@@ -248,21 +248,10 @@ struct screen
 };
 
 auto load_rom(auto filename) {
-    auto memory = std::array<std::uint8_t, 64_Kb>{};
     auto romfile = std::ifstream{filename, std::ifstream::binary};
     assert(romfile.is_open());
 
-    struct {
-        char name[4];
-        std::uint8_t prg_rom_chunks;
-        std::uint8_t chr_rom_chunks;
-        std::uint8_t mapper1;
-        std::uint8_t mapper2;
-        std::uint8_t prg_ram_size;
-        std::uint8_t tv_system1;
-        std::uint8_t tv_system2;
-        char unused[5];
-    } header;
+    nes::ines_header header;
     static_assert(sizeof(header) == 16);
     romfile.read(reinterpret_cast<char*>(&header), sizeof(header));
 
@@ -275,12 +264,10 @@ auto load_rom(auto filename) {
     auto prg = std::array<std::uint8_t, 16_Kb>{};
     romfile.read(reinterpret_cast<char*>(prg.data()), prg.size());
 
-    std::ranges::copy(prg, memory.begin() + 0x8000);
-
     if (header.prg_rom_chunks > 1) {
-        romfile.read(reinterpret_cast<char*>(prg.data()), prg.size());
+        throw std::runtime_error("not yet handled"); //TODO
+//        romfile.read(reinterpret_cast<char*>(prg.data()), prg.size());
     }
-    std::ranges::copy(prg, memory.begin() + 0xC000);
 
     auto chr = std::array<std::uint8_t, 8_Kb>{};
     romfile.read(reinterpret_cast<char*>(chr.data()), chr.size());
@@ -289,7 +276,7 @@ auto load_rom(auto filename) {
         ? nes::name_table_mirroring::vertical
         : nes::name_table_mirroring::horizontal;
 
-    return std::tuple{memory, chr, mirroring};
+    return std::tuple{prg, chr, mirroring};
 }
 
 static std::random_device rd;
