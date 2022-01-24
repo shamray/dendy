@@ -25,31 +25,40 @@ static_assert(sizeof(ines_header) == 16);
 class cartridge
 {
 public:
-    constexpr cartridge(std::array<std::uint8_t, 16_Kb> prg, std::array<std::uint8_t, 8_Kb> chr, name_table_mirroring mirroring)
+    cartridge(std::vector<std::array<std::uint8_t, 16_Kb>> prg, std::array<std::uint8_t, 8_Kb> chr, name_table_mirroring mirroring)
         : prg_{prg}
         , chr_{chr}
         , mirroring_{mirroring}
     {}
 
-    [[nodiscard]] constexpr auto chr() const -> auto& { return chr_; }
-    [[nodiscard]] constexpr auto mirroring() const { return mirroring_; }
+    [[nodiscard]] auto chr() const -> auto& { return chr_; }
+    [[nodiscard]] auto mirroring() const { return mirroring_; }
 
-    [[nodiscard]] constexpr auto write(std::uint16_t addr, std::uint8_t value) -> bool {
+    [[nodiscard]] auto write(std::uint16_t addr, std::uint8_t value) -> bool {
         return false;
     }
 
-    [[nodiscard]] constexpr auto read(std::uint16_t addr) -> std::optional<std::uint8_t> {
+    [[nodiscard]] auto read(std::uint16_t addr) -> std::optional<std::uint8_t> {
+        if (addr >= 0x8000 and addr <= 0xBFFF) {
+            auto address = addr & 0x3FFF;
+            auto& prg = prg_.front();
+
+            return prg[address];
+        }
+
         if (addr >= 0x8000 and addr <= 0xFFFF) {
-            addr &= 0x3FFF;
-            return prg_[addr];
+            auto address = addr & 0x3FFF;
+            auto& prg = prg_.back();
+
+            return prg[address];
         }
 
         return std::nullopt;
     }
 
 private:
-    std::array<std::uint8_t, 16_Kb>  prg_;
-    std::array<std::uint8_t, 8_Kb>   chr_;
+    std::vector<std::array<std::uint8_t, 16_Kb>> prg_;
+    std::array<std::uint8_t, 8_Kb> chr_;
     name_table_mirroring mirroring_;
 
 };

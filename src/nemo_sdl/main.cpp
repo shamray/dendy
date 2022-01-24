@@ -261,12 +261,13 @@ auto load_rom(auto filename) {
     if (header.chr_rom_chunks > 1)
         throw std::runtime_error("unsupported mapper, too many CHR sections");
 
-    auto prg = std::array<std::uint8_t, 16_Kb>{};
-    romfile.read(reinterpret_cast<char*>(prg.data()), prg.size());
+    auto prg = std::vector<std::array<std::uint8_t, 16_Kb>>{};
+    prg.emplace_back();
+    romfile.read(reinterpret_cast<char*>(prg.back().data()), prg.back().size());
 
     if (header.prg_rom_chunks > 1) {
-        throw std::runtime_error("not yet handled"); //TODO
-//        romfile.read(reinterpret_cast<char*>(prg.data()), prg.size());
+        prg.emplace_back();
+        romfile.read(reinterpret_cast<char*>(prg.back().data()), prg.back().size());
     }
 
     auto chr = std::array<std::uint8_t, 8_Kb>{};

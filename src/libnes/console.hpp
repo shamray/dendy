@@ -14,7 +14,7 @@ struct console_bus
         std::uint8_t snapshot{0};
     } j1;
 
-    console_bus(std::tuple<std::array<std::uint8_t, 16_Kb>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom, nes::ppu& ppu)
+    console_bus(std::tuple<std::vector<std::array<std::uint8_t, 16_Kb>>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom, nes::ppu& ppu)
         : cartridge{std::make_unique<nes::cartridge>(std::get<0>(rom), std::get<1>(rom), std::get<2>(rom))}
         , ppu{ppu}
     {
@@ -49,8 +49,8 @@ struct console_bus
     }
 
     std::uint8_t read(std::uint16_t addr) {
-        if (addr < 0x800) {
-            return mem[addr];
+        if (addr <= 0x1FFF) {
+            return mem[addr & 0x07FF];
         }
 
         if (auto r = ppu.read(addr); r.has_value())
@@ -70,7 +70,6 @@ struct console_bus
             return r.value();
 
         return 0;
-//        throw std::runtime_error("uknown address");
     }
 
     std::unique_ptr<cartridge> cartridge;
@@ -81,7 +80,7 @@ struct console_bus
 class console
 {
 public:
-    console(std::tuple<std::array<std::uint8_t, 16_Kb>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom)
+    console(std::tuple<std::vector<std::array<std::uint8_t, 16_Kb>>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom)
         : bus_{std::move(rom), ppu_}
     {
     }
