@@ -10,9 +10,9 @@ using namespace nes::literals;
 
 namespace {
 
-void tick(auto& ppu, int times = 1) {
+void tick(auto& ppu, auto& screen, int times = 1) {
     for (auto i = 0; i < times; ++i) {
-        ppu.tick();
+        ppu.tick(screen);
     }
 }
 
@@ -36,14 +36,14 @@ struct test_screen
     }
 };
 
-template <class ppu_t, class... args_t>
-void write(std::uint16_t addr, ppu_t& ppu, std::uint8_t byte, args_t... args) {
+template <class... args_t>
+void write(std::uint16_t addr, nes::ppu& ppu, std::uint8_t byte, args_t... args) {
     ppu.write(addr, byte);
     write(addr, ppu, args...);
 }
 
-template <class ppu_t>
-void write(std::uint16_t addr, ppu_t& ppu, std::uint8_t byte) {
+template <>
+void write(std::uint16_t addr, nes::ppu& ppu, std::uint8_t byte) {
     ppu.write(addr, byte);
 }
 
@@ -71,7 +71,7 @@ auto pattern_table(std::uint8_t index, input_type&& tile, args_t... args) {
 
 TEST_CASE("PPU") {
     auto screen = test_screen{};
-    auto ppu = nes::ppu{nes::DEFAULT_COLORS, screen};
+    auto ppu = nes::ppu{nes::DEFAULT_COLORS};
 
     constexpr auto BLACK = nes::DEFAULT_COLORS[63];
     constexpr auto VIOLET = nes::DEFAULT_COLORS[3];
@@ -89,7 +89,7 @@ TEST_CASE("PPU") {
 
     SECTION("start of the frame") {
         ppu.status |= 0x40;
-        ppu.tick();
+        ppu.tick(screen);
 
         CHECK((ppu.status & 0x40) == 0);
     }
@@ -182,7 +182,7 @@ TEST_CASE("PPU") {
                 write(0x2006, ppu, 0x20, 0x00); // Nametable
                 write(0x2007, ppu, 1);
 
-                tick(ppu, 242 * 341);           // Wait one frame
+                tick(ppu, screen, 242 * 341);           // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{0, 0}) == RASPBERRY);
                 CHECK(screen.pixels.at(nes::point{0, 0}) != BLACK);
@@ -198,7 +198,7 @@ TEST_CASE("PPU") {
                 write(0x2006, ppu, 0x20, 0x00); // Nametable
                 write(0x2007, ppu, 42);
 
-                tick(ppu, 242 * 341);           // Wait one frame
+                tick(ppu, screen, 242 * 341);           // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{7, 1}) == RASPBERRY);
             }
@@ -207,7 +207,7 @@ TEST_CASE("PPU") {
                 write(0x2006, ppu, 0x20, 0x00); // Nametable
                 write(0x2007, ppu, 0, 42);
 
-                tick(ppu, 242 * 341);           // Wait one frame
+                tick(ppu, screen, 242 * 341);           // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{15, 1}) == RASPBERRY);
             }
@@ -216,7 +216,7 @@ TEST_CASE("PPU") {
                 write(0x2006, ppu, 0x20, 0x00); // Nametable
                 write(0x2007, ppu, 99);
 
-                tick(ppu, 242 * 341);           // Wait one frame
+                tick(ppu, screen, 242 * 341);           // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{0, 0}) == RASPBERRY);
                 CHECK(screen.pixels.at(nes::point{1, 0}) == OLIVE);
@@ -232,28 +232,28 @@ TEST_CASE("PPU") {
 
                 SECTION("1 pixel") {
                     write(0x2005, ppu, 1, 0);
-                    tick(ppu, 242 * 341);       // Wait one frame
+                    tick(ppu, screen, 242 * 341);       // Wait one frame
 
                     CHECK(screen.pixels.at(nes::point{14, 1}) == RASPBERRY);
                 }
                 SECTION("8 pixels") {
                     write(0x2005, ppu, 8, 0);
-                    tick(ppu, 242 * 341);       // Wait one frame
+                    tick(ppu, screen, 242 * 341);       // Wait one frame
 
                     CHECK(screen.pixels.at(nes::point{7, 1}) == RASPBERRY);
                     CHECK(screen.pixels.at(nes::point{255, 1}) == RASPBERRY);
                 }
                 SECTION("201 pixels") {
                     write(0x2005, ppu, 201, 0);
-                    tick(ppu, 242 * 341);       // Wait one frame
+                    tick(ppu, screen, 242 * 341);       // Wait one frame
 
                     CHECK(screen.pixels.at(nes::point{62, 1}) == RASPBERRY);
                 }
                 SECTION("Flip nametables") {
-                    tick(ppu, 1 * 341);         // Wait prerender scanline
+                    tick(ppu, screen, 1 * 341);         // Wait prerender scanline
 
                     write(0x2000, ppu, 0x01);   // Make nametable #1 base nametable
-                    tick(ppu, 241 * 341);       // Wait one frame
+                    tick(ppu, screen, 241 * 341);       // Wait one frame
 
                     CHECK(screen.pixels.at(nes::point{7, 1}) == RASPBERRY);
                 }
@@ -269,7 +269,7 @@ TEST_CASE("PPU") {
 
                 SECTION("1 pixel") {
                     write(0x2005, ppu, 0, 1);
-                    tick(ppu, 242 * 341);       // Wait one frame
+                    tick(ppu, screen, 242 * 341);       // Wait one frame
 
                     CHECK(screen.pixels.at(nes::point{15, 0}) == RASPBERRY);
                 }
@@ -284,7 +284,7 @@ TEST_CASE("PPU") {
                 sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x00, .x = 0};
                 ppu.dma_write(mempage);
 
-                tick(ppu, 242 * 341); // Wait one frame
+                tick(ppu, screen, 242 * 341); // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{0, 0}) == CYAN);
             }
@@ -292,7 +292,7 @@ TEST_CASE("PPU") {
                 sprites[1] = nes::sprite{.y = 2, .tile = 1, .attr = 0x00, .x = 3};
                 ppu.dma_write(mempage);
 
-                tick(ppu, 242 * 341); // Wait one frame
+                tick(ppu, screen, 242 * 341); // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{3, 2}) == CYAN);
             }
@@ -300,7 +300,7 @@ TEST_CASE("PPU") {
                 sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x01, .x = 0};
                 ppu.dma_write(mempage);
 
-                tick(ppu, 242 * 341); // Wait one frame
+                tick(ppu, screen, 242 * 341); // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{0, 0}) == WHITE);
             }
@@ -308,7 +308,7 @@ TEST_CASE("PPU") {
                 sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x80, .x = 0};
                 ppu.dma_write(mempage);
 
-                tick(ppu, 242 * 341); // Wait one frame
+                tick(ppu, screen, 242 * 341); // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{0, 7}) == CYAN);
             }
@@ -316,7 +316,7 @@ TEST_CASE("PPU") {
                 sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x40, .x = 0};
                 ppu.dma_write(mempage);
 
-                tick(ppu, 242 * 341); // Wait one frame
+                tick(ppu, screen, 242 * 341); // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{7, 0}) == CYAN);
             }
@@ -329,8 +329,8 @@ TEST_CASE("PPU") {
                 write(0x2007, ppu, 1);
 
                 REQUIRE((ppu.status & 0x40) == 0);
-                tick(ppu, 1 * 341);             // Wait prerender scanline
-                tick(ppu, 2 + 129);             // Wait for first pixel to hit sprite 0
+                tick(ppu, screen, 1 * 341);             // Wait prerender scanline
+                tick(ppu, screen, 2 + 129);             // Wait for first pixel to hit sprite 0
 
                 CHECK((ppu.status & 0x40) != 0);
             }
