@@ -252,7 +252,6 @@ auto load_rom(auto filename) {
     assert(romfile.is_open());
 
     nes::ines_header header;
-    static_assert(sizeof(header) == 16);
     romfile.read(reinterpret_cast<char*>(&header), sizeof(header));
 
     if (header.prg_rom_chunks > 2)
