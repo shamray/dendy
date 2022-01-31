@@ -254,6 +254,10 @@ auto load_rom(auto filename) {
     nes::ines_header header;
     romfile.read(reinterpret_cast<char*>(&header), sizeof(header));
 
+    auto mapper_ix = (header.mapper1 >> 4) | (header.mapper2 & 0xF0);
+
+    assert(mapper_ix == 0 or mapper_ix == 1);
+
     if (header.prg_rom_chunks > 2)
         throw std::runtime_error("unsupported mapper, too many PRG sections");
 
