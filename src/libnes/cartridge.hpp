@@ -25,20 +25,32 @@ static_assert(sizeof(ines_header) == 16);
 class cartridge
 {
 public:
-    cartridge(std::vector<std::array<std::uint8_t, 16_Kb>> prg, std::array<std::uint8_t, 8_Kb> chr, name_table_mirroring mirroring)
-        : prg_{prg}
+    virtual ~cartridge() = default;
+
+    [[nodiscard]] virtual auto chr() const -> const pattern_table::memory_bank& = 0;
+    [[nodiscard]] virtual auto mirroring() const -> name_table_mirroring = 0;
+
+    [[nodiscard]] virtual auto write(std::uint16_t addr, std::uint8_t value) -> bool = 0;
+    [[nodiscard]] virtual auto read(std::uint16_t addr) -> std::optional<std::uint8_t>  = 0;
+};
+
+class nrom final: public cartridge
+{
+public:
+    nrom(std::vector<std::array<std::uint8_t, 16_Kb>> prg, std::array<std::uint8_t, 8_Kb> chr, name_table_mirroring mirroring)
+        : prg_{std::move(prg)}
         , chr_{chr}
         , mirroring_{mirroring}
     {}
 
-    [[nodiscard]] auto chr() const -> auto& { return chr_; }
-    [[nodiscard]] auto mirroring() const { return mirroring_; }
+    [[nodiscard]] auto chr() const -> const pattern_table::memory_bank& override { return chr_; }
+    [[nodiscard]] auto mirroring() const -> name_table_mirroring override { return mirroring_; }
 
-    [[nodiscard]] auto write(std::uint16_t addr, std::uint8_t value) -> bool {
+    [[nodiscard]] auto write(std::uint16_t addr, std::uint8_t value) -> bool override {
         return false;
     }
 
-    [[nodiscard]] auto read(std::uint16_t addr) -> std::optional<std::uint8_t> {
+    [[nodiscard]] auto read(std::uint16_t addr) -> std::optional<std::uint8_t> override {
         if (addr >= 0x8000 and addr <= 0xBFFF) {
             auto address = addr & 0x3FFF;
             auto& prg = prg_.front();
