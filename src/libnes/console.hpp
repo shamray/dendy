@@ -14,10 +14,14 @@ struct console_bus
         std::uint8_t snapshot{0};
     } j1;
 
-    console_bus(std::tuple<std::vector<std::array<std::uint8_t, 16_Kb>>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom, nes::ppu& ppu)
-        : cartridge{std::make_unique<nes::nrom>(std::get<0>(rom), std::get<1>(rom), std::get<2>(rom))}
+    console_bus(std::unique_ptr<cartridge> cartridge, nes::ppu& ppu)
+        : cartridge{std::move(cartridge)}
         , ppu{ppu}
     {
+        connect_cartridge();
+    }
+
+    void connect_cartridge() {
         ppu.connect_pattern_table(&cartridge->chr());
         ppu.nametable_mirroring(cartridge->mirroring());
     }
@@ -80,7 +84,7 @@ struct console_bus
 class console
 {
 public:
-    console(std::tuple<std::vector<std::array<std::uint8_t, 16_Kb>>, std::array<std::uint8_t, 8_Kb>, nes::name_table_mirroring>&& rom)
+    explicit console(std::unique_ptr<cartridge> rom)
         : bus_{std::move(rom), ppu_}
     {
     }

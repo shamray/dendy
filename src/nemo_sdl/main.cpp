@@ -247,7 +247,7 @@ struct screen
     }
 };
 
-auto load_rom(auto filename) {
+auto load_rom(auto filename) -> std::unique_ptr<nes::cartridge> {
     auto romfile = std::ifstream{filename, std::ifstream::binary};
     assert(romfile.is_open());
 
@@ -278,7 +278,7 @@ auto load_rom(auto filename) {
         ? nes::name_table_mirroring::vertical
         : nes::name_table_mirroring::horizontal;
 
-    return std::tuple{prg, chr, mirroring};
+    return std::make_unique<nes::nrom>(prg, chr, mirroring);
 }
 
 static std::random_device rd;
