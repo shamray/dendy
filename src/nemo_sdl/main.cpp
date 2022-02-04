@@ -258,27 +258,51 @@ auto load_rom(auto filename) -> std::unique_ptr<nes::cartridge> {
 
     assert(mapper_ix == 0 or mapper_ix == 1);
 
-    if (header.prg_rom_chunks > 2)
-        throw std::runtime_error("unsupported mapper, too many PRG sections");
+    if (mapper_ix == 0) {
+        if (header.prg_rom_chunks > 2)
+            throw std::runtime_error("unsupported mapper, too many PRG sections");
 
-    if (header.chr_rom_chunks > 1)
-        throw std::runtime_error("unsupported mapper, too many CHR sections");
+        if (header.chr_rom_chunks > 1)
+            throw std::runtime_error("unsupported mapper, too many CHR sections");
 
-    auto prg = std::vector<std::array<std::uint8_t, 16_Kb>>{};
+        auto prg = std::vector<std::array<std::uint8_t, 16_Kb>>{};
 
-    for (auto i = 0; i < header.prg_rom_chunks; ++i) {
-        prg.emplace_back();
-        romfile.read(reinterpret_cast<char*>(prg.back().data()), prg.back().size());
+        for (auto i = 0; i < header.prg_rom_chunks; ++i) {
+            prg.emplace_back();
+            romfile.read(reinterpret_cast<char*>(prg.back().data()), prg.back().size());
+        }
+
+        auto chr = std::array<std::uint8_t, 8_Kb>{};
+        romfile.read(reinterpret_cast<char*>(chr.data()), chr.size());
+
+        auto mirroring = (header.mapper1 & 0x01)
+                         ? nes::name_table_mirroring::vertical
+                         : nes::name_table_mirroring::horizontal;
+
+        return std::make_unique<nes::nrom>(prg, chr, mirroring);
     }
 
-    auto chr = std::array<std::uint8_t, 8_Kb>{};
-    romfile.read(reinterpret_cast<char*>(chr.data()), chr.size());
+    if (mapper_ix == 1) {
+        auto prg = std::vector<std::array<std::uint8_t, 16_Kb>>{};
 
-    auto mirroring = (header.mapper1 & 0x01)
-        ? nes::name_table_mirroring::vertical
-        : nes::name_table_mirroring::horizontal;
+        for (auto i = 0; i < header.prg_rom_chunks; ++i) {
+            prg.emplace_back();
+            romfile.read(reinterpret_cast<char*>(prg.back().data()), prg.back().size());
+        }
 
-    return std::make_unique<nes::nrom>(prg, chr, mirroring);
+        auto chr = std::vector<std::array<std::uint8_t, 4_Kb>>{};
+
+        for (auto i = 0; i < header.chr_rom_chunks; ++i) {
+            chr.emplace_back();
+            romfile.read(reinterpret_cast<char*>(chr.back().data()), chr.back().size());
+        }
+
+        return std::make_unique<nes::mmc1>(prg, chr);
+    }
+
+    throw std::runtime_error("Unsupported mapper " + std::to_string(mapper_ix));
+
+
 }
 
 static std::random_device rd;
