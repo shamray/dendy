@@ -2,9 +2,11 @@
 
 #include <libnes/literals.hpp>
 #include <libnes/ppu_name_table.hpp>
+#include <libnes/ppu_pattern_table.hpp>
 
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 namespace nes {
 
