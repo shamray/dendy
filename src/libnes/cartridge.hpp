@@ -32,7 +32,7 @@ public:
     [[nodiscard]] virtual auto chr() const -> const pattern_table::memory_bank& = 0;
     [[nodiscard]] virtual auto mirroring() const -> name_table_mirroring = 0;
 
-    [[nodiscard]] virtual auto write(std::uint16_t addr, std::uint8_t value) -> bool = 0;
+    virtual auto write(std::uint16_t addr, std::uint8_t value) -> bool = 0;
     [[nodiscard]] virtual auto read(std::uint16_t addr) -> std::optional<std::uint8_t>  = 0;
 };
 
@@ -48,7 +48,7 @@ public:
     [[nodiscard]] auto chr() const -> const pattern_table::memory_bank& override { return chr_; }
     [[nodiscard]] auto mirroring() const -> name_table_mirroring override { return mirroring_; }
 
-    [[nodiscard]] auto write(std::uint16_t addr, std::uint8_t value) -> bool override {
+    auto write(std::uint16_t addr, std::uint8_t value) -> bool override {
         return false;
     }
 
@@ -86,16 +86,34 @@ public:
     {}
 
     [[nodiscard]] auto chr() const -> const pattern_table::memory_bank& override {
+        memcpy(mapped_chr_.data(),          chr_[0].data(), 4_Kb);
+        memcpy(mapped_chr_.data() + 4_Kb,   chr_[1].data(), 4_Kb);
         return mapped_chr_;
     }
 
     [[nodiscard]] auto mirroring() const -> name_table_mirroring override { return mirroring_; }
 
-    [[nodiscard]] auto write(std::uint16_t addr, std::uint8_t value) -> bool override {
+    auto write(std::uint16_t addr, std::uint8_t value) -> bool override {
+        if (addr >= 0x8000 and addr <= 0xFFFF)
+            return true;
         return false;
     }
 
     [[nodiscard]] auto read(std::uint16_t addr) -> std::optional<std::uint8_t> override {
+        if (addr >= 0x8000 and addr <= 0xBFFF) {
+            auto address = addr & 0x3FFF;
+            auto& prg = prg_.front();
+
+            return prg[address];
+        }
+
+        if (addr >= 0x8000 and addr <= 0xFFFF) {
+            auto address = addr & 0x3FFF;
+            auto& prg = prg_.back();
+
+            return prg[address];
+        }
+
         return std::nullopt;
     }
 
@@ -104,7 +122,7 @@ private:
     std::vector<std::array<std::uint8_t, 4_Kb>> chr_;
     name_table_mirroring mirroring_{name_table_mirroring::horizontal};
 
-    std::array<std::uint8_t, 8_Kb> mapped_chr_{};
+    mutable std::array<std::uint8_t, 8_Kb> mapped_chr_{};
 };
 
 }

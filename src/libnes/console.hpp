@@ -50,6 +50,8 @@ struct console_bus
         if (addr < 0x800) {
             mem[addr] = value;
         }
+
+        cartridge->write(addr, value);
     }
 
     std::uint8_t read(std::uint16_t addr) {
