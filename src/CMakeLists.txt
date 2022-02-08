@@ -20,6 +20,8 @@ add_library(libnes
     libnes/ppu_palette_table.hpp
     libnes/ppu_pattern_table.hpp
     libnes/screen.hpp
+
+    libnes/mappers/mmc1.hpp
 )
 
 target_include_directories(libnes PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
