@@ -21,6 +21,7 @@ add_library(libnes
     libnes/ppu_pattern_table.hpp
     libnes/screen.hpp
 
+    libnes/mappers/nrom.hpp
     libnes/mappers/mmc1.hpp
 )
 
