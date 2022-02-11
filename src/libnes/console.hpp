@@ -3,6 +3,7 @@
 #include <libnes/ppu.hpp>
 #include <libnes/cpu.hpp>
 #include <libnes/cartridge.hpp>
+#include <libnes/mappers/mmc1.hpp>
 
 namespace nes {
 
