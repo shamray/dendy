@@ -4,6 +4,7 @@
 #include <libnes/cpu.hpp>
 #include <libnes/cartridge.hpp>
 #include <libnes/mappers/mmc1.hpp>
+#include <libnes/mappers/nrom.hpp>
 
 namespace nes {
 

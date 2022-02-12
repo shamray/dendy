@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <optional>
+#include <array>
 
 namespace nes {
 
