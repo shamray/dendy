@@ -9,21 +9,62 @@
 
 namespace nes {
 
-class mmc1_registers
+class mmc1_shift_register
 {
-    enum class prg_mode: std::uint8_t { switch32k, switch_16k_lo, switch_16k_hi};
-    enum class chr_mode: std::uint8_t { switch8k, switch4k };
-    enum class mirroring_mode: std::uint8_t { one_screen_lo, one_screen_hi, vertical, horizontal};
+    [[nodiscard]] constexpr static auto reset(std::uint8_t v) { return (v & 0x80) != 0; }
+public:
+    constexpr void load(std::uint8_t next_bit) {
+        assert(count_ < 5);
 
-    constexpr void load(std::uint8_t byte);
+        if (reset(next_bit)) {
+            reset_ = true;
 
-    [[nodiscard]] constexpr auto control() const -> std::uint8_t;
-    [[nodiscard]] constexpr auto mirroring() const -> name_table_mirroring;
+            value_ = 0;
+            count_ = 0;
 
-    [[nodiscard]] constexpr auto chr0() const -> std::uint8_t;
-    [[nodiscard]] constexpr auto chr1() const -> std::uint8_t;
-    [[nodiscard]] constexpr auto prg() const -> std::uint8_t;
+        } else {
+            reset_ = false;
+            count_ += 1;
+
+            value_ <<= 1;
+            value_ |= (next_bit & 0x01);
+        }
+    }
+
+    [[nodiscard]] constexpr auto is_reset() const -> bool { return reset_; }
+    [[nodiscard]] constexpr auto get_value() -> std::optional<std::uint8_t> {
+        if (count_ < 5)
+            return std::nullopt;
+
+        assert(!reset_);
+
+        auto result = value_;
+        value_ = 0;
+        count_ = 0;
+        return result;
+    }
+
+private:
+    bool reset_{false};
+    std::uint8_t value_{0};
+    int count_{0};
 };
+
+//class mmc1_registers
+//{
+//    enum class prg_mode: std::uint8_t { switch32k, switch_16k_lo, switch_16k_hi};
+//    enum class chr_mode: std::uint8_t { switch8k, switch4k };
+//    enum class mirroring_mode: std::uint8_t { one_screen_lo, one_screen_hi, vertical, horizontal};
+//
+//    constexpr void load(std::uint16_t addr, std::uint8_t value);
+//
+//    [[nodiscard]] constexpr auto control() const -> std::uint8_t;
+//    [[nodiscard]] constexpr auto mirroring() const -> name_table_mirroring;
+//
+//    [[nodiscard]] constexpr auto chr0() const -> std::uint8_t;
+//    [[nodiscard]] constexpr auto chr1() const -> std::uint8_t;
+//    [[nodiscard]] constexpr auto prg() const -> std::uint8_t;
+//};
 
 class mmc1 final: public cartridge
 {
@@ -42,8 +83,10 @@ public:
     [[nodiscard]] auto mirroring() const -> name_table_mirroring override { return mirroring_; }
 
     auto write(std::uint16_t addr, std::uint8_t value) -> bool override {
-        if (addr >= 0x8000 and addr <= 0xFFFF)
-            return true;
+        if (addr < 0x8000)
+            return false;
+
+//        registers_.load(addr, value);
         return false;
     }
 
@@ -69,6 +112,8 @@ private:
     std::vector<std::array<std::uint8_t, 16_Kb>> prg_;
     std::vector<std::array<std::uint8_t, 4_Kb>> chr_;
     name_table_mirroring mirroring_{name_table_mirroring::horizontal};
+
+    mmc1_shift_register shift_register_;
 
     mutable std::array<std::uint8_t, 8_Kb> mapped_chr_{};
 };
