@@ -38,6 +38,18 @@ TEST_CASE("MMC1 registers") {
             CHECK(sr.get_value() == 0b11101);
         }
 
+        SECTION("load five bits - getting value mutates state") {
+            sr.load(1);
+            sr.load(1);
+            sr.load(1);
+            sr.load(0);
+            sr.load(1);
+
+            [[maybe_unused]] auto _ = sr.get_value();
+
+            CHECK(sr.get_value() == std::nullopt);
+        }
+
         SECTION("load five bits - higher bits are ignored") {
             sr.load(0x7f);
             sr.load(0x7e);
