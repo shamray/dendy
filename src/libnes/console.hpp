@@ -53,7 +53,9 @@ struct console_bus
             mem[addr] = value;
         }
 
-        cartridge->write(addr, value);
+        if (cartridge->write(addr, value)) {
+            ppu.connect_pattern_table(&cartridge->chr());
+        }
     }
 
     std::uint8_t read(std::uint16_t addr) {

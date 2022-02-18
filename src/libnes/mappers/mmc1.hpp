@@ -75,8 +75,8 @@ public:
     {}
 
     [[nodiscard]] auto chr() const -> const pattern_table::memory_bank& override {
-        memcpy(mapped_chr_.data(),          chr_[0].data(), 4_Kb);
-        memcpy(mapped_chr_.data() + 4_Kb,   chr_[1].data(), 4_Kb);
+        memcpy(mapped_chr_.data(),          chr_[chr_ix0_].data(), 4_Kb);
+        memcpy(mapped_chr_.data() + 4_Kb,   chr_[chr_ix1_].data(), 4_Kb);
         return mapped_chr_;
     }
 
@@ -86,14 +86,23 @@ public:
         if (addr < 0x8000)
             return false;
 
-//        registers_.load(addr, value);
+        shift_register_.load(value);
+        if (auto r = shift_register_.get_value(); r.has_value()) {
+            if (addr < 0xA000)      control_ = r.value();
+            else if (addr < 0xC000) chr_ix0_ = r.value();
+            else if (addr < 0xE000) chr_ix1_ = r.value();
+            else                    prg_ix_ = r.value();
+
+            return true;
+        }
+
         return false;
     }
 
     [[nodiscard]] auto read(std::uint16_t addr) -> std::optional<std::uint8_t> override {
         if (addr >= 0x8000 and addr <= 0xBFFF) {
             auto address = addr & 0x3FFF;
-            auto& prg = prg_.front();
+            auto& prg = prg_[prg_ix_ % prg_.size()];
 
             return prg[address];
         }
@@ -114,6 +123,10 @@ private:
     name_table_mirroring mirroring_{name_table_mirroring::horizontal};
 
     mmc1_shift_register shift_register_;
+    std::uint8_t control_;
+    std::uint8_t chr_ix0_{0};
+    std::uint8_t chr_ix1_{0};
+    std::uint8_t prg_ix_{0};
 
     mutable std::array<std::uint8_t, 8_Kb> mapped_chr_{};
 };
