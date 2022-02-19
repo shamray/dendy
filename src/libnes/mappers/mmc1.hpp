@@ -123,7 +123,7 @@ private:
     name_table_mirroring mirroring_{name_table_mirroring::horizontal};
 
     mmc1_shift_register shift_register_;
-    std::uint8_t control_;
+    std::uint8_t control_{0x0C};
     std::uint8_t chr_ix0_{0};
     std::uint8_t chr_ix1_{0};
     std::uint8_t prg_ix_{0};
