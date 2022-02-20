@@ -60,10 +60,6 @@ public:
 
         [[nodiscard]] bool is_finished() const noexcept { return c_ == 0 && ac_ == 0; }
 
-//        [[nodiscard]] auto save_state() const { return std::tuple{command_, c_, ac_}; }
-
-//        void load_state(std::function<int(cpu&)> command, int c, int ac) { command_ = command; c_ = c; ac_ = ac; }
-
     private:
         std::function<int(cpu&)> command_;
         int c_{0};
