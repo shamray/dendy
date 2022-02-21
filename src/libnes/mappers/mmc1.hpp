@@ -50,22 +50,6 @@ private:
     int count_{0};
 };
 
-//class mmc1_registers
-//{
-//    enum class prg_mode: std::uint8_t { switch32k, switch_16k_lo, switch_16k_hi};
-//    enum class chr_mode: std::uint8_t { switch8k, switch4k };
-//    enum class mirroring_mode: std::uint8_t { one_screen_lo, one_screen_hi, vertical, horizontal};
-//
-//    constexpr void load(std::uint16_t addr, std::uint8_t value);
-//
-//    [[nodiscard]] constexpr auto control() const -> std::uint8_t;
-//    [[nodiscard]] constexpr auto mirroring() const -> name_table_mirroring;
-//
-//    [[nodiscard]] constexpr auto chr0() const -> std::uint8_t;
-//    [[nodiscard]] constexpr auto chr1() const -> std::uint8_t;
-//    [[nodiscard]] constexpr auto prg() const -> std::uint8_t;
-//};
-
 class mmc1 final: public cartridge
 {
 public:
@@ -100,16 +84,23 @@ public:
     }
 
     [[nodiscard]] auto read(std::uint16_t addr) -> std::optional<std::uint8_t> override {
+        auto prg_mode = (control_ & 0b01100) >> 2;
+        assert(prg_mode == 2 or prg_mode == 3);
+
         if (addr >= 0x8000 and addr <= 0xBFFF) {
             auto address = addr & 0x3FFF;
-            auto& prg = prg_[prg_ix_ % prg_.size()];
+            auto& prg = prg_mode == 3
+                ? prg_[prg_ix_ % prg_.size()]
+                : prg_.front();
 
             return prg[address];
         }
 
         if (addr >= 0x8000 and addr <= 0xFFFF) {
             auto address = addr & 0x3FFF;
-            auto& prg = prg_.back();
+            auto& prg = prg_mode == 3
+                ? prg_.back()
+                : prg_[prg_ix_ % prg_.size()];
 
             return prg[address];
         }
