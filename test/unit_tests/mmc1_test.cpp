@@ -35,7 +35,7 @@ TEST_CASE("MMC1 registers") {
             sr.load(0);
             sr.load(1);
 
-            CHECK(sr.get_value() == 0b11101);
+            CHECK(sr.get_value() == 0b10111);
         }
 
         SECTION("load five bits - getting value mutates state") {

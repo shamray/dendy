@@ -26,8 +26,8 @@ public:
             reset_ = false;
             count_ += 1;
 
-            value_ <<= 1;
-            value_ |= (next_bit & 0x01);
+            value_ >>= 1;
+            value_ |= (next_bit & 0x01) << 4;
         }
     }
 
@@ -75,7 +75,9 @@ public:
             if (addr < 0xA000)      control_ = r.value();
             else if (addr < 0xC000) chr_ix0_ = r.value();
             else if (addr < 0xE000) chr_ix1_ = r.value();
-            else                    prg_ix_ = r.value();
+            else {
+                prg_ix_ = r.value();
+            }
 
             return true;
         }
@@ -85,7 +87,7 @@ public:
 
     [[nodiscard]] auto read(std::uint16_t addr) -> std::optional<std::uint8_t> override {
         auto prg_mode = (control_ & 0b01100) >> 2;
-        assert(prg_mode == 2 or prg_mode == 3);
+        assert(prg_mode == 3);
 
         if (addr >= 0x8000 and addr <= 0xBFFF) {
             auto address = addr & 0x3FFF;
@@ -96,7 +98,7 @@ public:
             return prg[address];
         }
 
-        if (addr >= 0x8000 and addr <= 0xFFFF) {
+        if (addr >= 0xC000 and addr <= 0xFFFF) {
             auto address = addr & 0x3FFF;
             auto& prg = prg_mode == 3
                 ? prg_.back()
