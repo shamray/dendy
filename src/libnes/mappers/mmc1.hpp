@@ -59,8 +59,8 @@ public:
     {}
 
     [[nodiscard]] auto chr() const -> const pattern_table::memory_bank& override {
-        memcpy(mapped_chr_.data(),          chr_[chr_ix0_].data(), 4_Kb);
-        memcpy(mapped_chr_.data() + 4_Kb,   chr_[chr_ix1_].data(), 4_Kb);
+        memcpy(mapped_chr_.data(),          chr_[chr_ix0_ % chr_.size()].data(), 4_Kb);
+        memcpy(mapped_chr_.data() + 4_Kb,   chr_[chr_ix1_ % chr_.size()].data(), 4_Kb);
         return mapped_chr_;
     }
 
