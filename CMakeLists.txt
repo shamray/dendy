@@ -13,8 +13,6 @@ conan_cmake_configure(
 	REQUIRES
 		catch2/[>=2.13]
 		sdl/[>=2.0.14]
-		imgui/[>=1.83]
-		opengl/system
 	GENERATORS
 		cmake_find_package
 )
