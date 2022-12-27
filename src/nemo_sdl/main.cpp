@@ -19,6 +19,8 @@
 #include <string>
 #include <deque>
 #include <numeric>
+#include <filesystem>
+
 #include "icon16.hpp"
 
 using namespace nes::literals;
@@ -310,7 +312,7 @@ static std::mt19937 gen(rd());
 
 struct config
 {
-    std::string filename;
+    std::filesystem::path filename;
 };
 
 auto parse(int argc, char *argv[]) {
@@ -326,10 +328,11 @@ int main(int argc, char *argv[]) {
     auto config = parse(argc, argv);
     auto frontend = sdl::frontend::create();
 
-    auto window = sdl::main_window("NES Emulator", config.filename);
+    auto caption = config.filename.filename().string();
+    auto window = sdl::main_window("NES Emulator", caption);
 
     auto scr = screen{};
-    auto console = nes::console{load_rom("rom/"s + config.filename)};
+    auto console = nes::console{load_rom(config.filename)};
 
     const auto FPS   = 60;
     const auto DELAY = static_cast<int>(1000.0f / FPS);
