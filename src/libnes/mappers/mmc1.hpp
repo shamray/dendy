@@ -87,7 +87,17 @@ public:
 
     [[nodiscard]] auto read(std::uint16_t addr) -> std::optional<std::uint8_t> override {
         auto prg_mode = (control_ & 0b01100) >> 2;
-        assert(prg_mode == 3);
+
+        if (prg_mode == 0 or prg_mode == 1) {
+            auto address = addr & 0x3FFF;
+            auto prg_offset = addr & 0x8000
+                ? 1
+                : 0;
+            auto ix = (prg_ix_ * 2) + prg_offset;
+            auto& prg = prg_[ix];
+
+            return prg[address];
+        }
 
         if (addr >= 0x8000 and addr <= 0xBFFF) {
             auto address = addr & 0x3FFF;
