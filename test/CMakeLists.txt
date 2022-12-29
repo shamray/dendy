@@ -12,7 +12,7 @@ add_executable(unit_tests
 
 target_link_libraries(unit_tests
     libnes
-    Catch2::Catch2
+    Catch2::Catch2WithMain
 )
 
 catch_discover_tests(unit_tests)
@@ -23,7 +23,7 @@ add_executable(integration_tests
 
 target_link_libraries(integration_tests
     libnes
-    Catch2::Catch2
+    Catch2::Catch2WithMain
 )
 
 add_custom_command(

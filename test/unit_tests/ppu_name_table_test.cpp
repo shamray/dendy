@@ -1,5 +1,5 @@
 #include <libnes/ppu_name_table.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 TEST_CASE("nametable") {
     auto nt = nes::name_table{};

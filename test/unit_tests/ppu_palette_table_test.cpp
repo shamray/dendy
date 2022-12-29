@@ -1,5 +1,5 @@
 #include <libnes/ppu_palette_table.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 TEST_CASE("palette address") {
     auto pt = nes::palette_table{nes::DEFAULT_COLORS};

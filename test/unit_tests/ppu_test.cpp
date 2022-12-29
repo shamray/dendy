@@ -1,7 +1,7 @@
 #include <libnes/ppu.hpp>
 #include <libnes/literals.hpp>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <ranges>
 #include <unordered_map>

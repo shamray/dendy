@@ -11,7 +11,7 @@ endif()
 include("${CMAKE_BINARY_DIR}/conan.cmake")
 conan_cmake_configure(
 	REQUIRES
-		catch2/[>=2.13]
+		catch2/[>=3.0]
 		sdl/[>=2.0.14]
 	GENERATORS
 		cmake_find_package
@@ -20,7 +20,7 @@ conan_cmake_autodetect(settings)
 conan_cmake_install(PATH_OR_REFERENCE . BUILD missing SETTINGS ${settings})
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
-find_package(Catch2 REQUIRED)
+find_package(Catch2 3 REQUIRED)
 find_package(SDL2 REQUIRED)
 
 include(Catch)

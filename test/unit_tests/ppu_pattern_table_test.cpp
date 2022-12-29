@@ -1,6 +1,6 @@
 #include <libnes/ppu_pattern_table.hpp>
 #include <libnes/literals.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 using namespace nes::literals;
 

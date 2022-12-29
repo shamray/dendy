@@ -1,5 +1,5 @@
 #include <libnes/cartridge.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <libnes/mappers/mmc1.hpp>
 
