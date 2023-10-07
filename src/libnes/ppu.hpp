@@ -153,16 +153,8 @@ private:
         return r;
     }
 
-    constexpr void write_ctrl(std::uint8_t value) {
-        control = value;
-        if (scan_.is_vblank()) {
-            status |= 0x80;
-            if (control & 0x80)
-                nmi = true;
-        }
-    }
-
-    void write_oama(std::uint8_t value) { oam_.address = value; }
+    constexpr void write_ctrl(std::uint8_t value) { control = value; }
+    constexpr void write_oama(std::uint8_t value) { oam_.address = value; }
     void write_oamd(std::uint8_t value) { oam_.write(value); }
 
     constexpr void write_scrl(std::uint8_t value) {
