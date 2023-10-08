@@ -294,7 +294,7 @@ auto load_rom(auto filename) -> std::unique_ptr<nes::cartridge> {
 
         auto chr = std::vector<std::array<std::uint8_t, 4_Kb>>{};
 
-        for (auto i = 0; i < header.chr_rom_chunks; ++i) {
+        for (auto i = 0; i < header.chr_rom_chunks * 2; ++i) {
             chr.emplace_back();
             romfile.read(reinterpret_cast<char*>(chr.back().data()), chr.back().size());
         }
