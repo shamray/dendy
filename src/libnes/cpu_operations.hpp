@@ -30,7 +30,7 @@ inline auto index(std::uint16_t base, std::int16_t offset) {
 
 inline auto arith_result(int x) {
     auto c = (x / 0x100) != 0;
-    auto r = (x % 0x100);
+    auto r = static_cast<std::uint8_t>(x % 0x100);
 
     return std::tuple{r, c};
 }
@@ -402,10 +402,10 @@ const auto jsr = [](auto &cpu, auto address_mode) {
     return 0;
 };
 
-const auto rts = [](auto &cpu, auto _) {
+const auto rts = [](auto &cpu, auto ) {
     auto lo = cpu.read(cpu.s.pop());
     auto hi = cpu.read(cpu.s.pop());
-    auto address = (hi << 8) | lo;
+    auto address = static_cast<std::uint16_t>((hi << 8) | lo);
     cpu.pc.assign(address + 1);
 
     return 0;
@@ -416,7 +416,7 @@ const auto rti = [](auto &cpu, auto _) {
 
     auto lo = cpu.read(cpu.s.pop());
     auto hi = cpu.read(cpu.s.pop());
-    auto address = (hi << 8) | lo;
+    auto address = static_cast<std::uint16_t>((hi << 8) | lo);
     cpu.pc.assign(address);
 
     return 0;

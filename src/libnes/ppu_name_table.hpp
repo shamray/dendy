@@ -34,7 +34,7 @@ public:
     }
 
     name_table() {
-        std::ranges::for_each(vram_, [](auto& x){ std::ranges::fill(x, 0); });
+        std::ranges::for_each(vram_, [](auto& x){ std::ranges::fill(x, std::uint8_t{0}); });
     }
 
 private:

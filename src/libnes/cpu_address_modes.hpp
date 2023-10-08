@@ -129,7 +129,7 @@ const auto ind = [](auto& cpu) {
 
 const auto izx = [](auto& cpu) {
     return memory_based_address_mode{cpu, [](auto& cpu ) {
-        auto indexed = (cpu.read(cpu.pc.advance()) + cpu.x.value()) % 0x100;
+        auto indexed = static_cast<std::uint16_t>((cpu.read(cpu.pc.advance()) + cpu.x.value()) % 0x100);
         return std::tuple{cpu.read_word_wrapped(indexed), 0};
     }};
 };

@@ -1,6 +1,6 @@
 add_library(libnes
     libnes/color.hpp
-        libnes/literals.hpp
+    libnes/literals.hpp
 
     libnes/console.hpp
     libnes/cartridge.hpp
@@ -26,6 +26,11 @@ add_library(libnes
 
 target_include_directories(libnes PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_features(libnes PUBLIC cxx_std_20)
+
+target_compile_options(libnes PUBLIC
+        $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
+)
 
 add_executable(nemo_sdl WIN32
     nemo_sdl/main.cpp

@@ -120,8 +120,8 @@ public:
 };
 
 
-template <bus bus_t> cpu<bus_t>::cpu(bus_t& bus)
-    : bus_{bus}
+template <bus bus_t> cpu<bus_t>::cpu(bus_t& b)
+    : bus_{b}
 {
     pc.assign(read_word(0xFFFC));
 }

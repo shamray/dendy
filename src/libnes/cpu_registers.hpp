@@ -98,8 +98,8 @@ public:
 
     void assign(std::uint8_t val) { val_ = val; }
 
-    auto push() { return stack_base_ + val_--; }
-    auto pop()  { return stack_base_ + ++val_; }
+    auto push() { return static_cast<std::uint16_t>(stack_base_ + val_--); }
+    auto pop()  { return static_cast<std::uint16_t>(stack_base_ + ++val_); }
 
     [[nodiscard]] auto value() const { return val_; }
 

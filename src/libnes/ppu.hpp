@@ -135,10 +135,10 @@ public:
 
 private:
     [[nodiscard]] constexpr auto read_stat() -> std::uint8_t {
-        auto d = status & 0xE0;
+        auto requested_status = static_cast<std::uint8_t>(status & 0xe0);
         status &= 0x60;     // reset vblank
         address_latch = 0;
-        return d;
+        return requested_status;
     }
 
     [[nodiscard]] constexpr auto read_data() -> std::uint8_t {
@@ -186,7 +186,7 @@ private:
         else {
             // ppu chr write
         }
-        auto inc = (control & 0x04) ? 32 : 1;
+        auto inc = (control & 0x04) ? std::int8_t{32} : std::int8_t{1};
         address += inc;
     }
 
@@ -195,8 +195,12 @@ private:
     std::uint8_t nametable_index_x_{0};
     std::uint8_t nametable_index_y_{0};
 
-    [[nodiscard]] constexpr auto nametable_index_x() const { return (control >> 0) & 0x01; }
-    [[nodiscard]] constexpr auto nametable_index_y() const { return (control >> 1) & 0x01; }
+    [[nodiscard]] constexpr auto nametable_index_x() const {
+        return static_cast<std::uint8_t>((control >> 0) & 0x01);
+    }
+    [[nodiscard]] constexpr auto nametable_index_y() const {
+        return static_cast<std::uint8_t>((control >> 1) & 0x01);
+    }
 
     [[nodiscard]] constexpr auto pattern_table_bg_index() const { return (control & 0x10) >> 4; }
     [[nodiscard]] constexpr auto pattern_table_fg_index() const { return (control & 0x08) >> 3; }
@@ -211,8 +215,8 @@ private:
 
     [[nodiscard]] constexpr static auto read_tile_pixel(const auto& pattern_table, auto ix, auto tile, auto x, auto y) {
         const auto tile_offset = ix * 0x1000 + tile * 0x10;
-        const auto tile_lsb = pattern_table.read(tile_offset + y + 0);
-        const auto tile_msb = pattern_table.read(tile_offset + y + 8);
+        const auto tile_lsb = pattern_table.read(static_cast<std::uint16_t>(tile_offset + y + 0));
+        const auto tile_msb = pattern_table.read(static_cast<std::uint16_t>(tile_offset + y + 8));
         const auto pixel_lo = (tile_lsb >> (7 - x)) & 0x01;
         const auto pixel_hi = (tile_msb >> (7 - x)) & 0x01;
         return static_cast<std::uint8_t>(pixel_lo | (pixel_hi << 1));
@@ -230,7 +234,7 @@ private:
         if ((tile_y % 4) >> 1) {
             attr_byte = attr_byte >> 4;
         }
-        return attr_byte & 0x03;
+        return static_cast<std::uint8_t>(attr_byte & 0x03);
     }
 
     [[nodiscard]] constexpr static auto read_tile_palette(const auto& name_table, auto tile_x, auto tile_y, auto nametable_index) {
@@ -284,7 +288,7 @@ private:
     constexpr void postrender_scanline(screen_t& screen) noexcept {
         if (scan_.cycle() == 0) {
             for (const auto& s: oam_.sprites) {
-                auto palette = (s.attr & 0x03) + 4;
+                auto palette = static_cast<std::uint8_t>((s.attr & 0x03) + 4);
 
                 for (auto i = 0; i < 8; ++i) {
                     for (auto j = 0; j < 8; ++j) {

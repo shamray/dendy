@@ -21,7 +21,7 @@ public:
     [[nodiscard]] auto chr() const -> const pattern_table::memory_bank& override { return chr_; }
     [[nodiscard]] auto mirroring() const -> name_table_mirroring override { return mirroring_; }
 
-    auto write(std::uint16_t addr, std::uint8_t value) -> bool override {
+    auto write(std::uint16_t, std::uint8_t) -> bool override {
         return false;
     }
 

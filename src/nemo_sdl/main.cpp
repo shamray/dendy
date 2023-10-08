@@ -142,7 +142,7 @@ public:
         SDL_FreeSurface(icon);
     }
 
-    void display_fps(double fps) {
+    void display_fps(float fps) {
         fps_.push_back(fps);
         if (fps_.size() > 100) {
             fps_.pop_front();
@@ -368,7 +368,7 @@ int main(int argc, char *argv[]) {
 
         frameTime = SDL_GetTicks() - frameStart;
 
-        window.display_fps(1.0 / frameTime * 1000);
+        window.display_fps(1.0f / frameTime * 1000);
         if (frameTime < DELAY) {
             SDL_Delay((int)(DELAY - frameTime));
         }

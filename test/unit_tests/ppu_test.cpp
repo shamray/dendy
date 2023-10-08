@@ -37,14 +37,16 @@ struct test_screen
 };
 
 template <class... args_t>
-void write(std::uint16_t addr, nes::ppu& ppu, std::uint8_t byte, args_t... args) {
-    ppu.write(addr, byte);
+void write(std::uint16_t addr, nes::ppu& ppu, int byte, args_t... args) {
+    if ((byte & 0xff) != byte)
+        throw std::logic_error(std::format("{} is not byte", byte));
+    ppu.write(addr, static_cast<std::uint8_t>(byte));
     write(addr, ppu, args...);
 }
 
 template <>
-void write(std::uint16_t addr, nes::ppu& ppu, std::uint8_t byte) {
-    ppu.write(addr, byte);
+void write(std::uint16_t addr, nes::ppu& ppu, int byte) {
+    ppu.write(addr, static_cast<std::uint8_t>(byte));
 }
 
 auto empty_pattern_table() {
@@ -52,7 +54,7 @@ auto empty_pattern_table() {
 }
 
 template <class input_type>
-auto pattern_table(std::uint8_t index, input_type&& tile) {
+auto pattern_table(int index, input_type&& tile) {
     assert(tile.size() == 16);
     auto chr = empty_pattern_table();
     std::ranges::copy(tile, std::next(std::begin(chr), index * tile.size()));
@@ -60,7 +62,7 @@ auto pattern_table(std::uint8_t index, input_type&& tile) {
 }
 
 template <class input_type, class... args_t>
-auto pattern_table(std::uint8_t index, input_type&& tile, args_t... args) {
+auto pattern_table(int index, input_type&& tile, args_t... args) {
     assert(tile.size() == 16);
     auto chr = pattern_table(args...);
     std::ranges::copy(tile, std::next(std::begin(chr), index * tile.size()));

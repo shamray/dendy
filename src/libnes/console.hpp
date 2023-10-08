@@ -69,7 +69,7 @@ struct console_bus
             return r.value();
 
         if (addr == 0x4016) {
-            auto r = (j1.snapshot & 0x80) ? 1 : 0;
+            auto r = (j1.snapshot & 0x80) ? std::uint8_t{1} : std::uint8_t{0};
             j1.snapshot <<= 1;
             return r;
         }

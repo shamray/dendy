@@ -1,11 +1,9 @@
 #pragma once
 
-namespace nes
-{
+#include <cstddef>
 
-inline namespace literals
+namespace nes::inline literals
 {
-constexpr auto operator""_Kb(size_t const x) { return x * 1024; }
+constexpr auto operator""_Kb(std::size_t const x) { return x * 1024; }
 }
 
-}

@@ -77,7 +77,9 @@ TEST_CASE("The ultimate NES CPU test ROM (aka nestest)")
 
     try
     {
-        log << "nestest, test started: " << std::ctime(&start_time) << '\n' << std::endl;
+        auto buffer = std::array<char, 0x100>{};
+        ctime_s(buffer.data(), buffer.size(), &start_time);
+        log << "nestest, test started: " << buffer.data() << '\n' << std::endl;
 
         for (;!cpu.is_test_finished(); ++cycle) {
             if (cycle > 10000000)
