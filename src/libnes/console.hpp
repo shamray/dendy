@@ -29,11 +29,13 @@ struct console_bus
     }
 
     auto nmi() {
-        if (not ppu.nmi)
+        if (not ppu.nmi_raised)
             return false;
 
-        ppu.nmi = false;
-        return true;
+        auto nmi_signal = ppu.nmi_raised and not ppu.nmi_seen;
+        ppu.nmi_seen = true;
+
+        return nmi_signal;
     }
 
     void write(std::uint16_t addr, std::uint8_t value) {

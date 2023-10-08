@@ -47,7 +47,8 @@ public:
     std::uint8_t scroll_x_buffer{0};
     std::uint8_t scroll_y_buffer{0};
 
-    bool nmi{false};
+    bool nmi_raised{false};
+    bool nmi_seen{false};
 
     int address_latch{0};
     std::uint16_t address;
@@ -306,7 +307,7 @@ private:
         if (scan_.cycle() == 0) {
             status |= 0x80;
             if (control & 0x80)
-                nmi = true;
+                nmi_raised = true;
         }
     };
 
@@ -356,6 +357,7 @@ constexpr void ppu::prerender_scanline() noexcept {
     if (scan_.cycle() == 0) {
         status = 0x00;
         control &= 0xFE;
+        nmi_seen = false;
     }
     if (scan_.cycle() >= 280) {
         scroll_y = scroll_y_buffer;
