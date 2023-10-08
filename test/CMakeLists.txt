@@ -1,7 +1,6 @@
 add_executable(unit_tests
     unit_tests/cpu_test.cpp
-    unit_tests/clock_test.cpp
-    unit_tests/main.cpp
+        unit_tests/main.cpp
     unit_tests/ppu_crt_scan_test.cpp
     unit_tests/ppu_name_table_test.cpp
     unit_tests/ppu_palette_table_test.cpp

@@ -1,7 +1,6 @@
 add_library(libnes
     libnes/color.hpp
-    libnes/clock.hpp
-    libnes/literals.hpp
+        libnes/literals.hpp
 
     libnes/console.hpp
     libnes/cartridge.hpp

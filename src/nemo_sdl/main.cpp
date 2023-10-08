@@ -1,12 +1,9 @@
 #include <libnes/ppu.hpp>
 #include <libnes/cpu.hpp>
-#include <libnes/clock.hpp>
 #include <libnes/literals.hpp>
 #include <libnes/console.hpp>
 
 #include <SDL2/SDL.h>
-
-//#include <imgui/imgui_impl_sdl.h>
 
 #include <stdexcept>
 #include <array>
@@ -113,16 +110,6 @@ public:
             throw std::runtime_error("Cannot create window");
 
         glcontext_ = SDL_GL_CreateContext(window_);
-
-//        // Setup Dear ImGui context
-//        IMGUI_CHECKVERSION();
-//        ImGui::CreateContext();
-//        ImGuiIO &io = ImGui::GetIO();
-//        // Setup Platform/Renderer bindings
-//        ImGui_ImplGlfw_InitForOpenGL(window, true);
-//        ImGui_ImplOpenGL3_Init(glsl_version);
-//        // Setup Dear ImGui style
-//        ImGui::StyleColorsDark();
 
         renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_ACCELERATED);
         if (renderer_ == nullptr)
