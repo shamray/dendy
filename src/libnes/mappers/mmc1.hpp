@@ -1,17 +1,19 @@
 #pragma once
 
-#include <libnes/ppu_name_table.hpp>
 #include <libnes/cartridge.hpp>
+#include <libnes/ppu_name_table.hpp>
 
-#include <vector>
-#include <optional>
 #include <array>
+#include <optional>
+#include <vector>
 
-namespace nes {
+namespace nes
+{
 
 class mmc1_shift_register
 {
     [[nodiscard]] constexpr static auto reset(std::uint8_t v) { return (v & 0x80u) != 0; }
+
 public:
     constexpr void load(std::uint8_t next_bit) {
         assert(count_ < 5);
@@ -55,12 +57,11 @@ class mmc1 final: public cartridge
 public:
     mmc1(std::vector<std::array<std::uint8_t, 16_Kb>> prg, std::vector<std::array<std::uint8_t, 4_Kb>> chr)
         : prg_{std::move(prg)}
-        , chr_{std::move(chr)}
-    {}
+        , chr_{std::move(chr)} {}
 
     [[nodiscard]] auto chr() const -> const pattern_table::memory_bank& override {
-        memcpy(mapped_chr_.data(),          chr_[chr_ix0_ % chr_.size()].data(), 4_Kb);
-        memcpy(mapped_chr_.data() + 4_Kb,   chr_[chr_ix1_ % chr_.size()].data(), 4_Kb);
+        memcpy(mapped_chr_.data(), chr_[chr_ix0_ % chr_.size()].data(), 4_Kb);
+        memcpy(mapped_chr_.data() + 4_Kb, chr_[chr_ix1_ % chr_.size()].data(), 4_Kb);
         return mapped_chr_;
     }
 
@@ -72,9 +73,11 @@ public:
 
         shift_register_.load(value);
         if (auto r = shift_register_.get_value(); r.has_value()) {
-            if (addr < 0xA000)      control_ = r.value();
-            else if (addr < 0xC000) chr_ix0_ = r.value();
-            else if (addr < 0xE000) chr_ix1_ = r.value();
+            if (addr < 0xA000) control_ = r.value();
+            else if (addr < 0xC000)
+                chr_ix0_ = r.value();
+            else if (addr < 0xE000)
+                chr_ix1_ = r.value();
             else {
                 prg_ix_ = r.value();
             }
@@ -134,4 +137,4 @@ private:
     mutable std::array<std::uint8_t, 8_Kb> mapped_chr_{};
 };
 
-}
+}// namespace nes

@@ -1,25 +1,23 @@
 #pragma once
 
-#include <libnes/ppu.hpp>
-#include <libnes/cpu.hpp>
 #include <libnes/cartridge.hpp>
+#include <libnes/cpu.hpp>
 #include <libnes/mappers/mmc1.hpp>
 #include <libnes/mappers/nrom.hpp>
+#include <libnes/ppu.hpp>
 
-namespace nes {
-
-struct console_bus
+namespace nes
 {
-    struct controller_hack
-    {
+
+struct console_bus {
+    struct controller_hack {
         std::uint8_t keys{0};
         std::uint8_t snapshot{0};
     } j1;
 
     console_bus(std::unique_ptr<cartridge> cartridge, nes::ppu& ppu)
         : cartridge{std::move(cartridge)}
-        , ppu{ppu}
-    {
+        , ppu{ppu} {
         connect_cartridge();
     }
 
@@ -93,19 +91,21 @@ class console
 {
 public:
     explicit console(std::unique_ptr<cartridge> rom)
-        : bus_{std::move(rom), ppu_}
-    {
+        : bus_{std::move(rom), ppu_} {
     }
 
     template <screen screen_t>
     void render_frame(screen_t& screen) {
         auto count = 0;
-        for (;;++count) {
+        for (;; ++count) {
             cpu_.tick();
 
-            ppu_.tick(screen); if (ppu_.is_frame_ready()) break;
-            ppu_.tick(screen); if (ppu_.is_frame_ready()) break;
-            ppu_.tick(screen); if (ppu_.is_frame_ready()) break;
+            ppu_.tick(screen);
+            if (ppu_.is_frame_ready()) break;
+            ppu_.tick(screen);
+            if (ppu_.is_frame_ready()) break;
+            ppu_.tick(screen);
+            if (ppu_.is_frame_ready()) break;
         }
         assert(count == 29780 || count == 29781);
     }
@@ -120,4 +120,4 @@ private:
     cpu<console_bus> cpu_{bus_};
 };
 
-}
+}// namespace nes

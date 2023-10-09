@@ -1,6 +1,7 @@
 #pragma once
 
-namespace nes {
+namespace nes
+{
 
 class crt_scan
 {
@@ -9,8 +10,7 @@ public:
         : dots_{dots}
         , visible_scanlines_{visible_scanlines}
         , postrender_scanlines_{postrender_scanlines}
-        , vblank_scanlines_{vblank_scanlines}
-    {}
+        , vblank_scanlines_{vblank_scanlines} {}
 
     [[nodiscard]] constexpr auto line() const noexcept { return line_; }
     [[nodiscard]] constexpr auto cycle() const noexcept { return cycle_; }
@@ -31,7 +31,7 @@ public:
 
     [[nodiscard]] constexpr auto is_vblank() const noexcept {
         return line_ >= visible_scanlines_ + postrender_scanlines_ and
-               line_ < visible_scanlines_ + postrender_scanlines_ + vblank_scanlines_;
+            line_ < visible_scanlines_ + postrender_scanlines_ + vblank_scanlines_;
     }
 
     constexpr void advance() noexcept {
@@ -56,4 +56,4 @@ private:
     bool frame_is_odd_{false};
 };
 
-}
+}// namespace nes

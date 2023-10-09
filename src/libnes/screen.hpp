@@ -2,15 +2,15 @@
 
 #include <concepts>
 
-namespace nes {
-
-struct point
+namespace nes
 {
+
+struct point {
     short x;
     short y;
 };
 
-auto operator== (nes::point a, nes::point b) {
+auto operator==(nes::point a, nes::point b) {
     return a.x == b.x and a.y == b.y;
 }
 

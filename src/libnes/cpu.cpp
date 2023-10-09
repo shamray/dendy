@@ -8,6 +8,5 @@ namespace nes
 {
 
 unsupported_opcode::unsupported_opcode(std::uint8_t opcode)
-    : std::runtime_error("Unsupported opcode: "s + std::to_string(opcode))
-{}
+    : std::runtime_error("Unsupported opcode: "s + std::to_string(opcode)) {}
 }

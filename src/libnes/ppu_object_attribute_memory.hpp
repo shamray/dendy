@@ -1,16 +1,16 @@
 #pragma once
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
 
-namespace nes {
-
-struct sprite
+namespace nes
 {
-    std::uint8_t y   {0xFF};
+
+struct sprite {
+    std::uint8_t y{0xFF};
     std::uint8_t tile{0xFF};
     std::uint8_t attr{0xFF};
-    std::uint8_t x   {0xFF};
+    std::uint8_t x{0xFF};
 };
 static_assert(sizeof(sprite) == 4);
 

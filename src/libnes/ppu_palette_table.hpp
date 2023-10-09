@@ -2,17 +2,17 @@
 
 #include <libnes/color.hpp>
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
 
-namespace nes {
+namespace nes
+{
 
 class palette_table
 {
 public:
     explicit constexpr palette_table(const auto& system_color_palette)
-        : system_colors_{system_color_palette}
-    {
+        : system_colors_{system_color_palette} {
         palette_ram_.fill(0);
     }
 

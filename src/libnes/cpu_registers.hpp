@@ -7,8 +7,7 @@
 namespace nes
 {
 
-enum class cpu_flag
-{
+enum class cpu_flag {
     carry = 0,
     zero = 1,
     int_disable = 2,
@@ -24,7 +23,7 @@ class flags_register
     constexpr static auto pos(cpu_flag f) { return static_cast<size_t>(f); }
 
 public:
-    void assign(std::uint8_t bits) { bits_ = bits | 0x20u;  }
+    void assign(std::uint8_t bits) { bits_ = bits | 0x20u; }
     void set(cpu_flag f, bool value = true) { bits_.set(pos(f), value); }
     void reset(cpu_flag f) { bits_.reset(pos(f)); }
 
@@ -38,18 +37,17 @@ private:
 class arith_register
 {
 public:
-    explicit arith_register(flags_register& f) : flags_{f} {}
+    explicit arith_register(flags_register& f)
+        : flags_{f} {}
 
     [[nodiscard]] auto value() const { return val_; }
 
-    arith_register& operator=(std::uint8_t new_val)
-    {
+    arith_register& operator=(std::uint8_t new_val) {
         assign(new_val);
         return *this;
     }
 
-    void assign(std::uint8_t new_val)
-    {
+    void assign(std::uint8_t new_val) {
         val_ = new_val;
         flags_.set(cpu_flag::zero, val_ == 0);
         flags_.set(cpu_flag::negative, (val_ & 0x80u) != 0);
@@ -60,8 +58,7 @@ private:
     flags_register& flags_;
 };
 
-inline std::ostream& operator<< (std::ostream& s, const arith_register& r)
-{
+inline std::ostream& operator<<(std::ostream& s, const arith_register& r) {
     return s << static_cast<int>(r.value());
 }
 
@@ -69,11 +66,11 @@ class program_counter
 {
 public:
     program_counter() = default;
-    explicit program_counter(std::uint16_t val) : val_{val} {}
+    explicit program_counter(std::uint16_t val)
+        : val_{val} {}
 
     void assign(std::uint16_t val) { val_ = val; }
-    auto advance(std::int16_t increment = 1)
-    {
+    auto advance(std::int16_t increment = 1) {
         auto old = val_;
         val_ += increment;
         return old;
@@ -92,14 +89,13 @@ class stack_register
 {
 public:
     stack_register(std::uint16_t stack_base, std::uint8_t initial_value)
-            : val_(initial_value)
-            , stack_base_(stack_base)
-    {}
+        : val_(initial_value)
+        , stack_base_(stack_base) {}
 
     void assign(std::uint8_t val) { val_ = val; }
 
     auto push() { return static_cast<std::uint16_t>(stack_base_ + val_--); }
-    auto pop()  { return static_cast<std::uint16_t>(stack_base_ + ++val_); }
+    auto pop() { return static_cast<std::uint16_t>(stack_base_ + ++val_); }
 
     [[nodiscard]] auto value() const { return val_; }
 
@@ -108,4 +104,4 @@ private:
     std::uint16_t stack_base_;
 };
 
-}
+}// namespace nes

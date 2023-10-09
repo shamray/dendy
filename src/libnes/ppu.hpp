@@ -6,14 +6,15 @@
 #include <libnes/ppu_palette_table.hpp>
 #include <libnes/ppu_pattern_table.hpp>
 
-#include <libnes/screen.hpp>
 #include <libnes/color.hpp>
+#include <libnes/screen.hpp>
 
 #include <array>
-#include <optional>
 #include <cassert>
+#include <optional>
 
-namespace nes {
+namespace nes
+{
 
 constexpr auto VISIBLE_SCANLINES = 240;
 constexpr auto VERTICAL_BLANK_SCANLINES = 20;
@@ -25,13 +26,11 @@ class ppu
 public:
     template <class container_t>
     ppu(const container_t& system_color_palette)
-        : palette_table_{system_color_palette}
-    {}
+        : palette_table_{system_color_palette} {}
 
     ppu(const pattern_table::memory_bank& chr, const auto& system_color_palette)
         : pattern_table_{&chr}
-        , palette_table_{system_color_palette}
-    {}
+        , palette_table_{system_color_palette} {}
 
     constexpr void connect_pattern_table(auto new_bank) noexcept { pattern_table_.connect(new_bank); }
 
@@ -61,23 +60,45 @@ public:
 
     [[nodiscard]] constexpr auto read(std::uint16_t addr) -> std::optional<std::uint8_t> {
         switch (addr) {
-            case 0x2002: return read_stat();
-            case 0x2007: return read_data();
+            case 0x2002:
+                return read_stat();
+            case 0x2007:
+                return read_data();
 
-            default: return std::nullopt;
+            default:
+                return std::nullopt;
         }
     }
 
     constexpr auto write(std::uint16_t addr, std::uint8_t value) {
         switch (addr) {
-            case 0x2000: { write_ctrl(value); return true; }
-            case 0x2003: { write_oama(value); return true; }
-            case 0x2004: { write_oamd(value); return true; }
-            case 0x2005: { write_scrl(value); return true; }
-            case 0x2006: { write_addr(value); return true; }
-            case 0x2007: { write_data(value); return true; }
+            case 0x2000: {
+                write_ctrl(value);
+                return true;
+            }
+            case 0x2003: {
+                write_oama(value);
+                return true;
+            }
+            case 0x2004: {
+                write_oamd(value);
+                return true;
+            }
+            case 0x2005: {
+                write_scrl(value);
+                return true;
+            }
+            case 0x2006: {
+                write_addr(value);
+                return true;
+            }
+            case 0x2007: {
+                write_data(value);
+                return true;
+            }
 
-            default: return false;
+            default:
+                return false;
         }
     }
 
@@ -99,7 +120,7 @@ public:
         auto tile_x = (x + scroll_x) / 8;
         auto nametable_index_x = nametable_index_x_;
 
-        if (tile_x >= 32) { // wrap nametable while scrolling horizontally
+        if (tile_x >= 32) {// wrap nametable while scrolling horizontally
             tile_x %= 32;
             nametable_index_x ^= 1;
         }
@@ -112,7 +133,7 @@ public:
         auto tile_y = (y + scroll_y) / 8;
         auto nametable_index_y = nametable_index_y_;
 
-        if (tile_y >= 30) { // wrap nametable while scrolling vertically
+        if (tile_y >= 30) {// wrap nametable while scrolling vertically
             tile_y -= 30;
             nametable_index_y ^= 1;
         }
@@ -136,7 +157,7 @@ public:
 private:
     [[nodiscard]] constexpr auto read_stat() -> std::uint8_t {
         auto requested_status = static_cast<std::uint8_t>(status & 0xe0);
-        status &= 0x60;     // reset vblank
+        status &= 0x60;// reset vblank
         address_latch = 0;
         return requested_status;
     }
@@ -146,10 +167,15 @@ private:
         auto r = data_read_buffer_;
         auto& b = data_read_buffer_;
 
-        if (a >= 0x2000 and a <= 0x2FFF)        { b = name_table_.read(a & 0xFFF); }
-        else if (a >= 0x3000 and a <= 0x3EFF)   { throw std::range_error("not implemented"); }
-        else if (a >= 0x3F00 and a <= 0x3FFF)   { r = b = palette_table_.read(a & 0x001F); }
-        else                                    { b = pattern_table_.read(a); }
+        if (a >= 0x2000 and a <= 0x2FFF) {
+            b = name_table_.read(a & 0xFFF);
+        } else if (a >= 0x3000 and a <= 0x3EFF) {
+            throw std::range_error("not implemented");
+        } else if (a >= 0x3F00 and a <= 0x3FFF) {
+            r = b = palette_table_.read(a & 0x001F);
+        } else {
+            b = pattern_table_.read(a);
+        }
 
         return r;
     }
@@ -181,9 +207,11 @@ private:
     }
 
     constexpr void write_data(std::uint8_t value) {
-        if (address >= 0x2000 and address <= 0x3000) { name_table_.write(address & 0xFFF, value); }
-        else if (address >= 0x3F00 and address <= 0x3FFF) { palette_table_.write(address & 0x001F, value); }
-        else {
+        if (address >= 0x2000 and address <= 0x3000) {
+            name_table_.write(address & 0xFFF, value);
+        } else if (address >= 0x3F00 and address <= 0x3FFF) {
+            palette_table_.write(address & 0x001F, value);
+        } else {
             // ppu chr write
         }
         auto inc = (control & 0x04) ? std::int8_t{32} : std::int8_t{1};
@@ -299,12 +327,11 @@ private:
                             screen.draw_pixel(
                                 {static_cast<short>(s.x + dx), static_cast<short>(s.y + dy)},
                                 palette_table_.color_of(pixel, palette)
-                                );
+                            );
                         }
                     }
                 }
             }
-
         }
     }
     constexpr void vertical_blank_line() noexcept {
@@ -318,9 +345,9 @@ private:
 private:
     crt_scan scan_{SCANLINE_DOTS, VISIBLE_SCANLINES, POST_RENDER_SCANLINES, VERTICAL_BLANK_SCANLINES};
 
-    nes::pattern_table  pattern_table_;
-    nes::name_table     name_table_;
-    nes::palette_table  palette_table_;
+    nes::pattern_table pattern_table_;
+    nes::name_table name_table_;
+    nes::palette_table palette_table_;
     nes::object_attribute_memory oam_;
 
     std::uint8_t data_read_buffer_;
@@ -328,10 +355,15 @@ private:
 
 template <screen screen_t>
 constexpr void ppu::tick(screen_t& screen) {
-    if      (scan_.is_prerender())  { prerender_scanline(); }
-    else if (scan_.is_visible())    { visible_scanline(screen); }
-    else if (scan_.is_postrender()) { postrender_scanline(screen); }
-    else if (scan_.is_vblank())     { vertical_blank_line(); }
+    if (scan_.is_prerender()) {
+        prerender_scanline();
+    } else if (scan_.is_visible()) {
+        visible_scanline(screen);
+    } else if (scan_.is_postrender()) {
+        postrender_scanline(screen);
+    } else if (scan_.is_vblank()) {
+        vertical_blank_line();
+    }
 
     scan_.advance();
 }
@@ -368,4 +400,4 @@ constexpr void ppu::prerender_scanline() noexcept {
         nametable_index_y_ = nametable_index_y();
     }
 }
-}
+}// namespace nes

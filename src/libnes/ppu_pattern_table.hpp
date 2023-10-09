@@ -5,7 +5,8 @@
 #include <array>
 #include <stdexcept>
 
-namespace nes {
+namespace nes
+{
 
 class pattern_table
 {
@@ -14,8 +15,7 @@ public:
 
     pattern_table() = default;
     explicit pattern_table(const memory_bank* bank)
-        : bank_{bank}
-    {}
+        : bank_{bank} {}
 
     constexpr void connect(const memory_bank* new_bank) {
         bank_ = new_bank;
@@ -29,7 +29,7 @@ public:
 
         return bank_->at(addr);
     }
-    constexpr void write(std::uint16_t, std::uint8_t )    {}
+    constexpr void write(std::uint16_t, std::uint8_t) {}
 
 private:
     const memory_bank* bank_{nullptr};

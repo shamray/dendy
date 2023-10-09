@@ -1,16 +1,20 @@
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <ranges>
-#include <algorithm>
 #include <stdexcept>
-#include <array>
 
 #include <libnes/literals.hpp>
 
-namespace nes {
+namespace nes
+{
 
-enum class name_table_mirroring { horizontal, vertical };
+enum class name_table_mirroring {
+    horizontal,
+    vertical
+};
 
 class name_table
 {
@@ -34,20 +38,22 @@ public:
     }
 
     name_table() {
-        std::ranges::for_each(vram_, [](auto& x){ std::ranges::fill(x, std::uint8_t{0}); });
+        std::ranges::for_each(vram_, [](auto& x) { std::ranges::fill(x, std::uint8_t{0}); });
     }
 
 private:
     [[nodiscard]] constexpr auto bank_index(std::uint16_t addr) const -> int {
         using enum name_table_mirroring;
-        switch(mirroring) {
-            case horizontal:    return (addr >> 11u) & 0x01u;
-            case vertical:      return (addr >> 10u) & 0x01u;
+        switch (mirroring) {
+            case horizontal:
+                return (addr >> 11u) & 0x01u;
+            case vertical:
+                return (addr >> 10u) & 0x01u;
         }
         throw std::logic_error("Unhandled mirroring scenario");
     }
 
-    [[nodiscard]] constexpr static auto bank_offset(std::uint16_t addr) noexcept -> std::uint16_t  {
+    [[nodiscard]] constexpr static auto bank_offset(std::uint16_t addr) noexcept -> std::uint16_t {
         return addr & 0x3FFu;
     }
 
@@ -56,4 +62,4 @@ private:
     std::array<bank, 2> vram_;
 };
 
-}
+}// namespace nes
