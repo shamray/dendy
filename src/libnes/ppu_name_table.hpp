@@ -41,14 +41,14 @@ private:
     [[nodiscard]] constexpr auto bank_index(std::uint16_t addr) const -> int {
         using enum name_table_mirroring;
         switch(mirroring) {
-            case horizontal:    return (addr >> 11) & 0x01;
-            case vertical:      return (addr >> 10) & 0x01;
+            case horizontal:    return (addr >> 11u) & 0x01u;
+            case vertical:      return (addr >> 10u) & 0x01u;
         }
         throw std::logic_error("Unhandled mirroring scenario");
     }
 
     [[nodiscard]] constexpr static auto bank_offset(std::uint16_t addr) noexcept -> std::uint16_t  {
-        return addr & 0x3FF;
+        return addr & 0x3FFu;
     }
 
 private:

@@ -63,8 +63,9 @@ struct memory_based_address_mode
 
     auto fetch_address()
     {
-        if (!result_)
+        if (!result_) {
             result_ = fetch_addr_(cpu_);
+        }
         return result_.value();
     }
 

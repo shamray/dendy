@@ -128,7 +128,7 @@ template <bus bus_t> cpu<bus_t>::cpu(bus_t& b)
 
 template <bus bus_t> void cpu<bus_t>::tick()
 {
-    if (current_instruction.is_finished()) { [[likely]]
+    if (current_instruction.is_finished()) {
         if (not bus_.nmi()) {
 
             auto opcode = read(pc.advance());

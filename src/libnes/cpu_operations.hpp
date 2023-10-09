@@ -18,11 +18,11 @@ inline auto carry(const flags_register &f) {
 }
 
 inline auto is_page_crossed(std::uint16_t base, std::uint16_t effective_address) {
-    return (base & 0xFF00) != (effective_address & 0xFF00);
+    return (base & 0xFF00u) != (effective_address & 0xFF00u);
 }
 
 inline auto index(std::uint16_t base, std::int16_t offset) {
-    std::uint16_t address = int(base) + offset;
+    const std::uint16_t address = int(base) + offset;
     auto additional_cycles = is_page_crossed(base, address) ? 1 : 0;
 
     return std::tuple{address, additional_cycles};
@@ -41,7 +41,7 @@ inline void adc_impl(auto &result, std::uint8_t accum, std::uint8_t operand, fla
     );
     flags.set(cpu_flag::carry, c);
 
-    auto v = ((operand ^ r) & (r ^ accum) & 0x80) != 0;
+    auto v = ((operand ^ r) & (r ^ accum) & 0x80u) != 0;
     flags.set(cpu_flag::overflow, v);
 
     result = r;

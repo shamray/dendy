@@ -211,16 +211,7 @@ private:
     SDL_Texture* chr_{nullptr};
 };
 
-}
-
-auto load_dummy_texture(auto renderer) {
-    auto surface = SDL_LoadBMP("link.bmp");
-    return SDL_CreateTextureFromSurface(renderer, surface);
-}
-
-auto load_texture(const auto& frame_bufer) {
-
-}
+}// namespace sdl
 
 struct screen
 {

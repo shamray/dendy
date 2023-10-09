@@ -21,20 +21,20 @@ public:
     [[nodiscard]] auto chr() const -> const pattern_table::memory_bank& override { return chr_; }
     [[nodiscard]] auto mirroring() const -> name_table_mirroring override { return mirroring_; }
 
-    auto write(std::uint16_t, std::uint8_t) -> bool override {
+    auto write([[maybe_unused]] std::uint16_t addr, [[maybe_unused]] std::uint8_t value) -> bool override {
         return false;
     }
 
     [[nodiscard]] auto read(std::uint16_t addr) -> std::optional<std::uint8_t> override {
         if (addr >= 0x8000 and addr <= 0xBFFF) {
-            auto address = addr & 0x3FFF;
+            auto address = addr & 0x3FFFu;
             auto& prg = prg_.front();
 
             return prg[address];
         }
 
         if (addr >= 0x8000 and addr <= 0xFFFF) {
-            auto address = addr & 0x3FFF;
+            auto address = addr & 0x3FFFu;
             auto& prg = prg_.back();
 
             return prg[address];

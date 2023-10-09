@@ -11,15 +11,15 @@
 namespace nes {
 
 struct ines_header{
-    char name[4];
+    [[maybe_unused]] std::array<char,4> name;
     std::uint8_t prg_rom_chunks;
     std::uint8_t chr_rom_chunks;
     std::uint8_t mapper1;
     std::uint8_t mapper2;
-    std::uint8_t prg_ram_size;
-    std::uint8_t tv_system1;
-    std::uint8_t tv_system2;
-    char unused[5];
+    [[maybe_unused]] std::uint8_t prg_ram_size;
+    [[maybe_unused]] std::uint8_t tv_system1;
+    [[maybe_unused]] std::uint8_t tv_system2;
+    [[maybe_unused]] std::array<char,5> unused;
 };
 
 static_assert(sizeof(ines_header) == 16);

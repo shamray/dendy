@@ -11,7 +11,7 @@ namespace nes {
 
 class mmc1_shift_register
 {
-    [[nodiscard]] constexpr static auto reset(std::uint8_t v) { return (v & 0x80) != 0; }
+    [[nodiscard]] constexpr static auto reset(std::uint8_t v) { return (v & 0x80u) != 0; }
 public:
     constexpr void load(std::uint8_t next_bit) {
         assert(count_ < 5);
@@ -26,8 +26,8 @@ public:
             reset_ = false;
             count_ += 1;
 
-            value_ >>= 1;
-            value_ |= (next_bit & 0x01) << 4;
+            value_ >>= 1u;
+            value_ |= (next_bit & 0x01u) << 4u;
         }
     }
 
@@ -89,8 +89,8 @@ public:
         auto prg_mode = (control_ & 0b01100) >> 2;
 
         if (prg_mode == 0 or prg_mode == 1) {
-            auto address = addr & 0x3FFF;
-            auto prg_offset = addr & 0x8000
+            auto address = addr & 0x3FFFu;
+            auto prg_offset = (addr & 0x8000u) != 0
                 ? 1
                 : 0;
             auto ix = (prg_ix_ * 2) + prg_offset;
@@ -100,7 +100,7 @@ public:
         }
 
         if (addr >= 0x8000 and addr <= 0xBFFF) {
-            auto address = addr & 0x3FFF;
+            auto address = addr & 0x3FFFu;
             auto& prg = prg_mode == 3
                 ? prg_[prg_ix_ % prg_.size()]
                 : prg_.front();
@@ -109,7 +109,7 @@ public:
         }
 
         if (addr >= 0xC000 and addr <= 0xFFFF) {
-            auto address = addr & 0x3FFF;
+            auto address = addr & 0x3FFFu;
             auto& prg = prg_mode == 3
                 ? prg_.back()
                 : prg_[prg_ix_ % prg_.size()];

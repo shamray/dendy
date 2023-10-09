@@ -24,7 +24,7 @@ class flags_register
     constexpr static auto pos(cpu_flag f) { return static_cast<size_t>(f); }
 
 public:
-    void assign(std::uint8_t bits) { bits_ = bits | 0x20;  }
+    void assign(std::uint8_t bits) { bits_ = bits | 0x20u;  }
     void set(cpu_flag f, bool value = true) { bits_.set(pos(f), value); }
     void reset(cpu_flag f) { bits_.reset(pos(f)); }
 
@@ -52,7 +52,7 @@ public:
     {
         val_ = new_val;
         flags_.set(cpu_flag::zero, val_ == 0);
-        flags_.set(cpu_flag::negative, (val_ & 0x80) != 0);
+        flags_.set(cpu_flag::negative, (val_ & 0x80u) != 0);
     }
 
 private:
@@ -79,8 +79,8 @@ public:
         return old;
     }
 
-    [[nodiscard]] auto hi() const { return static_cast<std::uint8_t>(val_ >> 8); }
-    [[nodiscard]] auto lo() const { return static_cast<std::uint8_t>(val_ & 0xFF); }
+    [[nodiscard]] auto hi() const { return static_cast<std::uint8_t>(val_ >> 8u); }
+    [[nodiscard]] auto lo() const { return static_cast<std::uint8_t>(val_ & 0xFFu); }
 
     [[nodiscard]] auto value() const { return val_; }
 

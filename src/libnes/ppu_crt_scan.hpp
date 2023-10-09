@@ -46,10 +46,10 @@ public:
     }
 
 private:
-    const int dots_;
-    const int visible_scanlines_;
-    const int postrender_scanlines_;
-    const int vblank_scanlines_;
+    int dots_;
+    int visible_scanlines_;
+    int postrender_scanlines_;
+    int vblank_scanlines_;
 
     short line_{-1};
     short cycle_{0};
