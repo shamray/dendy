@@ -23,8 +23,11 @@ class object_attribute_memory
 public:
     std::array<sprite, 64> sprites;
 
-    void dma_write(const std::uint8_t* from) {
-        std::memcpy(sprites.data(), from, sprites.size() * sizeof(sprite));
+    constexpr void dma_write(const std::uint8_t* from) {
+        for (auto& s: sprites) {
+            s = *std::bit_cast<sprite*>(from);
+            from += sizeof(sprite);
+        }
     }
 
     void write(std::uint8_t data) {
