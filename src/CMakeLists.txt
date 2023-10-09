@@ -38,5 +38,5 @@ add_executable(nemo_sdl WIN32
 
 target_link_libraries(nemo_sdl
     libnes
-    SDL2::SDL2
+    ${SDL2_LIBRARIES}
 )
