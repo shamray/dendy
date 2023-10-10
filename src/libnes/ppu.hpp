@@ -102,8 +102,8 @@ public:
         }
     }
 
-    constexpr void dma_write(auto from) {
-        oam_.dma_write(from);
+    constexpr void dma_write(std::uint16_t from, auto read) {
+        oam_.dma_write(from, read);
     }
 
     [[nodiscard]] constexpr auto palette_table() const -> const auto& { return palette_table_; }

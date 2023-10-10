@@ -41,7 +41,7 @@ struct console_bus {
             return;
 
         if (addr == 0x4014) {
-            ppu.dma_write(&mem[value << 8]);
+            ppu.dma_write(value << 8U, [this](auto addr) { return read(addr); });
             return;
         }
 

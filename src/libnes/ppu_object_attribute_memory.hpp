@@ -23,15 +23,17 @@ class object_attribute_memory
 public:
     std::array<sprite, 64> sprites;
 
-    constexpr void dma_write(const std::uint8_t* from) {
+    constexpr void dma_write(std::uint16_t from, auto read) {
         for (auto& s: sprites) {
-            s = *std::bit_cast<sprite*>(from);
-            from += sizeof(sprite);
+            s.y = read(from++);
+            s.tile = read(from++);
+            s.attr = read(from++);
+            s.x = read(from++);
         }
     }
 
     void write(std::uint8_t data) {
-        auto ram = reinterpret_cast<std::uint8_t*>(sprites.data());
+        auto ram = std::bit_cast<std::uint8_t*>(sprites.data());
         ram[address++] = data;
     }
 

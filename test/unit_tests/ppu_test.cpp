@@ -10,64 +10,63 @@ using namespace nes::literals;
 
 namespace {
 
-void tick(auto& ppu, auto& screen, int times = 1) {
-    for (auto i = 0; i < times; ++i) {
-        ppu.tick(screen);
+    void tick(auto &ppu, auto &screen, int times = 1) {
+        for (auto i = 0; i < times; ++i) {
+            ppu.tick(screen);
+        }
     }
-}
 
-struct test_screen
-{
-    class hasher
-    {
-    public:
-        [[nodiscard]] constexpr auto operator()(nes::point p) const noexcept {
-            return p.x << 8 | p.y;
+    struct test_screen {
+        class hasher {
+        public:
+            [[nodiscard]] constexpr auto operator()(nes::point p) const noexcept {
+                return p.x << 8 | p.y;
+            }
+        };
+
+        std::unordered_map<nes::point, nes::color, hasher> pixels;
+
+        [[nodiscard]] constexpr static auto width() -> short { return 256; }
+
+        [[nodiscard]] constexpr static auto height() -> short { return 240; }
+
+        void draw_pixel(nes::point where, nes::color color) {
+            pixels[where] = color;
         }
     };
 
-    std::unordered_map<nes::point, nes::color, hasher> pixels;
-
-    [[nodiscard]] constexpr static auto width() -> short { return 256; }
-    [[nodiscard]] constexpr static auto height() -> short { return 240; }
-
-    void draw_pixel(nes::point where, nes::color color) {
-        pixels[where] = color;
+    template<class... args_t>
+    void write(std::uint16_t addr, nes::ppu &ppu, int byte, args_t... args) {
+        if ((byte & 0xff) != byte)
+            throw std::logic_error(std::format("{} is not byte", byte));
+        ppu.write(addr, static_cast<std::uint8_t>(byte));
+        write(addr, ppu, args...);
     }
-};
 
-template <class... args_t>
-void write(std::uint16_t addr, nes::ppu& ppu, int byte, args_t... args) {
-    if ((byte & 0xff) != byte)
-        throw std::logic_error(std::format("{} is not byte", byte));
-    ppu.write(addr, static_cast<std::uint8_t>(byte));
-    write(addr, ppu, args...);
-}
+    template<>
+    void write(std::uint16_t addr, nes::ppu &ppu, int byte) {
+        ppu.write(addr, static_cast<std::uint8_t>(byte));
+    }
 
-template <>
-void write(std::uint16_t addr, nes::ppu& ppu, int byte) {
-    ppu.write(addr, static_cast<std::uint8_t>(byte));
-}
+    auto empty_pattern_table() {
+        return std::array<std::uint8_t, 8_Kb>{0x00};
+    }
 
-auto empty_pattern_table() {
-    return std::array<std::uint8_t, 8_Kb>{0x00};
-}
+    template<class input_type>
+    auto pattern_table(int index, input_type &&tile) {
+        assert(tile.size() == 16);
+        auto chr = empty_pattern_table();
+        std::ranges::copy(tile, std::next(std::begin(chr), index * tile.size()));
+        return chr;
+    }
 
-template <class input_type>
-auto pattern_table(int index, input_type&& tile) {
-    assert(tile.size() == 16);
-    auto chr = empty_pattern_table();
-    std::ranges::copy(tile, std::next(std::begin(chr), index * tile.size()));
-    return chr;
-}
-
-template <class input_type, class... args_t>
-auto pattern_table(int index, input_type&& tile, args_t... args) {
-    assert(tile.size() == 16);
-    auto chr = pattern_table(args...);
-    std::ranges::copy(tile, std::next(std::begin(chr), index * tile.size()));
-    return chr;
-}
+    template<class input_type, class... args_t>
+    auto pattern_table(int index, input_type &&tile, args_t... args) {
+        assert(tile.size() == 16);
+        auto chr = pattern_table(args...);
+        std::ranges::copy(tile, std::next(std::begin(chr), index * tile.size()));
+        return chr;
+    }
 
 }
 
@@ -100,8 +99,8 @@ TEST_CASE("PPU") {
         write(0x2000, ppu, 0x00);
         write(0x2006, ppu, 0x3F, 0x00);
         write(0x2007, ppu,
-            63,
-            3 , 8 , 21
+              63,
+              3, 8, 21
         );
 
         CHECK(ppu.palette_table().read(0) == 63);
@@ -125,11 +124,11 @@ TEST_CASE("PPU") {
 
         SECTION("DMA") {
             auto sprites = std::array<nes::sprite, 64>{};
-            auto mempage = reinterpret_cast<std::uint8_t*>(sprites.data());
+            auto mempage = std::bit_cast<std::uint8_t *>(sprites.data());
 
             sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x00, .x = 0};
 
-            ppu.dma_write(mempage);
+            ppu.dma_write(0x0000, [mempage](auto addr) { return mempage[addr]; });
 
             CHECK(ppu.oam().sprites == sprites);
         }
@@ -140,26 +139,26 @@ TEST_CASE("PPU") {
         write(0x2006, ppu, 0x3F, 0x00);
         write(0x2007, ppu,
               63,
-              3 , 8 , 21, 63,
+              3, 8, 21, 63,
               48, 33, 22, 63,
-              0 , 0 , 0 , 63,
-              0 , 0 , 0 , 63,
+              0, 0, 0, 63,
+              0, 0, 0, 63,
               33, 22, 44, 63,
-              8 , 21, 48, 63,
-              0 , 0 , 0 , 63,
-              0 , 0 , 0 , 63
+              8, 21, 48, 63,
+              0, 0, 0, 63,
+              0, 0, 0, 63
         );
 
         // Pattern table
         auto chr = pattern_table(
-                1 , std::array{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // single point in top left corner
-                               0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+            1, std::array{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // single point in top left corner
+                          0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 
-                42, std::array{0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // single point in the second row
-                               0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+            42, std::array{0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // single point in the second row
+                           0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 
-                99, std::array{0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // points in top row; colors: 3, 2, 1, 0
-                               0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+            99, std::array{0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // points in top row; colors: 3, 2, 1, 0
+                           0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
         );
         ppu.connect_pattern_table(&chr);
 
@@ -167,14 +166,11 @@ TEST_CASE("PPU") {
 
             SECTION("nametable 0") {
                 CHECK(ppu.nametable_address(0, 0) == 0x0000);
-            }
-            SECTION("nametable 1") {
+            }SECTION("nametable 1") {
                 CHECK(ppu.nametable_address(1, 0) == 0x0400);
-            }
-            SECTION("nametable 2") {
+            }SECTION("nametable 2") {
                 CHECK(ppu.nametable_address(0, 1) == 0x0800);
-            }
-            SECTION("nametable 3") {
+            }SECTION("nametable 3") {
                 CHECK(ppu.nametable_address(1, 1) == 0x0C00);
             }
         }
@@ -237,21 +233,18 @@ TEST_CASE("PPU") {
                     tick(ppu, screen, 242 * 341);       // Wait one frame
 
                     CHECK(screen.pixels.at(nes::point{14, 1}) == RASPBERRY);
-                }
-                SECTION("8 pixels") {
+                }SECTION("8 pixels") {
                     write(0x2005, ppu, 8, 0);
                     tick(ppu, screen, 242 * 341);       // Wait one frame
 
                     CHECK(screen.pixels.at(nes::point{7, 1}) == RASPBERRY);
                     CHECK(screen.pixels.at(nes::point{255, 1}) == RASPBERRY);
-                }
-                SECTION("201 pixels") {
+                }SECTION("201 pixels") {
                     write(0x2005, ppu, 201, 0);
                     tick(ppu, screen, 242 * 341);       // Wait one frame
 
                     CHECK(screen.pixels.at(nes::point{62, 1}) == RASPBERRY);
-                }
-                SECTION("Flip nametables") {
+                }SECTION("Flip nametables") {
                     tick(ppu, screen, 1 * 341);         // Wait prerender scanline
 
                     write(0x2000, ppu, 0x01);   // Make nametable #1 base nametable
@@ -280,43 +273,39 @@ TEST_CASE("PPU") {
 
         SECTION("rendering sprites") {
             auto sprites = std::array<nes::sprite, 64>{};
-            auto mempage = reinterpret_cast<std::uint8_t*>(sprites.data());
+            auto mempage = std::bit_cast<std::uint8_t *>(sprites.data());
 
             SECTION("single point, sprite at (0, 0)") {
                 sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x00, .x = 0};
-                ppu.dma_write(mempage);
+                ppu.dma_write(0x0000, [mempage](auto addr) { return mempage[addr]; });
 
                 tick(ppu, screen, 242 * 341); // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{0, 0}) == CYAN);
-            }
-            SECTION("single point, sprite at (3, 2)") {
+            }SECTION("single point, sprite at (3, 2)") {
                 sprites[1] = nes::sprite{.y = 2, .tile = 1, .attr = 0x00, .x = 3};
-                ppu.dma_write(mempage);
+                ppu.dma_write(0x0000, [mempage](auto addr) { return mempage[addr]; });
 
                 tick(ppu, screen, 242 * 341); // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{3, 2}) == CYAN);
-            }
-            SECTION("single point, sprite palette #1") {
+            }SECTION("single point, sprite palette #1") {
                 sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x01, .x = 0};
-                ppu.dma_write(mempage);
+                ppu.dma_write(0x0000, [mempage](auto addr) { return mempage[addr]; });
 
                 tick(ppu, screen, 242 * 341); // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{0, 0}) == WHITE);
-            }
-            SECTION("single point, flip vertically") {
+            }SECTION("single point, flip vertically") {
                 sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x80, .x = 0};
-                ppu.dma_write(mempage);
+                ppu.dma_write(0x0000, [mempage](auto addr) { return mempage[addr]; });
 
                 tick(ppu, screen, 242 * 341); // Wait one frame
 
                 CHECK(screen.pixels.at(nes::point{0, 7}) == CYAN);
-            }
-            SECTION("single point, flip horizontally") {
+            }SECTION("single point, flip horizontally") {
                 sprites[1] = nes::sprite{.y = 0, .tile = 1, .attr = 0x40, .x = 0};
-                ppu.dma_write(mempage);
+                ppu.dma_write(0x0000, [mempage](auto addr) { return mempage[addr]; });
 
                 tick(ppu, screen, 242 * 341); // Wait one frame
 
@@ -325,7 +314,7 @@ TEST_CASE("PPU") {
 
             SECTION("sprite 0 hit") {
                 sprites[0] = nes::sprite{.y = 0, .tile = 1, .attr = 0x00, .x = 128};
-                ppu.dma_write(mempage);
+                ppu.dma_write(0x0000, [mempage](auto addr) { return mempage[addr]; });
 
                 write(0x2006, ppu, 0x20, 0x10); // Nametable
                 write(0x2007, ppu, 1);
