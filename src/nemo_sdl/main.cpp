@@ -1,22 +1,22 @@
-#include <libnes/ppu.hpp>
+#include <libnes/console.hpp>
 #include <libnes/cpu.hpp>
 #include <libnes/literals.hpp>
-#include <libnes/console.hpp>
+#include <libnes/ppu.hpp>
 
 #include <SDL2/SDL.h>
 
-#include <stdexcept>
 #include <array>
-#include <random>
 #include <cassert>
-#include <memory>
-#include <unordered_map>
-#include <fstream>
-#include <tuple>
-#include <string>
 #include <deque>
-#include <numeric>
 #include <filesystem>
+#include <fstream>
+#include <memory>
+#include <numeric>
+#include <random>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <unordered_map>
 
 #include "icon16.hpp"
 
@@ -26,7 +26,8 @@ using namespace std::string_literals;
 namespace sdl
 {
 
-class window {
+class window
+{
 public:
     virtual ~window() {
         SDL_DestroyWindow(window_);
@@ -36,7 +37,7 @@ public:
         assert(e.type == SDL_WINDOWEVENT);
         assert(SDL_GetWindowID(window_) == e.window.windowID);
 
-        switch(e.window.event) {
+        switch (e.window.event) {
             case SDL_WINDOWEVENT_CLOSE:
                 close();
         }
@@ -56,7 +57,7 @@ protected:
 
 class frontend
 {
-    frontend()  { SDL_Init(SDL_INIT_EVERYTHING); }
+    frontend() { SDL_Init(SDL_INIT_EVERYTHING); }
 
 public:
     ~frontend() { SDL_Quit(); }
@@ -78,14 +79,15 @@ public:
     auto process_events() {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
-            switch (e.type)
-            {
+            switch (e.type) {
                 case SDL_WINDOWEVENT:
                     if (process_window_event(e))
                         return true;
                     break;
-                case SDL_QUIT: return true;
-                case SDL_KEYDOWN: break;
+                case SDL_QUIT:
+                    return true;
+                case SDL_KEYDOWN:
+                    break;
             }
         }
         return false;
@@ -103,9 +105,8 @@ class main_window: public window
 {
 public:
     main_window(std::string title, std::string filename)
-        : title_{std::move(title) + " | " + std::move(filename)}
-    {
-        window_ = SDL_CreateWindow(title_.c_str() , SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 600, 480, SDL_WINDOW_OPENGL);
+        : title_{std::move(title) + " | " + std::move(filename)} {
+        window_ = SDL_CreateWindow(title_.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 600, 480, SDL_WINDOW_OPENGL);
         if (window_ == nullptr)
             throw std::runtime_error("Cannot create window");
 
@@ -115,7 +116,7 @@ public:
         if (renderer_ == nullptr)
             throw std::runtime_error("Cannot create renderer");
 
-        screen_ = SDL_CreateTexture (renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 256, 240);
+        screen_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 256, 240);
 
         std::uint32_t rmask, gmask, bmask, amask;
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
@@ -124,19 +125,20 @@ public:
         gmask = 0x00ff0000 >> shift;
         bmask = 0x0000ff00 >> shift;
         amask = 0x000000ff >> shift;
-#else // little endian, like x86
+#else// little endian, like x86
         rmask = 0x000000ff;
         gmask = 0x0000ff00;
         bmask = 0x00ff0000;
         amask = (icon16::gimp_image.bytes_per_pixel == 3) ? 0 : 0xff000000;
 #endif
         SDL_Surface* icon = SDL_CreateRGBSurfaceFrom(
-            (void*)icon16::gimp_image.pixel_data,
+            (void*) icon16::gimp_image.pixel_data,
             icon16::gimp_image.width,
             icon16::gimp_image.height,
-            icon16::gimp_image.bytes_per_pixel*8,
-            icon16::gimp_image.bytes_per_pixel*icon16::gimp_image.width,
-            rmask, gmask, bmask, amask);
+            icon16::gimp_image.bytes_per_pixel * 8,
+            icon16::gimp_image.bytes_per_pixel * icon16::gimp_image.width,
+            rmask, gmask, bmask, amask
+        );
 
         SDL_SetWindowIcon(window_, icon);
         SDL_FreeSurface(icon);
@@ -148,7 +150,7 @@ public:
             fps_.pop_front();
         }
         auto average_fps = std::accumulate(fps_.begin(), fps_.end(), 0.0) / fps_.size();
-        auto title = title_ + " | " + std::to_string(average_fps).substr(0,6) + " fps"s;
+        auto title = title_ + " | " + std::to_string(average_fps).substr(0, 6) + " fps"s;
         SDL_SetWindowTitle(window_, title.c_str());
     }
 
@@ -213,8 +215,7 @@ private:
 
 }// namespace sdl
 
-struct screen
-{
+struct screen {
     std::array<nes::color, 256 * 240> frame_buffer;
 
     [[nodiscard]] constexpr static auto width() -> short { return 256; }
@@ -256,8 +257,8 @@ auto load_rom(auto filename) -> std::unique_ptr<nes::cartridge> {
         romfile.read(reinterpret_cast<char*>(chr.data()), chr.size());
 
         auto mirroring = (header.mapper1 & 0x01)
-                         ? nes::name_table_mirroring::vertical
-                         : nes::name_table_mirroring::horizontal;
+            ? nes::name_table_mirroring::vertical
+            : nes::name_table_mirroring::horizontal;
 
         return std::make_unique<nes::nrom>(prg, chr, mirroring);
     }
@@ -281,28 +282,25 @@ auto load_rom(auto filename) -> std::unique_ptr<nes::cartridge> {
     }
 
     throw std::runtime_error("Unsupported mapper " + std::to_string(mapper_ix));
-
-
 }
 
 static std::random_device rd;
 static std::mt19937 gen(rd());
 
-struct config
-{
+struct config {
     std::filesystem::path filename;
 };
 
-auto parse(int argc, char *argv[]) {
+auto parse(int argc, char* argv[]) {
     if (argc < 2)
         throw std::runtime_error("No ROM file specified");
 
     auto filename = std::string{argv[1]};
 
-    return config { filename };
+    return config{filename};
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     auto config = parse(argc, argv);
     auto frontend = sdl::frontend::create();
 
@@ -312,7 +310,7 @@ int main(int argc, char *argv[]) {
     auto scr = screen{};
     auto console = nes::console{load_rom(config.filename)};
 
-    const auto FPS   = 60;
+    const auto FPS = 60;
     const auto DELAY = static_cast<int>(1000.0f / FPS);
     std::uint32_t frameStart, frameTime;
 
@@ -331,14 +329,14 @@ int main(int argc, char *argv[]) {
             auto kb_state = SDL_GetKeyboardState(nullptr);
 
             auto keys = std::uint8_t{0};
-            if (kb_state[SDL_SCANCODE_SPACE])   keys |= 0x80;
-            if (kb_state[SDL_SCANCODE_LSHIFT])  keys |= 0x40;
-            if (kb_state[SDL_SCANCODE_C])       keys |= 0x20;
-            if (kb_state[SDL_SCANCODE_V])       keys |= 0x10;
-            if (kb_state[SDL_SCANCODE_UP])      keys |= 0x08;
-            if (kb_state[SDL_SCANCODE_DOWN])    keys |= 0x04;
-            if (kb_state[SDL_SCANCODE_LEFT])    keys |= 0x02;
-            if (kb_state[SDL_SCANCODE_RIGHT])   keys |= 0x01;
+            if (kb_state[SDL_SCANCODE_SPACE]) keys |= 0x80;
+            if (kb_state[SDL_SCANCODE_LSHIFT]) keys |= 0x40;
+            if (kb_state[SDL_SCANCODE_C]) keys |= 0x20;
+            if (kb_state[SDL_SCANCODE_V]) keys |= 0x10;
+            if (kb_state[SDL_SCANCODE_UP]) keys |= 0x08;
+            if (kb_state[SDL_SCANCODE_DOWN]) keys |= 0x04;
+            if (kb_state[SDL_SCANCODE_LEFT]) keys |= 0x02;
+            if (kb_state[SDL_SCANCODE_RIGHT]) keys |= 0x01;
 
             console.controller_input(keys);
         }
@@ -347,8 +345,7 @@ int main(int argc, char *argv[]) {
             auto kb_state = SDL_GetKeyboardState(nullptr);
             return std::tuple{
                 kb_state[SDL_SCANCODE_RIGHT] != 0,
-                kb_state[SDL_SCANCODE_LEFT] != 0
-            };
+                kb_state[SDL_SCANCODE_LEFT] != 0};
         }();
 
         if (time_machine and forward or not time_machine) {
@@ -361,7 +358,7 @@ int main(int argc, char *argv[]) {
 
         window.display_fps(1.0f / frameTime * 1000);
         if (frameTime < DELAY) {
-            SDL_Delay((int)(DELAY - frameTime));
+            SDL_Delay((int) (DELAY - frameTime));
         }
     }
 
