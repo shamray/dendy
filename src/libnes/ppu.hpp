@@ -214,8 +214,10 @@ private:
         } else {
             // ppu chr write
         }
-        auto inc = (control & 0x04) ? std::int8_t{32} : std::int8_t{1};
-        address += inc;
+
+        address += (control & 0x04)
+            ? std::int8_t{32}
+            : std::int8_t{1};
     }
 
     constexpr void prerender_scanline() noexcept;

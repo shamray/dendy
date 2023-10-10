@@ -4,6 +4,7 @@
 #include <libnes/ppu_name_table.hpp>
 
 #include <array>
+#include <cassert>
 #include <optional>
 #include <vector>
 
@@ -12,7 +13,7 @@ namespace nes
 
 class mmc1_shift_register
 {
-    [[nodiscard]] constexpr static auto reset(std::uint8_t v) { return (v & 0x80u) != 0; }
+    [[nodiscard]] constexpr static auto reset(std::uint8_t v) { return (v & 0x80U) != 0; }
 
 public:
     constexpr void load(std::uint8_t next_bit) {
@@ -29,7 +30,7 @@ public:
             count_ += 1;
 
             value_ >>= 1u;
-            value_ |= (next_bit & 0x01u) << 4u;
+            value_ |= (next_bit & 0x01U) << 4U;
         }
     }
 
