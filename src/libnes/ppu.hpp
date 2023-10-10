@@ -393,6 +393,7 @@ constexpr void ppu::prerender_scanline() noexcept {
     if (scan_.cycle() == 0) {
         status = 0x00;
         control &= 0xFE;
+        nmi_raised = false;
         nmi_seen = false;
     }
     if (scan_.cycle() >= 280) {
