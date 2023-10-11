@@ -68,35 +68,34 @@ public:
         }
     }
 
-    constexpr auto write(std::uint16_t addr, std::uint8_t value) {
+    constexpr void write(std::uint16_t addr, std::uint8_t value) {
         switch (addr) {
             case 0x2000: {
                 write_ctrl(value);
-                return true;
+                return;
             }
             case 0x2003: {
                 write_oama(value);
-                return true;
+                return;
             }
             case 0x2004: {
                 write_oamd(value);
-                return true;
+                return;
             }
             case 0x2005: {
                 write_scrl(value);
-                return true;
+                return;
             }
             case 0x2006: {
                 write_addr(value);
-                return true;
+                return;
             }
             case 0x2007: {
                 write_data(value);
-                return true;
+                return;
             }
-
             default:
-                return false;
+                return;
         }
     }
 

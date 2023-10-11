@@ -9,14 +9,16 @@
 namespace nes
 {
 
-template <typename T, typename U>
-concept PPU = requires(T t, std::uint16_t address, std::uint8_t value, U u) {
-    { t.write(address, value) } -> std::same_as<bool>;
+template <typename T>
+concept PPU = requires(T t, std::uint16_t address, std::uint8_t value, nes::cartridge* rom, nes::name_table_mirroring m) {
     { t.read(address) } -> std::same_as<std::optional<std::uint8_t>>;
-    { t.dma_write(address, u) };
+    { t.dma_write(address, std::invocable<std::uint16_t> ) };
+    { t.load_cartridge(rom) };
+    { t.eject_cartridge() };
+    { t.nametable_mirroring(m) };
 };
 
-template <typename P>
+template <PPU P>
 struct console_bus {
     struct controller_hack {
         std::uint8_t keys{0};
@@ -57,20 +59,17 @@ struct console_bus {
     }
 
     constexpr void write(std::uint16_t addr, std::uint8_t value) {
-        if (ppu().write(addr, value))
-            return;
-
-        if (addr == 0x4014) {
-            ppu().dma_write(value << 8U, [this](auto addr) { return read(addr); });
-            return;
-        }
-
-        if (addr == 0x4016) {
-            j1.snapshot = j1.keys;
-        }
-
         if (addr < 0x2000) {
             mem[addr % 0x0800] = value;
+
+        } else if (addr >= 0x2000 and addr < 0x2008) {
+            ppu().write(addr, value);
+
+        } else if (addr == 0x4014) {
+            ppu().dma_write(value << 8U, [this](auto addr) { return read(addr); });
+
+        } else if (addr == 0x4016) {
+            j1.snapshot = j1.keys;
         }
 
         if (cartridge != nullptr)
