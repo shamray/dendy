@@ -10,7 +10,7 @@ struct point {
     short y;
 };
 
-auto operator==(nes::point a, nes::point b) {
+inline constexpr auto operator==(nes::point a, nes::point b) {
     return a.x == b.x and a.y == b.y;
 }
 

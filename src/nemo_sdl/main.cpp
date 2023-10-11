@@ -310,8 +310,8 @@ int main(int argc, char* argv[]) {
     auto scr = screen{};
     auto console = nes::console{load_rom(config.filename)};
 
-    const auto FPS = 60;
-    const auto DELAY = static_cast<int>(1000.0f / FPS);
+    static constexpr auto FPS = 60;
+    static constexpr auto DELAY = static_cast<int>(1000.0f / FPS);
     std::uint32_t frameStart, frameTime;
 
     frontend.add_window(&window);
