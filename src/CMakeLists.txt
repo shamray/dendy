@@ -17,7 +17,6 @@ add_library(libnes
     libnes/ppu_name_table.hpp
     libnes/ppu_object_attribute_memory.hpp
     libnes/ppu_palette_table.hpp
-    libnes/ppu_pattern_table.hpp
     libnes/screen.hpp
 
     libnes/mappers/nrom.hpp

@@ -4,7 +4,6 @@
 #include <libnes/ppu_name_table.hpp>
 #include <libnes/ppu_object_attribute_memory.hpp>
 #include <libnes/ppu_palette_table.hpp>
-#include <libnes/ppu_pattern_table.hpp>
 
 #include <libnes/color.hpp>
 #include <libnes/screen.hpp>

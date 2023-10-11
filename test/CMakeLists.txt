@@ -4,7 +4,6 @@ add_executable(unit_tests
     unit_tests/ppu_crt_scan_test.cpp
     unit_tests/ppu_name_table_test.cpp
     unit_tests/ppu_palette_table_test.cpp
-    unit_tests/ppu_pattern_table_test.cpp
     unit_tests/ppu_test.cpp
     unit_tests/mmc1_test.cpp
     unit_tests/ppu_oam_test.cpp

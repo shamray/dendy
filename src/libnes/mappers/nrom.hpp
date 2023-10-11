@@ -18,7 +18,7 @@ public:
         , chr_{chr}
         , mirroring_{mirroring} {}
 
-    [[nodiscard]] auto chr() const -> const pattern_table::memory_bank& override { return chr_; }
+    [[nodiscard]] auto chr() const -> const std::array<std::uint8_t, 8_Kb>& override { return chr_; }
     [[nodiscard]] auto mirroring() const -> name_table_mirroring override { return mirroring_; }
 
     auto write([[maybe_unused]] std::uint16_t addr, [[maybe_unused]] std::uint8_t value) -> bool override {

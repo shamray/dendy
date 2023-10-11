@@ -2,7 +2,6 @@
 
 #include <libnes/literals.hpp>
 #include <libnes/ppu_name_table.hpp>
-#include <libnes/ppu_pattern_table.hpp>
 
 #include <cstdint>
 #include <optional>
@@ -30,7 +29,7 @@ class cartridge
 public:
     virtual ~cartridge() = default;
 
-    [[nodiscard]] virtual auto chr() const -> const pattern_table::memory_bank& = 0;
+    [[nodiscard]] virtual auto chr() const -> const std::array<std::uint8_t, 8_Kb>& = 0;
     [[nodiscard]] virtual auto mirroring() const -> name_table_mirroring = 0;
 
     virtual auto write(std::uint16_t addr, std::uint8_t value) -> bool = 0;

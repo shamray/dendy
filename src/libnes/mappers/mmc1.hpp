@@ -60,7 +60,7 @@ public:
         : prg_{std::move(prg)}
         , chr_{std::move(chr)} {}
 
-    [[nodiscard]] auto chr() const -> const pattern_table::memory_bank& override {
+    [[nodiscard]] auto chr() const -> const std::array<std::uint8_t, 8_Kb>& override {
         return mapped_chr_;
     }
 
