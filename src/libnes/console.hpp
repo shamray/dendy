@@ -9,13 +9,14 @@
 namespace nes
 {
 
-template <typename T>
-concept ConnectedToBus = requires(T t, std::uint16_t address, std::uint8_t value) {
-    { t.write(address, value) };
+template <typename T, typename U>
+concept PPU = requires(T t, std::uint16_t address, std::uint8_t value, U u) {
+    { t.write(address, value) } -> std::same_as<bool>;
     { t.read(address) } -> std::same_as<std::optional<std::uint8_t>>;
+    { t.dma_write(address, u) };
 };
 
-template <ConnectedToBus P>
+template <typename P>
 struct console_bus {
     struct controller_hack {
         std::uint8_t keys{0};
@@ -68,8 +69,8 @@ struct console_bus {
             j1.snapshot = j1.keys;
         }
 
-        if (addr < 0x800) {
-            mem[addr] = value;
+        if (addr < 0x2000) {
+            mem[addr % 0x0800] = value;
         }
 
         if (cartridge != nullptr)
