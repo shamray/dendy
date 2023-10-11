@@ -22,7 +22,7 @@ struct console_bus {
     }
 
     void connect_cartridge() {
-        ppu.connect_pattern_table(&cartridge->chr());
+        ppu.load_cartridge(cartridge.get());
         ppu.nametable_mirroring(cartridge->mirroring());
     }
 
@@ -53,9 +53,7 @@ struct console_bus {
             mem[addr] = value;
         }
 
-        if (cartridge->write(addr, value)) {
-            ppu.connect_pattern_table(&cartridge->chr());
-        }
+        cartridge->write(addr, value);
     }
 
     std::uint8_t read(std::uint16_t addr) {

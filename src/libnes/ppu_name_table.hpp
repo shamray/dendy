@@ -37,12 +37,8 @@ public:
         return vram_[bank & 1];
     }
 
-    name_table() {
-        std::ranges::for_each(vram_, [](auto& x) { std::ranges::fill(x, std::uint8_t{0}); });
-    }
-
 private:
-    [[nodiscard]] constexpr auto bank_index(std::uint16_t addr) const -> int {
+    [[nodiscard]] constexpr auto bank_index(std::uint16_t addr) const -> std::size_t {
         using enum name_table_mirroring;
         switch (mirroring) {
             case horizontal:
@@ -59,7 +55,7 @@ private:
 
 private:
     using bank = std::array<std::uint8_t, 2_Kb>;
-    std::array<bank, 2> vram_;
+    std::array<bank, 2> vram_{};
 };
 
 }// namespace nes

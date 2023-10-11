@@ -61,8 +61,6 @@ public:
         , chr_{std::move(chr)} {}
 
     [[nodiscard]] auto chr() const -> const pattern_table::memory_bank& override {
-        memcpy(mapped_chr_.data(), chr_[chr_ix0_ % chr_.size()].data(), 4_Kb);
-        memcpy(mapped_chr_.data() + 4_Kb, chr_[chr_ix1_ % chr_.size()].data(), 4_Kb);
         return mapped_chr_;
     }
 
@@ -74,12 +72,15 @@ public:
 
         shift_register_.load(value);
         if (auto r = shift_register_.get_value(); r.has_value()) {
-            if (addr < 0xA000) control_ = r.value();
-            else if (addr < 0xC000)
+            if (addr < 0xA000) {
+                control_ = r.value();
+            } else if (addr < 0xC000) {
                 chr_ix0_ = r.value();
-            else if (addr < 0xE000)
+                memcpy(mapped_chr_.data(), chr_[chr_ix0_ % chr_.size()].data(), 4_Kb);
+            } else if (addr < 0xE000) {
                 chr_ix1_ = r.value();
-            else {
+                memcpy(mapped_chr_.data() + 4_Kb, chr_[chr_ix1_ % chr_.size()].data(), 4_Kb);
+            } else {
                 prg_ix_ = r.value();
             }
 

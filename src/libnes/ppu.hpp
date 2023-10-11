@@ -9,6 +9,7 @@
 #include <libnes/color.hpp>
 #include <libnes/screen.hpp>
 
+#include "cartridge.hpp"
 #include <array>
 #include <cassert>
 #include <optional>
@@ -28,11 +29,8 @@ public:
     ppu(const container_t& system_color_palette)
         : palette_table_{system_color_palette} {}
 
-    ppu(const pattern_table::memory_bank& chr, const auto& system_color_palette)
-        : pattern_table_{&chr}
-        , palette_table_{system_color_palette} {}
-
-    constexpr void connect_pattern_table(auto new_bank) noexcept { pattern_table_.connect(new_bank); }
+    constexpr void load_cartridge(cartridge* rom) noexcept { cartridge_ = rom; }
+    constexpr void eject_cartridge() noexcept { load_cartridge(nullptr); }
 
     constexpr void nametable_mirroring(auto mirroring) noexcept { name_table_.mirroring = mirroring; }
 
@@ -114,7 +112,7 @@ public:
         return index << 10;
     }
 
-    [[nodiscard]] constexpr auto tile_x_scrolled(short x) {
+    [[nodiscard]] constexpr auto tile_x_scrolled(short x) const {
         assert(nametable_index_x_ == 0 or nametable_index_x_ == 1);
 
         auto tile_x = (x + scroll_x) / 8;
@@ -127,7 +125,7 @@ public:
         return std::tuple{nametable_index_x, tile_x};
     }
 
-    [[nodiscard]] constexpr auto tile_y_scrolled(short y) {
+    [[nodiscard]] constexpr auto tile_y_scrolled(short y) const {
         assert(nametable_index_y_ == 0 or nametable_index_y_ == 1);
 
         auto tile_y = (y + scroll_y) / 8;
@@ -174,10 +172,15 @@ private:
         } else if (a >= 0x3F00 and a <= 0x3FFF) {
             r = b = palette_table_.read(a & 0x001F);
         } else {
-            b = pattern_table_.read(a);
+            b = read_chr(a);
         }
 
         return r;
+    }
+
+    [[nodiscard]] constexpr auto read_chr(std::uint16_t addr) const -> std::uint8_t {
+        auto& both_banks = cartridge_->chr();
+        return both_banks.at(addr);
     }
 
     constexpr void write_ctrl(std::uint8_t value) { control = value; }
@@ -243,10 +246,10 @@ private:
         return static_cast<std::uint16_t>((0x3c0 + tile_y / 4 * 8 + tile_x / 4) | nametable_index);
     }
 
-    [[nodiscard]] constexpr static auto read_tile_pixel(const auto& pattern_table, auto ix, auto tile, auto x, auto y) {
+    [[nodiscard]] constexpr auto read_tile_pixel(auto ix, auto tile, auto x, auto y) {
         const auto tile_offset = ix * 0x1000 + tile * 0x10;
-        const auto tile_lsb = pattern_table.read(static_cast<std::uint16_t>(tile_offset + y + 0));
-        const auto tile_msb = pattern_table.read(static_cast<std::uint16_t>(tile_offset + y + 8));
+        const auto tile_lsb = read_chr(static_cast<std::uint16_t>(tile_offset + y + 0));
+        const auto tile_msb = read_chr(static_cast<std::uint16_t>(tile_offset + y + 8));
         const auto pixel_lo = (tile_lsb >> (7 - x)) & 0x01;
         const auto pixel_hi = (tile_msb >> (7 - x)) & 0x01;
         return static_cast<std::uint8_t>(pixel_lo | (pixel_hi << 1));
@@ -289,7 +292,7 @@ private:
             auto nametable_addr = nametable_address(nametable_index_x, nametable_index_y);
 
             auto tile_index = read_tile_index(name_table_, tile_x, tile_y, nametable_addr);
-            auto pixel = read_tile_pixel(pattern_table_, pattern_table_bg_index(), tile_index, tile_col, tile_row);
+            auto pixel = read_tile_pixel(pattern_table_bg_index(), tile_index, tile_col, tile_row);
             auto palette = read_tile_palette(name_table_, tile_x, tile_y, nametable_addr);
 
             screen.draw_pixel({x, y}, palette_table_.color_of(pixel, palette));
@@ -301,7 +304,7 @@ private:
                 auto dy = y - s.y;
                 auto j = (s.attr & 0x40) ? 7 - dx : dx;
                 auto i = (s.attr & 0x80) ? 7 - dy : dy;
-                auto sprite_pixel = read_tile_pixel(pattern_table_, pattern_table_fg_index(), s.tile, j, i);
+                auto sprite_pixel = read_tile_pixel(pattern_table_fg_index(), s.tile, j, i);
                 if (sprite_pixel != 0) {
                     status |= 0x40;
                 }
@@ -322,7 +325,7 @@ private:
 
                 for (auto i = 0; i < 8; ++i) {
                     for (auto j = 0; j < 8; ++j) {
-                        auto pixel = read_tile_pixel(pattern_table_, pattern_table_fg_index(), s.tile, j, i);
+                        auto pixel = read_tile_pixel(pattern_table_fg_index(), s.tile, j, i);
                         auto dx = (s.attr & 0x40) ? 7 - j : j;
                         auto dy = (s.attr & 0x80) ? 7 - i : i;
                         if (pixel) {
@@ -347,11 +350,11 @@ private:
 private:
     crt_scan scan_{SCANLINE_DOTS, VISIBLE_SCANLINES, POST_RENDER_SCANLINES, VERTICAL_BLANK_SCANLINES};
 
-    nes::pattern_table pattern_table_;
     nes::name_table name_table_;
     nes::palette_table palette_table_;
     nes::object_attribute_memory oam_;
 
+    cartridge* cartridge_{nullptr};
     std::uint8_t data_read_buffer_;
 };
 
@@ -378,7 +381,7 @@ inline auto ppu::display_pattern_table(auto i, auto palette) const -> std::array
             auto offset = static_cast<std::uint16_t>(tile_y * 16 + tile_x);
             for (std::uint16_t row = 0; row < 8; ++row) {
                 for (std::uint16_t col = 0; col < 8; col++) {
-                    auto pixel = read_tile_pixel(pattern_table_, i, offset, col, row);
+                    auto pixel = read_tile_pixel(i, offset, col, row);
 
                     auto result_offset = (tile_y * 8 + row) * 128 + tile_x * 8 + (7 - col);
                     auto result_color = palette_table_.color_of(pixel, palette);
