@@ -9,39 +9,58 @@
 namespace nes
 {
 
+template <typename T>
+concept ConnectedToBus = requires(T t, std::uint16_t address, std::uint8_t value) {
+    { t.write(address, value) };
+    { t.read(address) } -> std::same_as<std::optional<std::uint8_t>>;
+};
+
+template <ConnectedToBus P>
 struct console_bus {
     struct controller_hack {
         std::uint8_t keys{0};
         std::uint8_t snapshot{0};
     } j1;
 
-    console_bus(std::unique_ptr<cartridge> cartridge, nes::ppu& ppu)
-        : cartridge{std::move(cartridge)}
-        , ppu{ppu} {
-        connect_cartridge();
+    explicit constexpr console_bus(P& ppu, cartridge* cartridge = nullptr)
+        : ppu_{ppu} {
+
+        load_cartridge(cartridge);
     }
 
-    void connect_cartridge() {
-        ppu.load_cartridge(cartridge.get());
-        ppu.nametable_mirroring(cartridge->mirroring());
+    constexpr auto ppu() -> auto& {
+        return ppu_.get();
     }
 
-    auto nmi() {
-        if (not ppu.nmi_raised)
+    constexpr void load_cartridge(cartridge* new_cartridge) {
+        cartridge = new_cartridge;
+
+        ppu().load_cartridge(cartridge);
+        if (cartridge != nullptr)
+            ppu().nametable_mirroring(cartridge->mirroring());
+    }
+
+    constexpr void eject_cartridge() {
+        ppu().eject_cartridge();
+        cartridge = nullptr;
+    }
+
+    [[nodiscard]] constexpr auto nmi() {
+        if (not ppu().nmi_raised)
             return false;
 
-        auto nmi_signal = ppu.nmi_raised and not ppu.nmi_seen;
-        ppu.nmi_seen = true;
+        auto nmi_signal = ppu().nmi_raised and not ppu().nmi_seen;
+        ppu().nmi_seen = true;
 
         return nmi_signal;
     }
 
-    void write(std::uint16_t addr, std::uint8_t value) {
-        if (ppu.write(addr, value))
+    constexpr void write(std::uint16_t addr, std::uint8_t value) {
+        if (ppu().write(addr, value))
             return;
 
         if (addr == 0x4014) {
-            ppu.dma_write(value << 8U, [this](auto addr) { return read(addr); });
+            ppu().dma_write(value << 8U, [this](auto addr) { return read(addr); });
             return;
         }
 
@@ -53,15 +72,16 @@ struct console_bus {
             mem[addr] = value;
         }
 
-        cartridge->write(addr, value);
+        if (cartridge != nullptr)
+            cartridge->write(addr, value);
     }
 
-    std::uint8_t read(std::uint16_t addr) {
+    constexpr std::uint8_t read(std::uint16_t addr) {
         if (addr <= 0x1FFF) {
             return mem[addr & 0x07FF];
         }
 
-        if (auto r = ppu.read(addr); r.has_value())
+        if (auto r = ppu().read(addr); r.has_value())
             return r.value();
 
         if (addr == 0x4016) {
@@ -80,16 +100,22 @@ struct console_bus {
         return 0;
     }
 
-    std::unique_ptr<cartridge> cartridge;
+    cartridge* cartridge{nullptr};
     std::array<std::uint8_t, 2_Kb> mem{};
-    nes::ppu& ppu;
+
+private:
+    std::reference_wrapper<P> ppu_;
 };
 
 class console
 {
 public:
+    using bus = console_bus<ppu>;
+    using cpu = cpu<bus>;
+
     explicit console(std::unique_ptr<cartridge> rom)
-        : bus_{std::move(rom), ppu_} {
+        : cartridge_{std::move(rom)}
+        , bus_{ppu_, cartridge_.get()} {
     }
 
     template <screen screen_t>
@@ -113,9 +139,10 @@ public:
     }
 
 private:
+    std::unique_ptr<cartridge> cartridge_;
     ppu ppu_{nes::DEFAULT_COLORS};
-    console_bus bus_;
-    cpu<console_bus> cpu_{bus_};
+    bus bus_{ppu_};
+    cpu cpu_{bus_};
 };
 
 }// namespace nes
