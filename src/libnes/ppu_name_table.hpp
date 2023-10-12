@@ -47,6 +47,10 @@ private:
                 return (addr >> 11u) & 0x01u;
             case vertical:
                 return (addr >> 10u) & 0x01u;
+            case single_screen_lo:
+                return 0;
+            case single_screen_hi:
+                return 1;
         }
         throw std::logic_error("Unhandled mirroring scenario");
     }
