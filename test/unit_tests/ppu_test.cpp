@@ -47,17 +47,17 @@ struct test_cartridge: nes::cartridge {
         : cart_chr{std::move(chr)}
         , cart_mirroring{mirroring} {}
 
-    [[nodiscard]] auto chr0() const -> const nes::membank<4_Kb>& override {
+    [[nodiscard]] auto chr0() const noexcept -> const nes::membank<4_Kb>& override {
         std::copy_n(cart_chr.begin(), 4_Kb, tmp_.begin());
         return tmp_;
     }
 
-    [[nodiscard]] auto chr1() const -> const nes::membank<4_Kb>& override {
+    [[nodiscard]] auto chr1() const noexcept -> const nes::membank<4_Kb>& override {
         std::copy_n(std::next(cart_chr.begin(), 4_Kb), 4_Kb, tmp_.begin());
         return tmp_;
     }
 
-    [[nodiscard]] auto mirroring() const -> nes::name_table_mirroring override {
+    [[nodiscard]] auto mirroring() const noexcept -> nes::name_table_mirroring override {
         return cart_mirroring;
     }
 
@@ -318,7 +318,7 @@ TEST_CASE("PPU") {
             }
 
             SECTION("scroll Y") {
-                ppu.nametable_mirroring(nes::name_table_mirroring::horizontal);
+                cartridge.cart_mirroring = nes::name_table_mirroring::horizontal;
 
                 write(0x2006, ppu, 0x20, 0x00);// Nametable
                 write(0x2007, ppu, 0, 42);

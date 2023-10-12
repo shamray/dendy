@@ -15,7 +15,6 @@ concept PPU = requires(T t, std::uint16_t address, std::uint8_t value, nes::cart
     { t.dma_write(address, std::invocable<std::uint16_t> ) };
     { t.load_cartridge(rom) };
     { t.eject_cartridge() };
-    { t.nametable_mirroring(m) };
 };
 
 template <PPU P>
@@ -39,8 +38,6 @@ struct console_bus {
         cartridge = new_cartridge;
 
         ppu().load_cartridge(cartridge);
-        if (cartridge != nullptr)
-            ppu().nametable_mirroring(cartridge->mirroring());
     }
 
     constexpr void eject_cartridge() {

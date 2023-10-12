@@ -31,8 +31,6 @@ public:
     constexpr void load_cartridge(cartridge* rom) noexcept { cartridge_ = rom; }
     constexpr void eject_cartridge() noexcept { load_cartridge(nullptr); }
 
-    constexpr void nametable_mirroring(auto mirroring) noexcept { name_table_.mirroring = mirroring; }
-
     std::uint8_t control{0};
     std::uint8_t status{0};
     std::uint8_t mask{0};
@@ -344,6 +342,7 @@ private:
         }
     }
     constexpr void vertical_blank_line() noexcept {
+
         if (scan_.cycle() == 0) {
             status |= 0x80;
             if (control & 0x80)
@@ -351,10 +350,17 @@ private:
         }
     };
 
+    [[nodiscard]] constexpr auto mirroring() const -> std::optional<name_table_mirroring> {
+        if (cartridge_)
+            return cartridge_->mirroring();
+        else
+            return std::nullopt;
+    };
+
 private:
     crt_scan scan_{SCANLINE_DOTS, VISIBLE_SCANLINES, POST_RENDER_SCANLINES, VERTICAL_BLANK_SCANLINES};
 
-    nes::name_table name_table_;
+    nes::name_table name_table_{[this]() { return mirroring(); }};
     nes::palette_table palette_table_;
     nes::object_attribute_memory oam_;
 

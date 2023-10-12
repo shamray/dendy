@@ -6,8 +6,8 @@
 #include <array>
 #include <cassert>
 #include <optional>
-#include <vector>
 #include <utility>
+#include <vector>
 
 namespace nes
 {
@@ -70,13 +70,7 @@ public:
     }
 
     [[nodiscard]] auto mirroring() const noexcept -> name_table_mirroring override {
-        switch (control_ & 0b00011) {
-            case 0b00: return name_table_mirroring::single_screen_lo;
-            case 0b01: return name_table_mirroring::single_screen_hi;
-            case 0b10: return name_table_mirroring::vertical;
-            case 0b11: return name_table_mirroring::horizontal;
-        }
-        std::unreachable();
+        return mirroring_;
     }
 
     auto write(std::uint16_t addr, std::uint8_t value) -> bool override {
@@ -87,6 +81,7 @@ public:
         if (auto r = shift_register_.get_value(); r.has_value()) {
             if (addr < 0xA000) {
                 control_ = r.value();
+                set_mirroring();
             } else if (addr < 0xC000) {
                 chr_ix0_ = r.value();
             } else if (addr < 0xE000) {
@@ -136,6 +131,23 @@ public:
         return std::nullopt;
     }
 
+    constexpr void set_mirroring() noexcept {
+        switch (control_ & 0b00011) {
+            case 0b00:
+                mirroring_ = name_table_mirroring::single_screen_lo;
+                break;
+            case 0b01:
+                mirroring_ = name_table_mirroring::single_screen_hi;
+                break;
+            case 0b10:
+                mirroring_ = name_table_mirroring::vertical;
+                break;
+            case 0b11:
+                mirroring_ = name_table_mirroring::horizontal;
+                break;
+        }
+    }
+
 private:
     std::vector<std::array<std::uint8_t, 16_Kb>> prg_;
     std::vector<membank<4_Kb>> chr_;
@@ -145,6 +157,8 @@ private:
     std::uint8_t chr_ix0_{0};
     std::uint8_t chr_ix1_{0};
     std::uint8_t prg_ix_{0};
+
+    nes::name_table_mirroring mirroring_{nes::name_table_mirroring::single_screen_lo};
 };
 
 }// namespace nes
