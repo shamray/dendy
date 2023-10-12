@@ -32,9 +32,9 @@ class cartridge
 public:
     virtual ~cartridge() = default;
 
-    [[nodiscard]] virtual auto chr0() const -> const membank<4_Kb>& = 0;
-    [[nodiscard]] virtual auto chr1() const -> const membank<4_Kb>& = 0;
-    [[nodiscard]] virtual auto mirroring() const -> name_table_mirroring = 0;
+    [[nodiscard]] virtual auto chr0() const noexcept -> const membank<4_Kb>& = 0;
+    [[nodiscard]] virtual auto chr1() const noexcept -> const membank<4_Kb>& = 0;
+    [[nodiscard]] virtual auto mirroring() const noexcept -> name_table_mirroring = 0;
 
     virtual auto write(std::uint16_t addr, std::uint8_t value) -> bool = 0;
     [[nodiscard]] virtual auto read(std::uint16_t addr) -> std::optional<std::uint8_t> = 0;

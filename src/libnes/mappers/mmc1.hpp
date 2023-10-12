@@ -7,6 +7,7 @@
 #include <cassert>
 #include <optional>
 #include <vector>
+#include <utility>
 
 namespace nes
 {
@@ -60,23 +61,22 @@ public:
         : prg_{std::move(prg)}
         , chr_{std::move(chr)} {}
 
-    [[nodiscard]] auto chr0() const -> const membank<4_Kb>& override {
+    [[nodiscard]] auto chr0() const noexcept -> const membank<4_Kb>& override {
         return chr_[chr_ix0_ % chr_.size()];
     }
 
-    [[nodiscard]] auto chr1() const -> const membank<4_Kb>& override {
+    [[nodiscard]] auto chr1() const noexcept -> const membank<4_Kb>& override {
         return chr_[chr_ix1_ % chr_.size()];
     }
 
-    [[nodiscard]] auto mirroring() const -> name_table_mirroring override {
+    [[nodiscard]] auto mirroring() const noexcept -> name_table_mirroring override {
         switch (control_ & 0b00011) {
-            case 0b00: return nes::name_table_mirroring::single_screen_lo;
-            case 0b01: return nes::name_table_mirroring::single_screen_hi;
-            case 0b10: return nes::name_table_mirroring::vertical;
-            case 0b11: return nes::name_table_mirroring::horizontal;
-            default:
-                throw std::logic_error("Should be unreachable");
+            case 0b00: return name_table_mirroring::single_screen_lo;
+            case 0b01: return name_table_mirroring::single_screen_hi;
+            case 0b10: return name_table_mirroring::vertical;
+            case 0b11: return name_table_mirroring::horizontal;
         }
+        std::unreachable();
     }
 
     auto write(std::uint16_t addr, std::uint8_t value) -> bool override {

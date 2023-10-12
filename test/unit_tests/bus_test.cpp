@@ -29,15 +29,15 @@ struct bus_test {
         nes::name_table_mirroring cart_mirroring{nes::name_table_mirroring::vertical};
         std::unordered_map<std::uint16_t, std::uint8_t> bytes_written;
 
-        [[nodiscard]] auto chr0() const -> const nes::membank<4_Kb>& override {
+        [[nodiscard]] auto chr0() const noexcept -> const nes::membank<4_Kb>& override {
             return cart_chr;
         }
 
-        [[nodiscard]] auto chr1() const -> const nes::membank<4_Kb>& override {
+        [[nodiscard]] auto chr1() const noexcept -> const nes::membank<4_Kb>& override {
             return cart_chr;
         }
 
-        [[nodiscard]] auto mirroring() const -> nes::name_table_mirroring override {
+        [[nodiscard]] auto mirroring() const noexcept -> nes::name_table_mirroring override {
             return cart_mirroring;
         }
 
