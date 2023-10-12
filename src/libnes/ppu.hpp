@@ -360,7 +360,7 @@ private:
 private:
     crt_scan scan_{SCANLINE_DOTS, VISIBLE_SCANLINES, POST_RENDER_SCANLINES, VERTICAL_BLANK_SCANLINES};
 
-    nes::name_table name_table_{[this]() { return mirroring(); }};
+    nes::name_table name_table_{[this]() constexpr { return mirroring(); }};
     nes::palette_table palette_table_;
     nes::object_attribute_memory oam_;
 

@@ -5,6 +5,7 @@
 #include <libnes/mappers/mmc1.hpp>
 #include <libnes/mappers/nrom.hpp>
 #include <libnes/ppu.hpp>
+#include <memory>
 
 namespace nes
 {
@@ -35,14 +36,14 @@ struct console_bus {
     }
 
     constexpr void load_cartridge(cartridge* new_cartridge) {
-        cartridge = new_cartridge;
+        cartridge_ = new_cartridge;
 
-        ppu().load_cartridge(cartridge);
+        ppu().load_cartridge(cartridge_);
     }
 
     constexpr void eject_cartridge() {
         ppu().eject_cartridge();
-        cartridge = nullptr;
+        cartridge_ = nullptr;
     }
 
     [[nodiscard]] constexpr auto nmi() {
@@ -69,8 +70,8 @@ struct console_bus {
             j1.snapshot = j1.keys;
         }
 
-        if (cartridge != nullptr)
-            cartridge->write(addr, value);
+        if (cartridge_ != nullptr)
+            cartridge_->write(addr, value);
     }
 
     constexpr std::uint8_t read(std::uint16_t addr) {
@@ -91,16 +92,18 @@ struct console_bus {
             return 0;
         }
 
-        if (auto r = cartridge->read(addr); r.has_value())
+        if (auto r = cartridge_->read(addr); r.has_value())
             return r.value();
 
         return 0;
     }
 
-    cartridge* cartridge{nullptr};
+    [[nodiscard]] constexpr auto cartridge() noexcept { return cartridge_; }
+
     std::array<std::uint8_t, 2_Kb> mem{};
 
 private:
+    nes::cartridge* cartridge_{nullptr};
     std::reference_wrapper<P> ppu_;
 };
 
@@ -108,7 +111,7 @@ class console
 {
 public:
     using bus = console_bus<ppu>;
-    using cpu = cpu<bus>;
+    using cpu = nes::cpu<bus>;
 
     explicit console(std::unique_ptr<cartridge> rom)
         : cartridge_{std::move(rom)}

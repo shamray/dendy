@@ -22,7 +22,7 @@ struct test_screen {
     class hasher
     {
     public:
-        [[nodiscard]] constexpr auto operator()(nes::point p) const noexcept {
+        [[nodiscard]] constexpr static auto operator()(const nes::point& p) noexcept -> std::size_t {
             return p.x << 8 | p.y;
         }
     };

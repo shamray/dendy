@@ -62,13 +62,13 @@ struct bus_test {
 TEST_CASE_METHOD(bus_test, "Bus - create bus") {
     SECTION("create bus with no cartridge") {
         auto new_bus = test_bus{ppu};
-        CHECK(new_bus.cartridge == nullptr);
+        CHECK(new_bus.cartridge() == nullptr);
         CHECK(ppu.cartridge == nullptr);
     }
 
     SECTION("create bus with cartridge loaded") {
         auto new_bus = test_bus{ppu, &cartridge};
-        CHECK(new_bus.cartridge == &cartridge);
+        CHECK(new_bus.cartridge() == &cartridge);
     }
 
     SECTION("create bus, then load cartridge") {
@@ -76,17 +76,17 @@ TEST_CASE_METHOD(bus_test, "Bus - create bus") {
 
         new_bus.load_cartridge(&cartridge);
 
-        CHECK(new_bus.cartridge == &cartridge);
+        CHECK(new_bus.cartridge() == &cartridge);
         CHECK(ppu.cartridge == &cartridge);
     }
 
     SECTION("create bus, eject cartridge") {
         auto new_bus = test_bus{ppu, &cartridge};
-        REQUIRE(new_bus.cartridge == &cartridge);
+        REQUIRE(new_bus.cartridge() == &cartridge);
 
         new_bus.eject_cartridge();
 
-        CHECK(new_bus.cartridge == nullptr);
+        CHECK(new_bus.cartridge() == nullptr);
         CHECK(ppu.cartridge == nullptr);
     }
 }

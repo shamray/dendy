@@ -2,6 +2,9 @@
 
 #include <optional>
 #include <tuple>
+#include <cstdint>
+
+#include <libnes/cpu_operations.hpp>
 
 namespace nes
 {

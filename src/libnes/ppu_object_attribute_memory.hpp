@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <bit>
 
 namespace nes
 {

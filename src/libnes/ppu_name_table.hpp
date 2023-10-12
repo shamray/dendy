@@ -9,6 +9,7 @@
 #include <optional>
 
 #include <libnes/literals.hpp>
+#include <utility>
 
 namespace nes
 {
@@ -27,13 +28,13 @@ public:
     explicit name_table(mirroring_callback mirroring)
         : mirroring_{std::move(mirroring)} {}
 
-    constexpr void write(std::uint16_t addr, std::uint8_t value) {
+    void write(std::uint16_t addr, std::uint8_t value) {
         auto i = bank_index(addr);
         auto j = bank_offset(addr);
 
         vram_[i][j] = value;
     }
-    [[nodiscard]] constexpr auto read(std::uint16_t addr) const {
+    [[nodiscard]] auto read(std::uint16_t addr) const {
         auto i = bank_index(addr);
         auto j = bank_offset(addr);
         return vram_[i][j];
@@ -44,7 +45,7 @@ public:
     }
 
 private:
-    [[nodiscard]] constexpr auto bank_index(std::uint16_t addr) const -> std::size_t {
+    [[nodiscard]] auto bank_index(std::uint16_t addr) const -> std::size_t {
         using enum name_table_mirroring;
         const auto mirroring = mirroring_().value_or(vertical);
         switch (mirroring) {
