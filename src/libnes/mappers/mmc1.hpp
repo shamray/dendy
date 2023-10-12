@@ -56,12 +56,16 @@ private:
 class mmc1 final: public cartridge
 {
 public:
-    mmc1(std::vector<std::array<std::uint8_t, 16_Kb>> prg, std::vector<std::array<std::uint8_t, 4_Kb>> chr)
+    mmc1(std::vector<std::array<std::uint8_t, 16_Kb>> prg, std::vector<membank<4_Kb>> chr)
         : prg_{std::move(prg)}
         , chr_{std::move(chr)} {}
 
-    [[nodiscard]] auto chr() const -> const std::array<std::uint8_t, 8_Kb>& override {
-        return mapped_chr_;
+    [[nodiscard]] auto chr0() const -> const membank<4_Kb>& override {
+        return chr_[chr_ix0_ % chr_.size()];
+    }
+
+    [[nodiscard]] auto chr1() const -> const membank<4_Kb>& override {
+        return chr_[chr_ix1_ % chr_.size()];
     }
 
     [[nodiscard]] auto mirroring() const -> name_table_mirroring override { return mirroring_; }
@@ -76,10 +80,8 @@ public:
                 control_ = r.value();
             } else if (addr < 0xC000) {
                 chr_ix0_ = r.value();
-                memcpy(mapped_chr_.data(), chr_[chr_ix0_ % chr_.size()].data(), 4_Kb);
             } else if (addr < 0xE000) {
                 chr_ix1_ = r.value();
-                memcpy(mapped_chr_.data() + 4_Kb, chr_[chr_ix1_ % chr_.size()].data(), 4_Kb);
             } else {
                 prg_ix_ = r.value();
             }
@@ -127,7 +129,7 @@ public:
 
 private:
     std::vector<std::array<std::uint8_t, 16_Kb>> prg_;
-    std::vector<std::array<std::uint8_t, 4_Kb>> chr_;
+    std::vector<membank<4_Kb>> chr_;
     name_table_mirroring mirroring_{name_table_mirroring::horizontal};
 
     mmc1_shift_register shift_register_;
@@ -135,8 +137,6 @@ private:
     std::uint8_t chr_ix0_{0};
     std::uint8_t chr_ix1_{0};
     std::uint8_t prg_ix_{0};
-
-    mutable std::array<std::uint8_t, 8_Kb> mapped_chr_{};
 };
 
 }// namespace nes

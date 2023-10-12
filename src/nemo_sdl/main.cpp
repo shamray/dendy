@@ -232,7 +232,7 @@ auto load_rom(auto filename) -> std::unique_ptr<nes::cartridge> {
     auto romfile = std::ifstream{filename, std::ifstream::binary};
     assert(romfile.is_open());
 
-    nes::ines_header header;
+    nes::ines_header header{};
     romfile.read(reinterpret_cast<char*>(&header), sizeof(header));
 
     auto mapper_ix = (header.mapper1 >> 4) | (header.mapper2 & 0xF0);
@@ -253,14 +253,17 @@ auto load_rom(auto filename) -> std::unique_ptr<nes::cartridge> {
             romfile.read(reinterpret_cast<char*>(prg.back().data()), prg.back().size());
         }
 
-        auto chr = std::array<std::uint8_t, 8_Kb>{};
-        romfile.read(reinterpret_cast<char*>(chr.data()), chr.size());
+        auto chr0 = nes::membank<4_Kb>{};
+        romfile.read(reinterpret_cast<char*>(chr0.data()), chr0.size());
+
+        auto chr1 = nes::membank<4_Kb>{};
+        romfile.read(reinterpret_cast<char*>(chr1.data()), chr1.size());
 
         auto mirroring = (header.mapper1 & 0x01)
             ? nes::name_table_mirroring::vertical
             : nes::name_table_mirroring::horizontal;
 
-        return std::make_unique<nes::nrom>(prg, chr, mirroring);
+        return std::make_unique<nes::nrom>(prg, chr0, chr1, mirroring);
     }
 
     if (mapper_ix == 1) {
@@ -271,7 +274,7 @@ auto load_rom(auto filename) -> std::unique_ptr<nes::cartridge> {
             romfile.read(reinterpret_cast<char*>(prg.back().data()), prg.back().size());
         }
 
-        auto chr = std::vector<std::array<std::uint8_t, 4_Kb>>{};
+        auto chr = std::vector<nes::membank<4_Kb>>{};
 
         for (auto i = 0; i < header.chr_rom_chunks * 2; ++i) {
             chr.emplace_back();

@@ -24,12 +24,16 @@ struct ines_header {
 
 static_assert(sizeof(ines_header) == 16);
 
+template <std::size_t size>
+using membank = std::array<std::uint8_t, size>;
+
 class cartridge
 {
 public:
     virtual ~cartridge() = default;
 
-    [[nodiscard]] virtual auto chr() const -> const std::array<std::uint8_t, 8_Kb>& = 0;
+    [[nodiscard]] virtual auto chr0() const -> const membank<4_Kb>& = 0;
+    [[nodiscard]] virtual auto chr1() const -> const membank<4_Kb>& = 0;
     [[nodiscard]] virtual auto mirroring() const -> name_table_mirroring = 0;
 
     virtual auto write(std::uint16_t addr, std::uint8_t value) -> bool = 0;

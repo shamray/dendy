@@ -25,11 +25,15 @@ struct bus_test {
     };
 
     struct test_cartridge: nes::cartridge {
-        std::array<std::uint8_t, 8_Kb> cart_chr{};
+        nes::membank<4_Kb> cart_chr{};
         nes::name_table_mirroring cart_mirroring{nes::name_table_mirroring::vertical};
         std::unordered_map<std::uint16_t, std::uint8_t> bytes_written;
 
-        [[nodiscard]] auto chr() const -> const nes::pattern_table::memory_bank& override {
+        [[nodiscard]] auto chr0() const -> const nes::membank<4_Kb>& override {
+            return cart_chr;
+        }
+
+        [[nodiscard]] auto chr1() const -> const nes::membank<4_Kb>& override {
             return cart_chr;
         }
 

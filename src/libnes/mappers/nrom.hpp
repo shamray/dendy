@@ -13,12 +13,14 @@ namespace nes
 class nrom final: public cartridge
 {
 public:
-    nrom(std::vector<std::array<std::uint8_t, 16_Kb>> prg, std::array<std::uint8_t, 8_Kb> chr, name_table_mirroring mirroring)
+    nrom(std::vector<std::array<std::uint8_t, 16_Kb>> prg, membank<4_Kb> chr0, membank<4_Kb> chr1, name_table_mirroring mirroring)
         : prg_{std::move(prg)}
-        , chr_{chr}
+        , chr0_{chr0}
+        , chr1_{chr1}
         , mirroring_{mirroring} {}
 
-    [[nodiscard]] auto chr() const -> const std::array<std::uint8_t, 8_Kb>& override { return chr_; }
+    [[nodiscard]] auto chr0() const -> const membank<4_Kb>& override { return chr0_; }
+    [[nodiscard]] auto chr1() const -> const membank<4_Kb>& override { return chr1_; }
     [[nodiscard]] auto mirroring() const -> name_table_mirroring override { return mirroring_; }
 
     auto write([[maybe_unused]] std::uint16_t addr, [[maybe_unused]] std::uint8_t value) -> bool override {
@@ -45,8 +47,9 @@ public:
 
 private:
     std::vector<std::array<std::uint8_t, 16_Kb>> prg_;
-    std::array<std::uint8_t, 8_Kb> chr_;
+    membank<4_Kb> chr0_;
+    membank<4_Kb> chr1_;
     name_table_mirroring mirroring_;
 };
 
-}
+}// namespace nes

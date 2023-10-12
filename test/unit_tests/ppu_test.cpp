@@ -39,16 +39,22 @@ struct test_screen {
 };
 
 struct test_cartridge: nes::cartridge {
-    std::array<std::uint8_t, 8_Kb> cart_chr{};
+    nes::membank<8_Kb> cart_chr{};
     nes::name_table_mirroring cart_mirroring{nes::name_table_mirroring::vertical};
 
     test_cartridge() = default;
-    test_cartridge(std::array<std::uint8_t, 8_Kb> chr, nes::name_table_mirroring mirroring = nes::name_table_mirroring::vertical)
+    test_cartridge(nes::membank<8_Kb> chr, nes::name_table_mirroring mirroring = nes::name_table_mirroring::vertical)
         : cart_chr{std::move(chr)}
         , cart_mirroring{mirroring} {}
 
-    [[nodiscard]] auto chr() const -> const nes::pattern_table::memory_bank& override {
-        return cart_chr;
+    [[nodiscard]] auto chr0() const -> const nes::membank<4_Kb>& override {
+        std::copy_n(cart_chr.begin(), 4_Kb, tmp_.begin());
+        return tmp_;
+    }
+
+    [[nodiscard]] auto chr1() const -> const nes::membank<4_Kb>& override {
+        std::copy_n(std::next(cart_chr.begin(), 4_Kb), 4_Kb, tmp_.begin());
+        return tmp_;
     }
 
     [[nodiscard]] auto mirroring() const -> nes::name_table_mirroring override {
@@ -62,6 +68,9 @@ struct test_cartridge: nes::cartridge {
     [[nodiscard]] auto read([[maybe_unused]] std::uint16_t addr) -> std::optional<std::uint8_t> override {
         return std::nullopt;
     }
+
+private:
+    mutable nes::membank<4_Kb> tmp_;
 };
 
 

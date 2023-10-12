@@ -159,7 +159,8 @@ private:
     }
 
     [[nodiscard]] constexpr auto read_data() -> std::uint8_t {
-        auto a = address++;
+        auto a = address;
+        address = ++address % 0x4000;
         auto r = data_read_buffer_;
         auto& b = data_read_buffer_;
 
@@ -177,8 +178,13 @@ private:
     }
 
     [[nodiscard]] constexpr auto read_chr(std::uint16_t addr) const -> std::uint8_t {
-        auto& both_banks = cartridge_->chr();
-        return both_banks.at(addr);
+        assert(addr < 0x2000);
+
+        auto& chr = (addr < 0x1000)
+            ? cartridge_->chr0()
+            : cartridge_->chr1();
+
+        return chr.at(addr % 0x1000);
     }
 
     constexpr void write_ctrl(std::uint8_t value) { control = value; }
