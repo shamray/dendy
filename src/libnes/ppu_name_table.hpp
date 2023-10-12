@@ -12,6 +12,8 @@ namespace nes
 {
 
 enum class name_table_mirroring {
+    single_screen_lo,
+    single_screen_hi,
     horizontal,
     vertical
 };

@@ -1,7 +1,9 @@
-#include <libnes/cartridge.hpp>
 #include <catch2/catch_all.hpp>
+#include <libnes/cartridge.hpp>
 
 #include <libnes/mappers/mmc1.hpp>
+
+using namespace nes::literals;
 
 TEST_CASE("MMC1 registers") {
 
@@ -58,6 +60,49 @@ TEST_CASE("MMC1 registers") {
             sr.load(0x7f);
 
             CHECK(sr.get_value() == 0b10101);
+        }
+    }
+}
+
+void write(nes::mmc1& cartridge, std::uint16_t address, std::uint8_t value) {
+    cartridge.write(address, value);
+    value >>= 1;
+    cartridge.write(address, value);
+    value >>= 1;
+    cartridge.write(address, value);
+    value >>= 1;
+    cartridge.write(address, value);
+    value >>= 1;
+    cartridge.write(address, value);
+    value >>= 1;
+}
+
+TEST_CASE("Mapper MMC1") {
+    auto prg = std::vector<nes::membank<16_Kb>>{{}, {}};
+    auto chr = std::vector<nes::membank<4_Kb>>{{}, {}, {}};
+
+    prg[0][0] = 'a';
+    prg[1][0] = 'b';
+
+    chr[0][0] = 'x';
+    chr[1][1] = 'y';
+    chr[1][2] = 'z';
+
+    auto cartridge = nes::mmc1{prg, chr};
+
+    SECTION("Mirroring") {
+        SECTION("At creation") {
+            CHECK(cartridge.mirroring() == nes::name_table_mirroring::single_screen_lo);
+        }
+
+        SECTION("Set vertical") {
+            write(cartridge, 0x8000, 0b00010);
+            CHECK(cartridge.mirroring() == nes::name_table_mirroring::vertical);
+        }
+
+        SECTION("Set vertical") {
+            write(cartridge, 0x8000, 0b00011);
+            CHECK(cartridge.mirroring() == nes::name_table_mirroring::horizontal);
         }
     }
 }

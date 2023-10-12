@@ -68,7 +68,16 @@ public:
         return chr_[chr_ix1_ % chr_.size()];
     }
 
-    [[nodiscard]] auto mirroring() const -> name_table_mirroring override { return mirroring_; }
+    [[nodiscard]] auto mirroring() const -> name_table_mirroring override {
+        switch (control_ & 0b00011) {
+            case 0b00: return nes::name_table_mirroring::single_screen_lo;
+            case 0b01: return nes::name_table_mirroring::single_screen_hi;
+            case 0b10: return nes::name_table_mirroring::vertical;
+            case 0b11: return nes::name_table_mirroring::horizontal;
+            default:
+                throw std::logic_error("Should be unreachable");
+        }
+    }
 
     auto write(std::uint16_t addr, std::uint8_t value) -> bool override {
         if (addr < 0x8000)
@@ -130,7 +139,6 @@ public:
 private:
     std::vector<std::array<std::uint8_t, 16_Kb>> prg_;
     std::vector<membank<4_Kb>> chr_;
-    name_table_mirroring mirroring_{name_table_mirroring::horizontal};
 
     mmc1_shift_register shift_register_;
     std::uint8_t control_{0x0C};
