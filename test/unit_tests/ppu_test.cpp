@@ -22,7 +22,7 @@ struct test_screen {
     class hasher
     {
     public:
-        [[nodiscard]] constexpr static auto operator()(const nes::point& p) noexcept -> std::size_t {
+        [[nodiscard]] constexpr auto operator()(const nes::point& p) const noexcept -> std::size_t {
             return p.x << 8 | p.y;
         }
     };
@@ -123,7 +123,7 @@ TEST_CASE("PPU") {
     static constexpr auto WHITE = nes::DEFAULT_COLORS[48];
 
     SECTION("power up state") {
-        CHECK(ppu.control == 0x00);
+        CHECK(ppu.control.value() == 0x00);
         CHECK(ppu.mask == 0x00);
     }
 

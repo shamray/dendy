@@ -9,6 +9,7 @@
 #include <libnes/screen.hpp>
 
 #include "cartridge.hpp"
+#include "ppu_registers.hpp"
 #include <array>
 #include <cassert>
 #include <optional>
@@ -31,7 +32,7 @@ public:
     constexpr void load_cartridge(cartridge* rom) noexcept { cartridge_ = rom; }
     constexpr void eject_cartridge() noexcept { load_cartridge(nullptr); }
 
-    std::uint8_t control{0};
+    control_register control;
     std::uint8_t status{0};
     std::uint8_t mask{0};
 
@@ -68,7 +69,7 @@ public:
     constexpr void write(std::uint16_t addr, std::uint8_t value) {
         switch (addr) {
             case 0x2000: {
-                write_ctrl(value);
+                control.assign(value);
                 return;
             }
             case 0x2003: {
@@ -185,7 +186,6 @@ private:
         return chr.at(addr % 0x1000);
     }
 
-    constexpr void write_ctrl(std::uint8_t value) { control = value; }
     constexpr void write_oama(std::uint8_t value) { oam_.address = value; }
     void write_oamd(std::uint8_t value) { oam_.write(value); }
 
@@ -220,25 +220,13 @@ private:
             // ppu chr write
         }
 
-        address += (control & 0x04)
-            ? std::int8_t{32}
-            : std::int8_t{1};
+        address += control.vram_address_increment();
     }
 
     constexpr void prerender_scanline() noexcept;
 
     std::uint8_t nametable_index_x_{0};
     std::uint8_t nametable_index_y_{0};
-
-    [[nodiscard]] constexpr auto nametable_index_x() const {
-        return static_cast<std::uint8_t>((control >> 0) & 0x01);
-    }
-    [[nodiscard]] constexpr auto nametable_index_y() const {
-        return static_cast<std::uint8_t>((control >> 1) & 0x01);
-    }
-
-    [[nodiscard]] constexpr auto pattern_table_bg_index() const { return (control & 0x10) >> 4; }
-    [[nodiscard]] constexpr auto pattern_table_fg_index() const { return (control & 0x08) >> 3; }
 
     [[nodiscard]] constexpr static auto nametable_tile_offset(auto tile_x, auto tile_y, int nametable_index) {
         return static_cast<std::uint16_t>((tile_y * 32 + tile_x) | nametable_index);
@@ -294,7 +282,7 @@ private:
             auto nametable_addr = nametable_address(nametable_index_x, nametable_index_y);
 
             auto tile_index = read_tile_index(name_table_, tile_x, tile_y, nametable_addr);
-            auto pixel = read_tile_pixel(pattern_table_bg_index(), tile_index, tile_col, tile_row);
+            auto pixel = read_tile_pixel(control.pattern_table_bg_index(), tile_index, tile_col, tile_row);
             auto palette = read_tile_palette(name_table_, tile_x, tile_y, nametable_addr);
 
             screen.draw_pixel({x, y}, palette_table_.color_of(pixel, palette));
@@ -306,7 +294,7 @@ private:
                 auto dy = y - s.y;
                 auto j = (s.attr & 0x40) ? 7 - dx : dx;
                 auto i = (s.attr & 0x80) ? 7 - dy : dy;
-                auto sprite_pixel = read_tile_pixel(pattern_table_fg_index(), s.tile, j, i);
+                auto sprite_pixel = read_tile_pixel(control.pattern_table_fg_index(), s.tile, j, i);
                 if (sprite_pixel != 0) {
                     status |= 0x40;
                 }
@@ -315,7 +303,7 @@ private:
 
         if (scan_.cycle() == 257) {
             scroll_x = scroll_x_buffer;
-            nametable_index_x_ = nametable_index_x();
+            nametable_index_x_ = control.nametable_index_x();
         }
     }
 
@@ -327,7 +315,7 @@ private:
 
                 for (auto i = 0; i < 8; ++i) {
                     for (auto j = 0; j < 8; ++j) {
-                        auto pixel = read_tile_pixel(pattern_table_fg_index(), s.tile, j, i);
+                        auto pixel = read_tile_pixel(control.pattern_table_fg_index(), s.tile, j, i);
                         auto dx = (s.attr & 0x40) ? 7 - j : j;
                         auto dy = (s.attr & 0x80) ? 7 - i : i;
                         if (pixel) {
@@ -345,8 +333,7 @@ private:
 
         if (scan_.cycle() == 0) {
             status |= 0x80;
-            if (control & 0x80)
-                nmi_raised = true;
+            nmi_raised = control.raise_vblank_nmi();
         }
     };
 
@@ -407,13 +394,13 @@ inline auto ppu::display_pattern_table(auto i, auto palette) const -> std::array
 constexpr void ppu::prerender_scanline() noexcept {
     if (scan_.cycle() == 0) {
         status = 0x00;
-        control &= 0xFE;
+        control.smb_hotfix();
         nmi_raised = false;
         nmi_seen = false;
     }
     if (scan_.cycle() >= 280) {
         scroll_y = scroll_y_buffer;
-        nametable_index_y_ = nametable_index_y();
+        nametable_index_y_ = control.nametable_index_y();
     }
 }
 }// namespace nes

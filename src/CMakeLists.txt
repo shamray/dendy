@@ -21,6 +21,7 @@ add_library(libnes
 
     libnes/mappers/nrom.hpp
     libnes/mappers/mmc1.hpp
+    libnes/ppu_registers.hpp
 )
 
 target_include_directories(libnes PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

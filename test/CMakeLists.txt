@@ -8,6 +8,7 @@ add_executable(unit_tests
     unit_tests/mmc1_test.cpp
     unit_tests/ppu_oam_test.cpp
     unit_tests/bus_test.cpp
+    unit_tests/ppu_registers_test.cpp
 )
 
 target_link_libraries(unit_tests
