@@ -289,7 +289,7 @@ private:
 
             // Sprite 0 hit
             auto s = oam_.sprites[0];
-            if (x >= s.x and x < s.x + 8 and y >= s.y and y < s.y + 8 and pixel != 0) {
+            if (x >= s.x and x < s.x + 8 and y >= s.y and y < s.y + 8/* and pixel != 0*/) {
                 auto dx = x - s.x;
                 auto dy = y - s.y;
                 auto j = (s.attr & 0x40) ? 7 - dx : dx;
