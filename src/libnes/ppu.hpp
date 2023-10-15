@@ -245,6 +245,17 @@ private:
         return static_cast<std::uint8_t>(pixel_lo | (pixel_hi << 1));
     }
 
+    [[nodiscard]] constexpr auto read_tile_pixel16(auto tile, auto x, auto y, bool flipped_vertically) {
+        const auto first_bite = (y < 8) == !flipped_vertically;// either top half of the sprite and not flipped
+                                                               // or bottom half and flipped
+        const auto tile_offset = (tile & 0x1) * 0x1000 + (tile & 0xFE) * 0x10 + (first_bite ? 0 : 1);
+        const auto tile_lsb = read_chr(static_cast<std::uint16_t>(tile_offset + y + 0));
+        const auto tile_msb = read_chr(static_cast<std::uint16_t>(tile_offset + y + 8));
+        const auto pixel_lo = (tile_lsb >> (7 - x)) & 0x01;
+        const auto pixel_hi = (tile_msb >> (7 - x)) & 0x01;
+        return static_cast<std::uint8_t>(pixel_lo | (pixel_hi << 1));
+    }
+
     [[nodiscard]] constexpr static auto read_tile_index(const auto& name_table, auto tile_x, auto tile_y, auto nametable_index) {
         auto offset = nametable_tile_offset(tile_x, tile_y, nametable_index);
         return name_table.read(offset);
@@ -289,7 +300,7 @@ private:
 
             // Sprite 0 hit
             auto s = oam_.sprites[0];
-            if (x >= s.x and x < s.x + 8 and y >= s.y and y < s.y + 8/* and pixel != 0*/) {
+            if (x >= s.x and x < s.x + 8 and y >= s.y and y < s.y + 8 /* and pixel != 0*/) {
                 auto dx = x - s.x;
                 auto dy = y - s.y;
                 auto j = (s.attr & 0x40) ? 7 - dx : dx;
@@ -313,11 +324,15 @@ private:
             for (const auto& s: oam_.sprites) {
                 auto palette = static_cast<std::uint8_t>((s.attr & 0x03) + 4);
 
-                for (auto i = 0; i < 8; ++i) {
+                for (auto i = 0; i < (control.sprite_size() == sprite_size::sprite8x8 ? 8 : 16); ++i) {
                     for (auto j = 0; j < 8; ++j) {
-                        auto pixel = read_tile_pixel(control.pattern_table_fg_index(), s.tile, j, i);
-                        auto dx = (s.attr & 0x40) ? 7 - j : j;
-                        auto dy = (s.attr & 0x80) ? 7 - i : i;
+                        auto pixel = control.sprite_size() == sprite_size::sprite8x8
+                            ? read_tile_pixel(control.pattern_table_fg_index(), s.tile, j, i)
+                            : read_tile_pixel16(s.tile, j, i, (s.attr & 0x80) != 0);
+                        auto dx = (s.attr & 0x40) ? 7 - j : j;// flipped horizontally
+                        auto dy = (s.attr & 0x80)             // flipped vertically
+                            ? (control.sprite_size() == sprite_size::sprite8x8 ? 7 : 15) - i
+                            : i;
                         if (pixel) {
                             screen.draw_pixel(
                                 {static_cast<short>(s.x + dx), static_cast<short>(s.y + dy)},
