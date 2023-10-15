@@ -46,7 +46,7 @@ public:
     }
 
     [[nodiscard]] constexpr auto sprite_size() const {
-        return (value_ & 0x40) == 0
+        return (value_ & 0x20) == 0
             ? nes::sprite_size::sprite8x8
             : nes::sprite_size::sprite8x16;
     }
