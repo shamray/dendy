@@ -134,6 +134,11 @@ public:
         assert(count == 29780 || count == 29781);
     }
 
+    template <screen screen_t>
+    void render_nametables(screen_t& screen) {
+        ppu_.render_nametables(screen);
+    }
+
     void controller_input(std::uint8_t keys) {
         bus_.j1.keys = keys;
     }

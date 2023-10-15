@@ -181,6 +181,42 @@ private:
     std::string title_;
 };
 
+class nametable_window: public window
+{
+public:
+    nametable_window(std::string caption) {
+        window_ = SDL_CreateWindow(caption.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 512, 480, SDL_WINDOW_OPENGL);
+        if (window_ == nullptr)
+            throw std::runtime_error("Cannot create window");
+
+        renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_ACCELERATED);
+        if (renderer_ == nullptr)
+            throw std::runtime_error("Cannot create renderer");
+
+        screen_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 512, 480);
+    }
+
+    void render(const auto& frame_buffer) {
+        SDL_RenderClear(renderer_);
+        SDL_UpdateTexture(screen_, nullptr, frame_buffer.data(), 512 * sizeof(std::uint32_t));
+        SDL_RenderCopy(renderer_, screen_, nullptr, nullptr);
+        SDL_RenderPresent(renderer_);
+    }
+
+    void close() override {
+        quit_ = true;
+    }
+
+    ~nametable_window() override {
+        SDL_DestroyTexture(screen_);
+        SDL_DestroyRenderer(renderer_);
+    }
+
+private:
+    SDL_Renderer* renderer_{nullptr};
+    SDL_Texture* screen_{nullptr};
+};
+
 class chr_window: public window
 {
 public:
@@ -216,7 +252,7 @@ private:
 }// namespace sdl
 
 struct screen {
-    std::array<nes::color, 256 * 240> frame_buffer;
+    std::vector<nes::color> frame_buffer{256 * 240};
 
     [[nodiscard]] constexpr static auto width() -> short { return 256; }
     [[nodiscard]] constexpr static auto height() -> short { return 240; }
@@ -224,7 +260,20 @@ struct screen {
     void draw_pixel(nes::point where, nes::color color) {
         if (where.x >= width() or where.y >= height())
             return;
-        frame_buffer[where.y * 256 + where.x] = color;
+        frame_buffer[where.y * width() + where.x] = color;
+    }
+};
+
+struct screen_nt {
+    std::vector<nes::color> frame_buffer{256 * 240 * 4};
+
+    [[nodiscard]] constexpr static auto width() -> short { return 256 * 2; }
+    [[nodiscard]] constexpr static auto height() -> short { return 240 * 2; }
+
+    void draw_pixel(nes::point where, nes::color color) {
+        if (where.x >= width() or where.y >= height())
+            return;
+        frame_buffer[where.y * width() + where.x] = color;
     }
 };
 
@@ -309,8 +358,10 @@ int main(int argc, char* argv[]) {
 
     auto caption = config.filename.filename().string();
     auto window = sdl::main_window("NES Emulator", caption);
+    auto nametable_window = sdl::nametable_window("Name Tables");
 
     auto scr = screen{};
+    auto snt = screen_nt{};
     auto console = nes::console{load_rom(config.filename)};
 
     static constexpr auto FPS = 60;
@@ -318,6 +369,7 @@ int main(int argc, char* argv[]) {
     std::uint32_t frameStart, frameTime;
 
     frontend.add_window(&window);
+    frontend.add_window(&nametable_window);
 
     for (;;) {
         frameStart = SDL_GetTicks();
@@ -353,9 +405,11 @@ int main(int argc, char* argv[]) {
 
         if (time_machine and forward or not time_machine) {
             console.render_frame(scr);
+            console.render_nametables(snt);
         }
 
         window.render(scr.frame_buffer);
+        nametable_window.render(snt.frame_buffer);
 
         frameTime = SDL_GetTicks() - frameStart;
 

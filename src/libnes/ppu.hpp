@@ -138,6 +138,26 @@ public:
     auto display_pattern_table(auto i, auto palette) const -> std::array<color, 128 * 128>;
 
     template <screen screen_t>
+    void render_nametables(screen_t& screen) {
+        for (auto y: std::views::iota(short{0}, short{240 * 2})) {
+            for (auto x: std::views::iota(short{0}, short{256 * 2})) {
+                const auto y_of_tile = y / 8;
+                const auto x_of_tile = x / 8;
+                const auto y_in_tile = y % 8;
+                const auto x_in_tile = x % 8;
+
+                auto nametable_addr = nametable_address(x < 256 ? 0 : 1, y < 240 ? 0 : 1);
+
+                auto tile_index = read_tile_index(name_table_, x_of_tile, y_of_tile, nametable_addr);
+                auto pixel = read_tile_pixel(control.pattern_table_bg_index(), tile_index, x_in_tile, y_in_tile);
+                auto palette = read_tile_palette(name_table_, x_of_tile, y_of_tile, nametable_addr);
+
+                screen.draw_pixel({x, y}, palette_table_.color_of(pixel, palette));
+            }
+        }
+    }
+
+    template <screen screen_t>
     void render_noise(auto get_noise, screen_t& screen) {
         // The sky above the port was the color of television, tuned to a dead channel
         for (auto x = 0; x < screen.width(); ++x) {
