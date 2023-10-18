@@ -1,0 +1,29 @@
+name: Continuous Integration (WIP)
+on: [push]
+jobs:
+  Windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Vcpkg
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git
+          vcpkg/bootstrap-vcpkg
+
+      - name: Build Project
+        run: |
+          mkdir build
+          cmake "-DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build
+          cmake --build build
+
+      - name: Zip Result
+        run: |
+          Compress-Archive -Path build/* -Destination result.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: result
+          path: result.zip
