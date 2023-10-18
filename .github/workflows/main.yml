@@ -17,13 +17,3 @@ jobs:
           mkdir build
           cmake "-DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build
           cmake --build build
-
-      - name: Zip Result
-        run: |
-          Compress-Archive -Path build/* -Destination result.zip
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: result
-          path: result.zip
