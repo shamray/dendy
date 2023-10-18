@@ -1,4 +1,4 @@
-name: Continuous Integration (WIP)
+name: CI
 on: [push]
 jobs:
   Windows:
