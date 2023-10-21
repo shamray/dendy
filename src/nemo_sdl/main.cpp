@@ -185,7 +185,7 @@ class nametable_window: public window
 {
 public:
     nametable_window(std::string caption) {
-        window_ = SDL_CreateWindow(caption.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 512, 480, SDL_WINDOW_OPENGL);
+        window_ = SDL_CreateWindow(caption.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 512, 512, SDL_WINDOW_OPENGL);
         if (window_ == nullptr)
             throw std::runtime_error("Cannot create window");
 
@@ -193,7 +193,7 @@ public:
         if (renderer_ == nullptr)
             throw std::runtime_error("Cannot create renderer");
 
-        screen_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 512, 480);
+        screen_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 512, 512);
     }
 
     void render(const auto& frame_buffer) {
@@ -265,10 +265,10 @@ struct screen {
 };
 
 struct screen_nt {
-    std::vector<nes::color> frame_buffer{256 * 240 * 4};
+    std::vector<nes::color> frame_buffer{256 * 256 * 4};
 
     [[nodiscard]] constexpr static auto width() -> short { return 256 * 2; }
-    [[nodiscard]] constexpr static auto height() -> short { return 240 * 2; }
+    [[nodiscard]] constexpr static auto height() -> short { return 256 * 2; }
 
     void draw_pixel(nes::point where, nes::color color) {
         if (where.x >= width() or where.y >= height())
