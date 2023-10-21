@@ -38,4 +38,4 @@ jobs:
         with:
           name: My Test Results
           path: test_report_*.xml
-          reporter: jest-junit
+          reporter: java-junit
