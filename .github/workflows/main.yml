@@ -30,7 +30,8 @@ jobs:
 
       - name: Run Tests
         run: |
-          build/test/Debug/unit_tests --reporter JUnit --out test_report_unit_tests.xml
+          build/test/Debug/unit_tests --reporter JUnit::out=test_report_unit_tests.xml --reporter console
+          build/test/Debug/integration_tests --reporter JUnit::out=test_report_integration_tests.xml --reporter console
 
       - name: Test Report
         uses: dorny/test-reporter@v1
