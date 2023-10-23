@@ -4,7 +4,7 @@ jobs:
   windows:
     strategy:
       matrix:
-        build-config: [debug, release]
+        build-config: [Debug, Release]
       fail-fast: false
     runs-on: windows-latest
     steps:
@@ -19,7 +19,7 @@ jobs:
       - name: Build Project
         run: |
           mkdir build
-          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build-config }} "-DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build
+          cmake "-DCMAKE_BUILD_TYPE=${{ matrix.build-config }}" "-DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build
           cmake --build build
 
       - name: Upload Artifact
