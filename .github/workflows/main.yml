@@ -1,10 +1,11 @@
 name: CI
 on: [push]
 jobs:
-  Windows:
+  windows:
     strategy:
       matrix:
         build-config: [debug, release]
+      fail-fast: false
     runs-on: windows-latest
     steps:
       - name: Checkout repository
