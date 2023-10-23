@@ -1,7 +1,8 @@
 name: CI
-on: [push]
+on: [push, pull_request]
 jobs:
-  windows:
+  build-windows:
+    name: Build
     strategy:
       matrix:
         build-config: [Debug, Release]
@@ -16,7 +17,8 @@ jobs:
           git clone https://github.com/Microsoft/vcpkg.git ../vcpkg
           ../vcpkg/bootstrap-vcpkg
 
-      - uses: TheMrMilchmann/setup-msvc-dev@v3
+      - name: Setup MSVC environment
+        uses: TheMrMilchmann/setup-msvc-dev@v3
         with:
           arch: x64
 
@@ -29,7 +31,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: result-${{ matrix.build-config }}
+          name: bin-windows-${{ matrix.build-config }}
           path: |
             src
             test
@@ -37,15 +39,24 @@ jobs:
             rom
             build
 
-      - name: Run Tests
-        run: |
-          build/test/unit_tests --reporter JUnit::out=test_report_unit_tests.xml --reporter console --success
-          build/test/integration_tests --reporter JUnit::out=test_report_integration_tests.xml --reporter console --success
-
-      - name: Test Report
-        uses: dorny/test-reporter@v1
-        if: success() || failure()
+  test-windows:
+    name: Test
+    needs:
+      build-windows
+    strategy:
+      matrix:
+        build-config: [Debug, Release]
+      fail-fast: false
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v3
         with:
-          name: My Test Results
-          path: test_report_*.xml
-          reporter: java-junit
+          name: bin-windows-${{ matrix.build-config }}
+
+      - name: Unit Tests
+        run:
+          build/test/unit_tests
+
+      - name: Integration Tests
+        run:
+          build/test/integration_tests
