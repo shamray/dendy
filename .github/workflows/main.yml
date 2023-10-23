@@ -21,15 +21,16 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=${{ matrix.build-config }} "-DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build
           cmake --build build
 
-      - name: Zip Result
-        run: |
-          Compress-Archive -Path * -Destination result.zip
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: result
-          path: result.zip
+          name: result-${{ matrix.build-config }}
+          path: |
+            src
+            test
+            tools
+            rom
+            build
 
       - name: Run Tests
         run: |
