@@ -2,7 +2,7 @@ name: CI
 on: [push, pull_request]
 jobs:
   build-windows:
-    name: Build
+    name: Build (Windows, ${{ matrix.build-config }}, MSVC)
     strategy:
       matrix:
         build-config: [Debug, Release]
@@ -54,7 +54,7 @@ jobs:
           build/test/${{ matrix.build-config }}/integration_tests
 
   build-linux:
-    name: Build (Linux)
+    name: Build (Linux, ${{ matrix.build-config }}, ${{ matrix.compiler }})
     strategy:
       matrix:
         build-config: [Debug, Release]
@@ -65,7 +65,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Cpp
+      - name: Setup C++
         uses: aminya/setup-cpp@v1
         with:
           compiler: ${{ matrix.compiler }}
@@ -77,7 +77,7 @@ jobs:
       - name: Build Project
         run: |
           mkdir build
-          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} "-DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build
+          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build-config }} "-DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build
           cmake --build build
 
 
