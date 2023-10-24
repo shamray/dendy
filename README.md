@@ -2,7 +2,7 @@
 # NEM0 - a NES Emulator Nobody Asked For
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Build Status](https://github.com/shamray/nemo/actions/workflows/main.yml/badge.svg)](https://github.com/shamray/nemo/actions/workflows/main.yml)
+[![Build Status](https://github.com/shamray/nemo/actions/workflows/ci.yml/badge.svg)](https://github.com/shamray/nemo/actions/workflows/ci.yml)
 
 Yet another NES emulator, a passion project written just for fun, still work 
 in progress. It's a (not yet) cross-platform emulator, written in C++20 (with 
