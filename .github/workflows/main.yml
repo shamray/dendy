@@ -84,7 +84,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: bin-ubuntu-${{ matrix.build-config }}
+          name: bin-linux-${{ matrix.build-config }}-${{ matrix.compiler }}
           path: |
             *
             !build/vcpkg_installed/**
