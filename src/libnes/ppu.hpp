@@ -276,12 +276,12 @@ private:
         return static_cast<std::uint8_t>(pixel_lo | (pixel_hi << 1));
     }
 
-    [[nodiscard]] constexpr static auto read_tile_index(const auto& name_table, auto tile_x, auto tile_y, auto nametable_index) {
+    [[nodiscard]] constexpr static auto read_tile_index(const auto& name_table, auto tile_x, auto tile_y, auto nametable_index) -> std::uint8_t {
         auto offset = nametable_tile_offset(tile_x, tile_y, nametable_index);
         return name_table.read(offset);
     }
 
-    [[nodiscard]] constexpr static auto tile_palette(auto tile_x, auto tile_y, auto attr_byte) {
+    [[nodiscard]] constexpr static auto tile_palette(auto tile_x, auto tile_y, auto attr_byte) -> std::uint8_t {
         if ((tile_x % 4) >> 1) {
             attr_byte = attr_byte >> 2;
         }
