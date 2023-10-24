@@ -52,3 +52,34 @@ jobs:
       - name: Integration Tests
         run:
           build/test/${{ matrix.build-config }}/integration_tests
+
+  build-linux:
+    name: Build (Linux)
+    strategy:
+      matrix:
+        build-config: [Debug, Release]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Vcpkg
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git ../vcpkg
+          ../vcpkg/bootstrap-vcpkg.sh
+
+      - name: Build Project
+        run: |
+          mkdir build
+          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} "-DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build
+          cmake --build build
+
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: bin-ubuntu-${{ matrix.build-config }}
+          path: |
+            *
+            !build/vcpkg_installed/**
