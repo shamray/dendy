@@ -14,19 +14,13 @@ jobs:
 
       - name: Install Vcpkg
         run: |
-          git clone https://github.com/Microsoft/vcpkg.git vcpkg
-          vcpkg/bootstrap-vcpkg
-
-      - name: Cache Vcpkg Packages
-        uses: actions/cache@v3
-        with:
-          path: vcpkg/packages
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          git clone https://github.com/Microsoft/vcpkg.git ../vcpkg
+          ../vcpkg/bootstrap-vcpkg
 
       - name: Build Project
         run: |
           mkdir build
-          cmake "-DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build
+          cmake "-DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build
           cmake --build build --config ${{ matrix.build-config }}
 
       - name: Upload Artifact
@@ -35,7 +29,6 @@ jobs:
           name: bin-windows-${{ matrix.build-config }}
           path: |
             *
-            !vcpkg
             !build/vcpkg_installed/**
 
   test-windows:
