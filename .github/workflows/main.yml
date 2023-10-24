@@ -58,21 +58,26 @@ jobs:
     strategy:
       matrix:
         build-config: [Debug, Release]
+        compiler: [gcc, llvm]
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Vcpkg
-        run: |
-          git clone https://github.com/Microsoft/vcpkg.git ../vcpkg
-          ../vcpkg/bootstrap-vcpkg.sh
+      - name: Setup Cpp
+        uses: aminya/setup-cpp@v1
+        with:
+          compiler: ${{ matrix.compiler }}
+          vcvarsall: ${{ contains(matrix.os, 'windows') }}
+          cmake: true
+          ninja: true
+          vcpkg: true
 
       - name: Build Project
         run: |
           mkdir build
-          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} "-DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build
+          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} "-DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build
           cmake --build build
 
 
