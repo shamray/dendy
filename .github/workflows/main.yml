@@ -17,27 +17,26 @@ jobs:
           git clone https://github.com/Microsoft/vcpkg.git ../vcpkg
           ../vcpkg/bootstrap-vcpkg
 
-      - name: Setup MSVC environment
-        uses: TheMrMilchmann/setup-msvc-dev@v3
+      - name: Cache Vcpkg Packages
+        uses: actions/cache@v3
         with:
-          arch: x64
+          path: ../vcpkg/packages
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
 
       - name: Build Project
         run: |
           mkdir build
-          cmake "-DCMAKE_BUILD_TYPE=${{ matrix.build-config }}" "-DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build -G Ninja
-          cmake --build build
+          cmake "-DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build
+          cmake --build build --config ${{ matrix.build-config }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: bin-windows-${{ matrix.build-config }}
           path: |
-            src
-            test
-            tools
-            rom
-            build
+            **
+            !vcpkg/**
+            !build/vcpkg_installed/**
 
   test-windows:
     name: Test
@@ -55,8 +54,8 @@ jobs:
 
       - name: Unit Tests
         run:
-          build/test/unit_tests
+          build/test/${{ matrix.build-config }}/unit_tests
 
       - name: Integration Tests
         run:
-          build/test/integration_tests
+          build/test/${{ matrix.build-config }}/integration_tests
