@@ -256,7 +256,7 @@ private:
         return static_cast<std::uint16_t>((0x3c0 + tile_y / 4 * 8 + tile_x / 4) | nametable_index);
     }
 
-    [[nodiscard]] constexpr auto read_tile_pixel(auto ix, auto tile, auto x, auto y) {
+    [[nodiscard]] constexpr auto read_tile_pixel(auto ix, auto tile, auto x, auto y) const {
         const auto tile_offset = ix * 0x1000 + tile * 0x10;
         const auto tile_lsb = read_chr(static_cast<std::uint16_t>(tile_offset + y + 0));
         const auto tile_msb = read_chr(static_cast<std::uint16_t>(tile_offset + y + 8));
