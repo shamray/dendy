@@ -37,11 +37,11 @@ public:
             : std::int8_t{32};
     }
 
-    [[nodiscard]] constexpr auto pattern_table_fg_index() const {
+    [[nodiscard]] constexpr auto pattern_table_fg_index() const -> std::uint8_t {
         return (value_ & 0x08) >> 3;
     }
 
-    [[nodiscard]] constexpr auto pattern_table_bg_index() const {
+    [[nodiscard]] constexpr auto pattern_table_bg_index() const -> std::uint8_t {
         return (value_ & 0x10) >> 4;
     }
 
