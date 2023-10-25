@@ -363,6 +363,7 @@ int main(int argc, char* argv[]) {
     auto scr = screen{};
     auto snt = screen_nt{};
     auto console = nes::console{load_rom(config.filename)};
+    auto chr = std::array{sdl::chr_window("CHR 0"), sdl::chr_window("CHR 1")};
 
     static constexpr auto FPS = 60;
     static constexpr auto DELAY = static_cast<int>(1000.0f / FPS);
@@ -370,6 +371,8 @@ int main(int argc, char* argv[]) {
 
     frontend.add_window(&window);
     frontend.add_window(&nametable_window);
+    frontend.add_window(&chr[0]);
+    frontend.add_window(&chr[1]);
 
     for (;;) {
         frameStart = SDL_GetTicks();
@@ -406,6 +409,10 @@ int main(int argc, char* argv[]) {
         if (time_machine and forward or not time_machine) {
             console.render_frame(scr);
             console.render_nametables(snt);
+
+            for (auto i = 0; i < chr.size(); ++i) {
+                chr[i].render(console.display_pattern_table(i));
+            }
         }
 
         window.render(scr.frame_buffer);

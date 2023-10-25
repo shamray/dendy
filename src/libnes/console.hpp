@@ -139,6 +139,10 @@ public:
         ppu_.render_nametables(screen);
     }
 
+    auto display_pattern_table(auto i) const {
+        return ppu_.display_pattern_table(i, 0);
+    }
+
     void controller_input(std::uint8_t keys) {
         bus_.j1.keys = keys;
     }
