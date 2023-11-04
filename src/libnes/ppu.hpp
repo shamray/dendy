@@ -50,6 +50,9 @@ public:
     std::uint8_t data_buffer;
 
     template <screen screen_t>
+    constexpr void tick_old(screen_t& screen);
+
+    template <screen screen_t>
     constexpr void tick(screen_t& screen);
 
     [[nodiscard]] constexpr auto is_frame_ready() const noexcept { return scan_.is_frame_finished(); }
@@ -226,7 +229,7 @@ private:
         address += control.vram_address_increment();
     }
 
-    constexpr void prerender_scanline() noexcept;
+    constexpr void prerender_scanline_old() noexcept;
 
     std::uint8_t nametable_index_x_{0};
     std::uint8_t nametable_index_y_{0};
@@ -282,7 +285,7 @@ private:
     }
 
     template <screen screen_t>
-    constexpr void visible_scanline(screen_t& screen) {
+    constexpr void visible_scanline_old(screen_t& screen) {
         auto y = scan_.line();
         auto x = static_cast<short>(scan_.cycle() - 2);
 
@@ -322,7 +325,7 @@ private:
     }
 
     template <screen screen_t>
-    constexpr void postrender_scanline(screen_t& screen) noexcept {
+    constexpr void postrender_scanline_old(screen_t& screen) noexcept {
         if (scan_.cycle() == 0) {
             for (const auto& s: oam_.sprites) {
                 auto palette = static_cast<std::uint8_t>((s.attr & 0x03) + 4);
@@ -347,7 +350,7 @@ private:
             }
         }
     }
-    constexpr void vertical_blank_line() noexcept {
+    constexpr void vertical_blank_line_old() noexcept {
 
         if (scan_.cycle() == 0) {
             status |= 0x80;
@@ -374,17 +377,22 @@ private:
 };
 
 template <screen screen_t>
-constexpr void ppu::tick(screen_t& screen) {
+constexpr void ppu::tick_old(screen_t& screen) {
     if (scan_.is_prerender()) {
-        prerender_scanline();
+        prerender_scanline_old();
     } else if (scan_.is_visible()) {
-        visible_scanline(screen);
+        visible_scanline_old(screen);
     } else if (scan_.is_postrender()) {
-        postrender_scanline(screen);
+        postrender_scanline_old(screen);
     } else if (scan_.is_vblank()) {
-        vertical_blank_line();
+        vertical_blank_line_old();
     }
 
+    scan_.advance();
+}
+
+template <screen screen_t>
+constexpr void ppu::tick(screen_t& screen) {
     scan_.advance();
 }
 
@@ -409,7 +417,7 @@ inline auto ppu::display_pattern_table(auto i, auto palette) const -> std::array
     return result;
 }
 
-constexpr void ppu::prerender_scanline() noexcept {
+constexpr void ppu::prerender_scanline_old() noexcept {
     if (scan_.cycle() == 0) {
         status = 0x00;
         control.smb_hotfix();

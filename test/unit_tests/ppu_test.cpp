@@ -14,7 +14,7 @@ namespace
 
 void tick(auto& ppu, auto& screen, int times = 1) {
     for (auto i = 0; i < times; ++i) {
-        ppu.tick(screen);
+        ppu.tick_old(screen);
     }
 }
 
@@ -129,7 +129,7 @@ TEST_CASE("PPU") {
 
     SECTION("start of the frame") {
         ppu.status |= 0x40;
-        ppu.tick(screen);
+        ppu.tick_old(screen);
 
         CHECK((ppu.status & 0x40) == 0);
     }

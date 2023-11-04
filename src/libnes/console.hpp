@@ -124,11 +124,11 @@ public:
         for (;; ++count) {
             cpu_.tick();
 
-            ppu_.tick(screen);
+            ppu_.tick_old(screen);
             if (ppu_.is_frame_ready()) break;
-            ppu_.tick(screen);
+            ppu_.tick_old(screen);
             if (ppu_.is_frame_ready()) break;
-            ppu_.tick(screen);
+            ppu_.tick_old(screen);
             if (ppu_.is_frame_ready()) break;
         }
         assert(count == 29780 || count == 29781);
