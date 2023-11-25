@@ -36,6 +36,10 @@ public:
     std::uint8_t status{0};
     std::uint8_t mask{0};
 
+    std::uint16_t vram_addr;
+    std::uint16_t temp_addr;
+    std::uint8_t fine_x;
+
     int scroll_latch{0};
     std::uint8_t scroll_x{0};
     std::uint8_t scroll_y{0};
@@ -230,6 +234,7 @@ private:
     }
 
     constexpr void prerender_scanline_old() noexcept;
+    constexpr void prerender_scanline() noexcept;
 
     std::uint8_t nametable_index_x_{0};
     std::uint8_t nametable_index_y_{0};
@@ -325,6 +330,12 @@ private:
     }
 
     template <screen screen_t>
+    constexpr void visible_scanline(screen_t& screen);
+
+    template <screen screen_t>
+    constexpr void postrender_scanline(screen_t& screen);
+
+    template <screen screen_t>
     constexpr void postrender_scanline_old(screen_t& screen) noexcept {
         if (scan_.cycle() == 0) {
             for (const auto& s: oam_.sprites) {
@@ -374,6 +385,8 @@ private:
 
     cartridge* cartridge_{nullptr};
     std::uint8_t data_read_buffer_;
+
+    std::uint16_t addr_;
 };
 
 template <screen screen_t>
@@ -393,6 +406,17 @@ constexpr void ppu::tick_old(screen_t& screen) {
 
 template <screen screen_t>
 constexpr void ppu::tick(screen_t& screen) {
+    if (scan_.is_prerender()) {
+        prerender_scanline();
+    }
+
+    if (scan_.is_prerender() or scan_.is_visible()) {
+        visible_scanline(screen);
+    } else if (scan_.is_postrender()) {
+        postrender_scanline(screen);
+    } else if (scan_.is_vblank()) {
+        vertical_blank_line_old();
+    }
     scan_.advance();
 }
 
@@ -428,6 +452,57 @@ constexpr void ppu::prerender_scanline_old() noexcept {
         scroll_y = scroll_y_buffer;
         nametable_index_y_ = control.nametable_index_y();
     }
+}
+
+constexpr void ppu::prerender_scanline() noexcept {
+    if (scan_.cycle() == 1) {
+        status = 0x00;
+    }
+}
+
+template <screen screen_t>
+constexpr void ppu::visible_scanline(screen_t& screen) {
+    if (scan_.cycle() >= 2 and scan_.cycle() <= 257) {
+        // draw pixel
+    }
+    if ((scan_.cycle() >= 2 and scan_.cycle() <= 255) or (scan_.cycle() >= 322 and scan_.cycle() <= 337)) {
+        // update registers
+        switch (scan_.cycle() % 8) {
+            case 1:
+                // NT
+                break;
+            case 2:
+                // NT
+                break;
+            case 3:
+                // AT
+                break;
+            case 4:
+                // AT
+                break;
+            case 5:
+                // BG lsbits
+                break;
+            case 6:
+                // BG lsbits
+                break;
+            case 7:
+                // BG msbits
+                break;
+            case 0:
+                // BG msbits
+                // inc horiz v
+                break;
+        }
+    }
+    if (scan_.cycle() == 1 or scan_.cycle() == 321 or scan_.cycle() == 339) {
+    }
+    if (scan_.cycle() == 338 or scan_.cycle() == 340) {
+    }
+}
+
+template <screen screen_t>
+constexpr void ppu::postrender_scanline(screen_t& screen) {
 }
 
 template <screen screen_t>
